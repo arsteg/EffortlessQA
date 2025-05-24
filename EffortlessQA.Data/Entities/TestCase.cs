@@ -1,0 +1,51 @@
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json;
+
+namespace EffortlessQA.Data.Entities
+{
+    [Auditable]
+    public class TestCase : EntityBase
+    {
+        [Key]
+        public Guid Id { get; set; } = Guid.NewGuid();
+
+        [Required, MaxLength(200)]
+        public string Title { get; set; }
+
+        [MaxLength(1000)]
+        public string? Description { get; set; }
+
+        public JsonDocument? Steps { get; set; } // JSONB for AI-ready metadata
+
+        public JsonDocument? ExpectedResults { get; set; }
+
+        [Required, MaxLength(20)]
+        [RegularExpression("High|Medium|Low")]
+        // [Index]
+        public string Priority { get; set; }
+
+        public string[]? Tags { get; set; }
+
+        [Required]
+        public Guid TestSuiteId { get; set; }
+
+        [ForeignKey("TestSuiteId")]
+        //[Index]
+        public TestSuite TestSuite { get; set; }
+
+        [Required, MaxLength(50)]
+        // [Index]
+        public string TenantId { get; set; }
+
+        [Required]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public DateTime? UpdatedAt { get; set; }
+
+        // Navigation properties
+        public List<TestRunResult> TestRunResults { get; set; } = new();
+        public List<Defect> Defects { get; set; } = new();
+        public List<RequirementTestCase> RequirementTestCases { get; set; } = new();
+    }
+}
