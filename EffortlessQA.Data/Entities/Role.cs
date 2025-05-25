@@ -25,5 +25,6 @@ namespace EffortlessQA.Data.Entities
         [RegularExpression("Admin|Tester", ErrorMessage = "Role must be Admin or Tester")]
         public RoleType RoleType { get; set; } // "Admin" or "Tester"
         public List<RolePermission> RolePermissions { get; set; } = new();
+        public string TenantId { get; set; }
     }
 }

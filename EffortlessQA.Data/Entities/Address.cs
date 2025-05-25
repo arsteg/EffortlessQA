@@ -28,5 +28,6 @@ namespace EffortlessQA.Data.Entities
 
         [MaxLength(255)]
         public string? BillingContactEmail { get; set; }
+        public string TenantId { get; set; }
     }
 }
