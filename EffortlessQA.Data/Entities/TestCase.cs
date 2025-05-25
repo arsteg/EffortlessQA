@@ -23,7 +23,7 @@ namespace EffortlessQA.Data.Entities
         [Required, MaxLength(20)]
         [RegularExpression("High|Medium|Low")]
         // [Index]
-        public string Priority { get; set; }
+        public PriorityLevel Priority { get; set; }
 
         public string[]? Tags { get; set; }
 
@@ -38,14 +38,13 @@ namespace EffortlessQA.Data.Entities
         // [Index]
         public string TenantId { get; set; }
 
-        [Required]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        public DateTime? UpdatedAt { get; set; }
-
         // Navigation properties
         public List<TestRunResult> TestRunResults { get; set; } = new();
         public List<Defect> Defects { get; set; } = new();
         public List<RequirementTestCase> RequirementTestCases { get; set; } = new();
+        public Guid? FolderId { get; set; }
+
+        [ForeignKey("FolderId")]
+        public TestFolder? Folder { get; set; }
     }
 }

@@ -17,7 +17,6 @@ namespace EffortlessQA.Data.Entities
 
         [ForeignKey("TestCaseId")]
         public TestCase TestCase { get; set; }
-
-        public string TenantId { get; set; }
+        public int? Weight { get; set; } // Optional for future prioritization
     }
 }

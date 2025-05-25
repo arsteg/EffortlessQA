@@ -35,4 +35,17 @@ namespace EffortlessQA.Data.Entities
         Medium,
         Low
     }
+
+    public enum PriorityLevel
+    {
+        High,
+        Medium,
+        Low
+    }
+
+    public enum RoleType
+    {
+        Admin,
+        Tester
+    }
 }

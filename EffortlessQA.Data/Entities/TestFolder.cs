@@ -1,10 +1,15 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace EffortlessQA.Data.Entities
 {
     [Auditable]
-    public class TestSuite : EntityBase
+    public class TestFolder : EntityBase
     {
         [Key]
         public Guid Id { get; set; } = Guid.NewGuid();
@@ -19,19 +24,10 @@ namespace EffortlessQA.Data.Entities
         public Guid ProjectId { get; set; }
 
         [ForeignKey("ProjectId")]
-        // [Index]
         public Project Project { get; set; }
 
         [Required, MaxLength(50)]
-        //[Index]
         public string TenantId { get; set; }
-
-        // Navigation property
         public List<TestCase> TestCases { get; set; } = new();
-
-        public Guid? ParentSuiteId { get; set; }
-
-        [ForeignKey("ParentSuiteId")]
-        public TestSuite? ParentSuite { get; set; }
     }
 }

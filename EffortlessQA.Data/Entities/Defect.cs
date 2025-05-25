@@ -19,7 +19,7 @@ namespace EffortlessQA.Data.Entities
         [Required, MaxLength(20)]
         [RegularExpression("High|Medium|Low")]
         // [Index]
-        public DefectSeverity Severity { get; set; }
+        public SeverityLevel Severity { get; set; }
 
         [Required, MaxLength(20)]
         [RegularExpression("Open|InProgress|Resolved|Closed")]
@@ -45,9 +45,12 @@ namespace EffortlessQA.Data.Entities
         // [Index]
         public string TenantId { get; set; }
 
-        [Required]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public Guid? AssignedUserId { get; set; }
 
-        public DateTime? UpdatedAt { get; set; }
+        [ForeignKey("AssignedUserId")]
+        public User? AssignedUser { get; set; }
+
+        [MaxLength(1000)]
+        public string? ResolutionNotes { get; set; }
     }
 }

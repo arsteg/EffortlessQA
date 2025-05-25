@@ -17,6 +17,5 @@ namespace EffortlessQA.Data.Entities
 
         [ForeignKey("PermissionId")]
         public Permission Permission { get; set; }
-        public string TenantId { get; set; }
     }
 }

@@ -17,18 +17,6 @@ namespace EffortlessQA.Data.Entities
         [Required]
         public string ContactPerson { get; set; }
 
-        public string Address { get; set; }
-
-        public string City { get; set; }
-
-        public string State { get; set; }
-
-        [ForeignKey("Country")]
-        public int? CountryId { get; set; } // Nullable if not required
-        public Country Country { get; set; }
-
-        public string Pincode { get; set; }
-
         [Required]
         [EmailAddress]
         [StringLength(255)]
@@ -44,5 +32,7 @@ namespace EffortlessQA.Data.Entities
 
         // Navigation property
         public List<User> Users { get; set; } = new();
+
+        public Address? Address { get; set; }
     }
 }
