@@ -20,6 +20,8 @@ namespace EffortlessQA.Api.Extensions
         public const string TESTFOLDER_TAG = "Test Folders";
         public const string AUDITLOG_TAG = "Audit Logs";
         public const string REPORTING_TAG = "Reporting";
+        public const string SEARCH_TAG = "Search";
+        public const string PERMISSION_ROLE_TAG = "Permissions & Roles";
 
         public static void MapApiEndpoints(this WebApplication app)
         {
