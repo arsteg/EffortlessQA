@@ -19,6 +19,7 @@ namespace EffortlessQA.Api.Extensions
         public const string TENANT_TAG = "Tenants";
         public const string TESTFOLDER_TAG = "Test Folders";
         public const string AUDITLOG_TAG = "Audit Logs";
+        public const string REPORTING_TAG = "Reporting";
 
         public static void MapApiEndpoints(this WebApplication app)
         {
