@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 using EffortlessQA.Data.Entities;
 
 namespace EffortlessQA.Data.Dtos
@@ -10,7 +11,7 @@ namespace EffortlessQA.Data.Dtos
         public Guid TestRunId { get; set; }
         public TestExecutionStatus Status { get; set; }
         public string? Comments { get; set; }
-        public object? Attachments { get; set; }
+        public JsonDocument? Attachments { get; set; }
         public string TenantId { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
@@ -44,5 +45,33 @@ namespace EffortlessQA.Data.Dtos
 
             public object? Attachments { get; set; }
         }
+    }
+
+    public class CreateTestRunResultDto
+    {
+        public Guid TestCaseId { get; set; }
+        public TestExecutionStatus Status { get; set; }
+        public string? Comments { get; set; }
+        public string? Attachments { get; set; } // JSON string
+    }
+
+    public class UpdateTestRunResultDto
+    {
+        public TestExecutionStatus? Status { get; set; }
+        public string? Comments { get; set; }
+        public string? Attachments { get; set; } // JSON string
+    }
+
+    public class BulkUpdateTestRunResultDto
+    {
+        public List<BulkUpdateTestRunResultItemDto> ResultUpdates { get; set; } = new();
+    }
+
+    public class BulkUpdateTestRunResultItemDto
+    {
+        public Guid ResultId { get; set; }
+        public TestExecutionStatus? Status { get; set; }
+        public string? Comments { get; set; }
+        public string? Attachments { get; set; } // JSON string
     }
 }

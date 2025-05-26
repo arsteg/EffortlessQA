@@ -1,4 +1,5 @@
 ﻿using EffortlessQA.Data.Dtos;
+using EffortlessQA.Data.Entities;
 
 namespace EffortlessQA.Api.Services.Interface
 {
@@ -6,13 +7,31 @@ namespace EffortlessQA.Api.Services.Interface
     {
         Task<TestRunResultDto> CreateTestRunResultAsync(
             Guid testRunId,
-            TestRunResultCreateDto dto,
+            string tenantId,
+            CreateTestRunResultDto dto
+        );
+        Task<PagedResult<TestRunResultDto>> GetTestRunResultsAsync(
+            Guid testRunId,
+            string tenantId,
+            int page,
+            int limit,
+            TestExecutionStatus[]? statuses
+        );
+        Task<TestRunResultDto> GetTestRunResultAsync(
+            Guid resultId,
+            Guid testRunId,
             string tenantId
         );
-        Task BulkUpdateTestRunResultsAsync(
+        Task<TestRunResultDto> UpdateTestRunResultAsync(
+            Guid resultId,
             Guid testRunId,
-            TestRunResultBulkUpdateDto dto,
-            string tenantId
+            string tenantId,
+            UpdateTestRunResultDto dto
+        );
+        Task<IList<TestRunResultDto>> BulkUpdateTestRunResultsAsync(
+            Guid testRunId,
+            string tenantId,
+            BulkUpdateTestRunResultDto dto
         );
     }
 }
