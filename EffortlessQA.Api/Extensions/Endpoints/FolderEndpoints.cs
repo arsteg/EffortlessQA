@@ -6,15 +6,15 @@ namespace EffortlessQA.Api.Extensions
 {
     public static partial class ApiExtensions
     {
-        public static void MapTestSuiteEndpoints(this WebApplication app)
+        public static void MapTestFolderEndpoints(this WebApplication app)
         {
-            // POST /api/v1/projects/{projectId}/testsuites
+            // POST /api/v1/projects/{projectId}/testfolders
             app.MapPost(
-                    "/api/v1/projects/{projectId}/testsuites",
+                    "/api/v1/projects/{projectId}/testfolders",
                     async (
                         Guid projectId,
-                        [FromBody] CreateTestSuiteDto dto,
-                        ITestSuiteService testSuiteService,
+                        [FromBody] CreateTestFolderDto dto,
+                        ITestFolderService testFolderService,
                         HttpContext context
                     ) =>
                     {
@@ -25,16 +25,16 @@ namespace EffortlessQA.Api.Extensions
                             {
                                 return Results.Unauthorized();
                             }
-                            var testSuite = await testSuiteService.CreateTestSuiteAsync(
+                            var testFolder = await testFolderService.CreateTestFolderAsync(
                                 projectId,
                                 tenantId,
                                 dto
                             );
                             return Results.Ok(
-                                new ApiResponse<TestSuiteDto>
+                                new ApiResponse<TestFolderDto>
                                 {
-                                    Data = testSuite,
-                                    Meta = new { Message = "Test suite created successfully" }
+                                    Data = testFolder,
+                                    Meta = new { Message = "Test folder created successfully" }
                                 }
                             );
                         }
@@ -53,17 +53,17 @@ namespace EffortlessQA.Api.Extensions
                         }
                     }
                 )
-                .WithName("CreateTestSuite")
+                .WithName("CreateTestFolder")
                 .RequireAuthorization("AdminOnly")
-                .WithTags(TESTSUITE_TAG)
+                .WithTags(TESTFOLDER_TAG)
                 .WithMetadata();
 
-            // GET /api/v1/projects/{projectId}/testsuites
+            // GET /api/v1/projects/{projectId}/testfolders
             app.MapGet(
-                    "/api/v1/projects/{projectId}/testsuites",
+                    "/api/v1/projects/{projectId}/testfolders",
                     async (
                         Guid projectId,
-                        ITestSuiteService testSuiteService,
+                        ITestFolderService testFolderService,
                         HttpContext context,
                         [FromQuery] int page = 1,
                         [FromQuery] int limit = 50,
@@ -77,7 +77,7 @@ namespace EffortlessQA.Api.Extensions
                             {
                                 return Results.Unauthorized();
                             }
-                            var testSuites = await testSuiteService.GetTestSuitesAsync(
+                            var testFolders = await testFolderService.GetTestFoldersAsync(
                                 projectId,
                                 tenantId,
                                 page,
@@ -85,14 +85,14 @@ namespace EffortlessQA.Api.Extensions
                                 filter
                             );
                             return Results.Ok(
-                                new ApiResponse<PagedResult<TestSuiteDto>>
+                                new ApiResponse<PagedResult<TestFolderDto>>
                                 {
-                                    Data = testSuites,
+                                    Data = testFolders,
                                     Meta = new
                                     {
                                         Page = page,
                                         Limit = limit,
-                                        Total = testSuites.TotalCount
+                                        Total = testFolders.TotalCount
                                     }
                                 }
                             );
@@ -112,17 +112,17 @@ namespace EffortlessQA.Api.Extensions
                         }
                     }
                 )
-                .WithName("GetTestSuites")
-                .WithTags(TESTSUITE_TAG)
+                .WithName("GetTestFolders")
+                .WithTags(TESTFOLDER_TAG)
                 .WithMetadata();
 
-            // GET /api/v1/projects/{projectId}/testsuites/{testSuiteId}
+            // GET /api/v1/projects/{projectId}/testfolders/{folderId}
             app.MapGet(
-                    "/api/v1/projects/{projectId}/testsuites/{testSuiteId}",
+                    "/api/v1/projects/{projectId}/testfolders/{folderId}",
                     async (
                         Guid projectId,
-                        Guid testSuiteId,
-                        ITestSuiteService testSuiteService,
+                        Guid folderId,
+                        ITestFolderService testFolderService,
                         HttpContext context
                     ) =>
                     {
@@ -133,16 +133,16 @@ namespace EffortlessQA.Api.Extensions
                             {
                                 return Results.Unauthorized();
                             }
-                            var testSuite = await testSuiteService.GetTestSuiteAsync(
-                                testSuiteId,
+                            var testFolder = await testFolderService.GetTestFolderAsync(
+                                folderId,
                                 projectId,
                                 tenantId
                             );
                             return Results.Ok(
-                                new ApiResponse<TestSuiteDto>
+                                new ApiResponse<TestFolderDto>
                                 {
-                                    Data = testSuite,
-                                    Meta = new { Message = "Test suite retrieved successfully" }
+                                    Data = testFolder,
+                                    Meta = new { Message = "Test folder retrieved successfully" }
                                 }
                             );
                         }
@@ -161,18 +161,18 @@ namespace EffortlessQA.Api.Extensions
                         }
                     }
                 )
-                .WithName("GetTestSuite")
-                .WithTags(TESTSUITE_TAG)
+                .WithName("GetTestFolder")
+                .WithTags(TESTFOLDER_TAG)
                 .WithMetadata();
 
-            // PUT /api/v1/projects/{projectId}/testsuites/{testSuiteId}
+            // PUT /api/v1/projects/{projectId}/testfolders/{folderId}
             app.MapPut(
-                    "/api/v1/projects/{projectId}/testsuites/{testSuiteId}",
+                    "/api/v1/projects/{projectId}/testfolders/{folderId}",
                     async (
                         Guid projectId,
-                        Guid testSuiteId,
-                        [FromBody] UpdateTestSuiteDto dto,
-                        ITestSuiteService testSuiteService,
+                        Guid folderId,
+                        [FromBody] UpdateTestFolderDto dto,
+                        ITestFolderService testFolderService,
                         HttpContext context
                     ) =>
                     {
@@ -183,17 +183,17 @@ namespace EffortlessQA.Api.Extensions
                             {
                                 return Results.Unauthorized();
                             }
-                            var testSuite = await testSuiteService.UpdateTestSuiteAsync(
-                                testSuiteId,
+                            var testFolder = await testFolderService.UpdateTestFolderAsync(
+                                folderId,
                                 projectId,
                                 tenantId,
                                 dto
                             );
                             return Results.Ok(
-                                new ApiResponse<TestSuiteDto>
+                                new ApiResponse<TestFolderDto>
                                 {
-                                    Data = testSuite,
-                                    Meta = new { Message = "Test suite updated successfully" }
+                                    Data = testFolder,
+                                    Meta = new { Message = "Test folder updated successfully" }
                                 }
                             );
                         }
@@ -212,18 +212,18 @@ namespace EffortlessQA.Api.Extensions
                         }
                     }
                 )
-                .WithName("UpdateTestSuite")
+                .WithName("UpdateTestFolder")
                 .RequireAuthorization("AdminOnly")
-                .WithTags(TESTSUITE_TAG)
+                .WithTags(TESTFOLDER_TAG)
                 .WithMetadata();
 
-            // DELETE /api/v1/projects/{projectId}/testsuites/{testSuiteId}
+            // DELETE /api/v1/projects/{projectId}/testfolders/{folderId}
             app.MapDelete(
-                    "/api/v1/projects/{projectId}/testsuites/{testSuiteId}",
+                    "/api/v1/projects/{projectId}/testfolders/{folderId}",
                     async (
                         Guid projectId,
-                        Guid testSuiteId,
-                        ITestSuiteService testSuiteService,
+                        Guid folderId,
+                        ITestFolderService testFolderService,
                         HttpContext context
                     ) =>
                     {
@@ -234,8 +234,8 @@ namespace EffortlessQA.Api.Extensions
                             {
                                 return Results.Unauthorized();
                             }
-                            await testSuiteService.DeleteTestSuiteAsync(
-                                testSuiteId,
+                            await testFolderService.DeleteTestFolderAsync(
+                                folderId,
                                 projectId,
                                 tenantId
                             );
@@ -243,7 +243,7 @@ namespace EffortlessQA.Api.Extensions
                                 new ApiResponse<object>
                                 {
                                     Data = null,
-                                    Meta = new { Message = "Test suite deleted successfully" }
+                                    Meta = new { Message = "Test folder deleted successfully" }
                                 }
                             );
                         }
@@ -262,9 +262,9 @@ namespace EffortlessQA.Api.Extensions
                         }
                     }
                 )
-                .WithName("DeleteTestSuite")
+                .WithName("DeleteTestFolder")
                 .RequireAuthorization("AdminOnly")
-                .WithTags(TESTSUITE_TAG)
+                .WithTags(TESTFOLDER_TAG)
                 .WithMetadata();
         }
     }

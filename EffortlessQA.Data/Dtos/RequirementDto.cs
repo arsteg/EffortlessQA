@@ -12,4 +12,23 @@
         public DateTime? UpdatedAt { get; set; }
         public List<Guid> TestCaseIds { get; set; } = new();
     }
+
+    public class CreateRequirementDto
+    {
+        public string Title { get; set; }
+        public string? Description { get; set; }
+        public string[]? Tags { get; set; }
+    }
+
+    public class UpdateRequirementDto
+    {
+        public string? Title { get; set; }
+        public string? Description { get; set; }
+        public string[]? Tags { get; set; }
+    }
+
+    public class LinkTestCaseDto
+    {
+        public Guid TestCaseId { get; set; }
+    }
 }

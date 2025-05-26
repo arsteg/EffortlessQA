@@ -11,8 +11,21 @@ namespace EffortlessQA.Data.Dtos
         public string TenantId { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? ModifiedAt { get; set; }
-        public Guid CreatedBy { get; set; }
-        public Guid? ModifiedBy { get; set; }
+        public Guid? ParentSuiteId { get; set; }
+    }
+
+    public class CreateTestSuiteDto
+    {
+        public string Name { get; set; }
+        public string? Description { get; set; }
+        public Guid? ParentSuiteId { get; set; }
+    }
+
+    public class UpdateTestSuiteDto
+    {
+        public string? Name { get; set; }
+        public string? Description { get; set; }
+        public Guid? ParentSuiteId { get; set; }
     }
 
     public class TestSuiteCreateDto

@@ -9,69 +9,52 @@ namespace EffortlessQA.Api.Services.Implementation
     public class TestSuiteService : ITestSuiteService
     {
         private readonly EffortlessQAContext _context;
+        private readonly IConfiguration _configuration;
 
-        public TestSuiteService(EffortlessQAContext context)
+        public TestSuiteService(EffortlessQAContext context, IConfiguration configuration)
         {
             _context = context;
-        }
-
-        public async Task<PagedResult<TestSuiteDto>> GetTestSuitesAsync(
-            Guid projectId,
-            string tenantId,
-            int page,
-            int limit,
-            string sort,
-            string filter
-        )
-        {
-            var query = _context
-                .TestSuites.AsNoTracking()
-                .Where(ts => ts.ProjectId == projectId && ts.TenantId == tenantId && !ts.IsDeleted);
-
-            if (!string.IsNullOrEmpty(filter))
-            {
-                query = query.Where(ts =>
-                    ts.Name.Contains(filter) || ts.Description.Contains(filter)
-                );
-            }
-
-            //query = query.OrderBy(sort);
-            var totalCount = await query.CountAsync();
-            var items = await query
-                .Skip((page - 1) * limit)
-                .Take(limit)
-                .Select(ts => new TestSuiteDto
-                {
-                    Id = ts.Id,
-                    Name = ts.Name,
-                    Description = ts.Description,
-                    ProjectId = ts.ProjectId,
-                    TenantId = ts.TenantId
-                })
-                .ToListAsync();
-
-            return new PagedResult<TestSuiteDto> { Items = items, TotalCount = totalCount };
+            _configuration = configuration;
         }
 
         public async Task<TestSuiteDto> CreateTestSuiteAsync(
             Guid projectId,
-            TestSuiteCreateDto dto,
-            string tenantId
+            string tenantId,
+            CreateTestSuiteDto dto
         )
         {
-            var project = await _context.Projects.FindAsync(projectId);
-            if (project == null || project.TenantId != tenantId)
-                throw new Exception("Project not found or access denied.");
+            var project = await _context.Projects.FirstOrDefaultAsync(p =>
+                p.Id == projectId && p.TenantId == tenantId && !p.IsDeleted
+            );
+
+            if (project == null)
+                throw new Exception("Project not found.");
+
+            if (dto.ParentSuiteId.HasValue)
+            {
+                var parentSuite = await _context.TestSuites.FirstOrDefaultAsync(ts =>
+                    ts.Id == dto.ParentSuiteId
+                    && ts.ProjectId == projectId
+                    && ts.TenantId == tenantId
+                    && !ts.IsDeleted
+                );
+                if (parentSuite == null)
+                    throw new Exception("Parent test suite not found.");
+            }
 
             var testSuite = new TestSuite
             {
+                Id = Guid.NewGuid(),
                 Name = dto.Name,
                 Description = dto.Description,
                 ProjectId = projectId,
-                TenantId = tenantId
+                TenantId = tenantId,
+                ParentSuiteId = dto.ParentSuiteId,
+                CreatedAt = DateTime.UtcNow,
+                ModifiedAt = DateTime.UtcNow
             };
 
-            _context.TestSuites.Add(testSuite);
+            await _context.TestSuites.AddAsync(testSuite);
             await _context.SaveChangesAsync();
 
             return new TestSuiteDto
@@ -80,91 +63,143 @@ namespace EffortlessQA.Api.Services.Implementation
                 Name = testSuite.Name,
                 Description = testSuite.Description,
                 ProjectId = testSuite.ProjectId,
-                TenantId = testSuite.TenantId
+                TenantId = testSuite.TenantId,
+                ParentSuiteId = testSuite.ParentSuiteId
             };
         }
 
-        public async Task<PagedResult<TestCaseDto>> GetTestCasesAsync(
-            Guid testSuiteId,
+        public async Task<PagedResult<TestSuiteDto>> GetTestSuitesAsync(
+            Guid projectId,
             string tenantId,
             int page,
             int limit,
-            string sort,
-            string filter
+            string? filter
         )
         {
-            var query = _context
-                .TestCases.AsNoTracking()
-                .Where(tc =>
-                    tc.TestSuiteId == testSuiteId && tc.TenantId == tenantId && !tc.IsDeleted
-                );
+            var query = _context.TestSuites.Where(ts =>
+                ts.ProjectId == projectId && ts.TenantId == tenantId && !ts.IsDeleted
+            );
 
             if (!string.IsNullOrEmpty(filter))
             {
-                query = query.Where(tc =>
-                    tc.Title.Contains(filter) || tc.Description.Contains(filter)
-                );
+                query = query.Where(ts => ts.Name.Contains(filter));
             }
 
-            //query = query.OrderBy(sort);
+            query = query.OrderBy(ts => ts.Name);
+
             var totalCount = await query.CountAsync();
-            var items = await query
+            var testSuites = await query
                 .Skip((page - 1) * limit)
                 .Take(limit)
-                .Select(tc => new TestCaseDto
+                .Select(ts => new TestSuiteDto
                 {
-                    Id = tc.Id,
-                    Title = tc.Title,
-                    Description = tc.Description,
-                    Steps = tc.Steps,
-                    ExpectedResults = tc.ExpectedResults,
-                    Priority = tc.Priority,
-                    Tags = tc.Tags,
-                    TestSuiteId = tc.TestSuiteId,
-                    TenantId = tc.TenantId
+                    Id = ts.Id,
+                    Name = ts.Name,
+                    Description = ts.Description,
+                    ProjectId = ts.ProjectId,
+                    TenantId = ts.TenantId,
+                    ParentSuiteId = ts.ParentSuiteId
                 })
                 .ToListAsync();
 
-            return new PagedResult<TestCaseDto> { Items = items, TotalCount = totalCount };
+            return new PagedResult<TestSuiteDto>
+            {
+                Items = testSuites,
+                TotalCount = totalCount,
+                Page = page,
+                Limit = limit
+            };
         }
 
-        public async Task<TestCaseDto> CreateTestCaseAsync(
+        public async Task<TestSuiteDto> GetTestSuiteAsync(
             Guid testSuiteId,
-            TestCaseCreateDto dto,
+            Guid projectId,
             string tenantId
         )
         {
-            var testSuite = await _context.TestSuites.FindAsync(testSuiteId);
-            if (testSuite == null || testSuite.TenantId != tenantId)
-                throw new Exception("TestSuite not found or access denied.");
+            var testSuite = await _context.TestSuites.FirstOrDefaultAsync(ts =>
+                ts.Id == testSuiteId
+                && ts.ProjectId == projectId
+                && ts.TenantId == tenantId
+                && !ts.IsDeleted
+            );
 
-            var testCase = new TestCase
+            if (testSuite == null)
+                throw new Exception("Test suite not found.");
+
+            return new TestSuiteDto
             {
-                Title = dto.Title,
-                Description = dto.Description,
-                Steps = dto.Steps,
-                ExpectedResults = dto.ExpectedResults,
-                Priority = dto.Priority,
-                Tags = dto.Tags,
-                TestSuiteId = testSuiteId,
-                TenantId = tenantId
+                Id = testSuite.Id,
+                Name = testSuite.Name,
+                Description = testSuite.Description,
+                ProjectId = testSuite.ProjectId,
+                TenantId = testSuite.TenantId,
+                ParentSuiteId = testSuite.ParentSuiteId
             };
+        }
 
-            _context.TestCases.Add(testCase);
+        public async Task<TestSuiteDto> UpdateTestSuiteAsync(
+            Guid testSuiteId,
+            Guid projectId,
+            string tenantId,
+            UpdateTestSuiteDto dto
+        )
+        {
+            var testSuite = await _context.TestSuites.FirstOrDefaultAsync(ts =>
+                ts.Id == testSuiteId
+                && ts.ProjectId == projectId
+                && ts.TenantId == tenantId
+                && !ts.IsDeleted
+            );
+
+            if (testSuite == null)
+                throw new Exception("Test suite not found.");
+
+            if (dto.ParentSuiteId.HasValue)
+            {
+                var parentSuite = await _context.TestSuites.FirstOrDefaultAsync(ts =>
+                    ts.Id == dto.ParentSuiteId
+                    && ts.ProjectId == projectId
+                    && ts.TenantId == tenantId
+                    && !ts.IsDeleted
+                );
+                if (parentSuite == null)
+                    throw new Exception("Parent test suite not found.");
+            }
+
+            testSuite.Name = dto.Name ?? testSuite.Name;
+            testSuite.Description = dto.Description ?? testSuite.Description;
+            testSuite.ParentSuiteId = dto.ParentSuiteId ?? testSuite.ParentSuiteId;
+            testSuite.ModifiedAt = DateTime.UtcNow;
+
             await _context.SaveChangesAsync();
 
-            return new TestCaseDto
+            return new TestSuiteDto
             {
-                Id = testCase.Id,
-                Title = testCase.Title,
-                Description = testCase.Description,
-                Steps = testCase.Steps,
-                ExpectedResults = testCase.ExpectedResults,
-                Priority = testCase.Priority,
-                Tags = testCase.Tags,
-                TestSuiteId = testCase.TestSuiteId,
-                TenantId = testCase.TenantId
+                Id = testSuite.Id,
+                Name = testSuite.Name,
+                Description = testSuite.Description,
+                ProjectId = testSuite.ProjectId,
+                TenantId = testSuite.TenantId,
+                ParentSuiteId = testSuite.ParentSuiteId
             };
+        }
+
+        public async Task DeleteTestSuiteAsync(Guid testSuiteId, Guid projectId, string tenantId)
+        {
+            var testSuite = await _context.TestSuites.FirstOrDefaultAsync(ts =>
+                ts.Id == testSuiteId
+                && ts.ProjectId == projectId
+                && ts.TenantId == tenantId
+                && !ts.IsDeleted
+            );
+
+            if (testSuite == null)
+                throw new Exception("Test suite not found.");
+
+            testSuite.IsDeleted = true;
+            testSuite.ModifiedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
         }
     }
 }

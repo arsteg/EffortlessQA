@@ -9,71 +9,40 @@ namespace EffortlessQA.Api.Services.Implementation
     public class RequirementService : IRequirementService
     {
         private readonly EffortlessQAContext _context;
+        private readonly IConfiguration _configuration;
 
-        public RequirementService(EffortlessQAContext context)
+        public RequirementService(EffortlessQAContext context, IConfiguration configuration)
         {
             _context = context;
-        }
-
-        public async Task<PagedResult<RequirementDto>> GetRequirementsAsync(
-            Guid projectId,
-            string tenantId,
-            int page,
-            int limit,
-            string sort,
-            string filter
-        )
-        {
-            var query = _context
-                .Requirements.AsNoTracking()
-                .Where(r => r.ProjectId == projectId && r.TenantId == tenantId && !r.IsDeleted);
-
-            if (!string.IsNullOrEmpty(filter))
-            {
-                query = query.Where(r =>
-                    r.Title.Contains(filter) || r.Description.Contains(filter)
-                );
-            }
-
-            //query = query.OrderBy(sort);
-            var totalCount = await query.CountAsync();
-            var items = await query
-                .Skip((page - 1) * limit)
-                .Take(limit)
-                .Select(r => new RequirementDto
-                {
-                    Id = r.Id,
-                    Title = r.Title,
-                    Description = r.Description,
-                    Tags = r.Tags,
-                    ProjectId = r.ProjectId,
-                    TenantId = r.TenantId
-                })
-                .ToListAsync();
-
-            return new PagedResult<RequirementDto> { Items = items, TotalCount = totalCount };
+            _configuration = configuration;
         }
 
         public async Task<RequirementDto> CreateRequirementAsync(
             Guid projectId,
-            RequirementCreateDto dto,
-            string tenantId
+            string tenantId,
+            CreateRequirementDto dto
         )
         {
-            var project = await _context.Projects.FindAsync(projectId);
-            if (project == null || project.TenantId != tenantId)
-                throw new Exception("Project not found or access denied.");
+            var project = await _context.Projects.FirstOrDefaultAsync(p =>
+                p.Id == projectId && p.TenantId == tenantId && !p.IsDeleted
+            );
+
+            if (project == null)
+                throw new Exception("Project not found.");
 
             var requirement = new Requirement
             {
+                Id = Guid.NewGuid(),
                 Title = dto.Title,
                 Description = dto.Description,
                 Tags = dto.Tags,
                 ProjectId = projectId,
-                TenantId = tenantId
+                TenantId = tenantId,
+                CreatedAt = DateTime.UtcNow,
+                ModifiedAt = DateTime.UtcNow
             };
 
-            _context.Requirements.Add(requirement);
+            await _context.Requirements.AddAsync(requirement);
             await _context.SaveChangesAsync();
 
             return new RequirementDto
@@ -83,8 +52,223 @@ namespace EffortlessQA.Api.Services.Implementation
                 Description = requirement.Description,
                 Tags = requirement.Tags,
                 ProjectId = requirement.ProjectId,
-                TenantId = requirement.TenantId
+                TenantId = requirement.TenantId,
+                CreatedAt = requirement.CreatedAt,
+                UpdatedAt = requirement.ModifiedAt
             };
+        }
+
+        public async Task<PagedResult<RequirementDto>> GetRequirementsAsync(
+            Guid projectId,
+            string tenantId,
+            int page,
+            int limit,
+            string? filter,
+            string[]? tags
+        )
+        {
+            var query = _context.Requirements.Where(r =>
+                r.ProjectId == projectId && r.TenantId == tenantId && !r.IsDeleted
+            );
+
+            if (!string.IsNullOrEmpty(filter))
+            {
+                query = query.Where(r => r.Title.Contains(filter));
+            }
+
+            if (tags != null && tags.Length > 0)
+            {
+                query = query.Where(r => r.Tags != null && tags.Any(t => r.Tags.Contains(t)));
+            }
+
+            query = query.OrderBy(r => r.Title);
+
+            var totalCount = await query.CountAsync();
+            var requirements = await query
+                .Skip((page - 1) * limit)
+                .Take(limit)
+                .Select(r => new RequirementDto
+                {
+                    Id = r.Id,
+                    Title = r.Title,
+                    Description = r.Description,
+                    Tags = r.Tags,
+                    ProjectId = r.ProjectId,
+                    TenantId = r.TenantId,
+                    CreatedAt = r.CreatedAt,
+                    UpdatedAt = r.ModifiedAt
+                })
+                .ToListAsync();
+
+            return new PagedResult<RequirementDto>
+            {
+                Items = requirements,
+                TotalCount = totalCount,
+                Page = page,
+                Limit = limit
+            };
+        }
+
+        public async Task<RequirementDto> GetRequirementAsync(
+            Guid requirementId,
+            Guid projectId,
+            string tenantId
+        )
+        {
+            var requirement = await _context.Requirements.FirstOrDefaultAsync(r =>
+                r.Id == requirementId
+                && r.ProjectId == projectId
+                && r.TenantId == tenantId
+                && !r.IsDeleted
+            );
+
+            if (requirement == null)
+                throw new Exception("Requirement not found.");
+
+            return new RequirementDto
+            {
+                Id = requirement.Id,
+                Title = requirement.Title,
+                Description = requirement.Description,
+                Tags = requirement.Tags,
+                ProjectId = requirement.ProjectId,
+                TenantId = requirement.TenantId,
+                CreatedAt = requirement.CreatedAt,
+                UpdatedAt = requirement.ModifiedAt
+            };
+        }
+
+        public async Task<RequirementDto> UpdateRequirementAsync(
+            Guid requirementId,
+            Guid projectId,
+            string tenantId,
+            UpdateRequirementDto dto
+        )
+        {
+            var requirement = await _context.Requirements.FirstOrDefaultAsync(r =>
+                r.Id == requirementId
+                && r.ProjectId == projectId
+                && r.TenantId == tenantId
+                && !r.IsDeleted
+            );
+
+            if (requirement == null)
+                throw new Exception("Requirement not found.");
+
+            requirement.Title = dto.Title ?? requirement.Title;
+            requirement.Description = dto.Description ?? requirement.Description;
+            requirement.Tags = dto.Tags ?? requirement.Tags;
+            requirement.ModifiedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return new RequirementDto
+            {
+                Id = requirement.Id,
+                Title = requirement.Title,
+                Description = requirement.Description,
+                Tags = requirement.Tags,
+                ProjectId = requirement.ProjectId,
+                TenantId = requirement.TenantId,
+                CreatedAt = requirement.CreatedAt,
+                UpdatedAt = requirement.ModifiedAt
+            };
+        }
+
+        public async Task DeleteRequirementAsync(
+            Guid requirementId,
+            Guid projectId,
+            string tenantId
+        )
+        {
+            var requirement = await _context.Requirements.FirstOrDefaultAsync(r =>
+                r.Id == requirementId
+                && r.ProjectId == projectId
+                && r.TenantId == tenantId
+                && !r.IsDeleted
+            );
+
+            if (requirement == null)
+                throw new Exception("Requirement not found.");
+
+            requirement.IsDeleted = true;
+            requirement.ModifiedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task LinkTestCaseToRequirementAsync(
+            Guid requirementId,
+            Guid projectId,
+            string tenantId,
+            Guid testCaseId
+        )
+        {
+            var requirement = await _context.Requirements.FirstOrDefaultAsync(r =>
+                r.Id == requirementId
+                && r.ProjectId == projectId
+                && r.TenantId == tenantId
+                && !r.IsDeleted
+            );
+
+            if (requirement == null)
+                throw new Exception("Requirement not found.");
+
+            var testCase = await _context.TestCases.FirstOrDefaultAsync(tc =>
+                tc.Id == testCaseId
+                //&& tc.ProjectId == projectId
+                && tc.TenantId == tenantId
+                && !tc.IsDeleted
+            );
+
+            if (testCase == null)
+                throw new Exception("Test case not found.");
+
+            var existingLink = await _context.RequirementTestCases.FirstOrDefaultAsync(rtc =>
+                rtc.RequirementId == requirementId && rtc.TestCaseId == testCaseId && !rtc.IsDeleted
+            );
+
+            if (existingLink != null)
+                throw new Exception("Test case is already linked to this requirement.");
+
+            var link = new RequirementTestCase
+            {
+                RequirementId = requirementId,
+                TestCaseId = testCaseId,
+                CreatedAt = DateTime.UtcNow,
+                ModifiedAt = DateTime.UtcNow
+            };
+
+            await _context.RequirementTestCases.AddAsync(link);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task UnlinkTestCaseFromRequirementAsync(
+            Guid requirementId,
+            Guid projectId,
+            string tenantId,
+            Guid testCaseId
+        )
+        {
+            var requirement = await _context.Requirements.FirstOrDefaultAsync(r =>
+                r.Id == requirementId
+                && r.ProjectId == projectId
+                && r.TenantId == tenantId
+                && !r.IsDeleted
+            );
+
+            if (requirement == null)
+                throw new Exception("Requirement not found.");
+
+            var link = await _context.RequirementTestCases.FirstOrDefaultAsync(rtc =>
+                rtc.RequirementId == requirementId && rtc.TestCaseId == testCaseId && !rtc.IsDeleted
+            );
+
+            if (link == null)
+                throw new Exception("Test case is not linked to this requirement.");
+
+            link.IsDeleted = true;
+            link.ModifiedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
         }
     }
 }

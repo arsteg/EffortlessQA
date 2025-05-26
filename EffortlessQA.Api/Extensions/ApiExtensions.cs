@@ -17,6 +17,7 @@ namespace EffortlessQA.Api.Extensions
         public static string TESTRUN_RESULT_TAG = "Test Run Result";
         public static string DEFECTS_TAG = "Defects";
         public const string TENANT_TAG = "Tenants";
+        public const string TESTFOLDER_TAG = "Test Folders";
 
         public static void MapApiEndpoints(this WebApplication app)
         {
@@ -24,7 +25,7 @@ namespace EffortlessQA.Api.Extensions
             MapProjectEndpoints(app);
             MapRequirementEndpoints(app);
             MapTestSuiteEndpoints(app);
-            MapTestCaseEndpoints(app);
+            //MapTestCaseEndpoints(app);
             MapTestRunEndpoints(app);
             MapTestRunResultEndpoints(app);
             MapDefectEndpoints(app);

@@ -4,31 +4,25 @@ namespace EffortlessQA.Api.Services.Interface
 {
     public interface ITestSuiteService
     {
+        Task<TestSuiteDto> CreateTestSuiteAsync(
+            Guid projectId,
+            string tenantId,
+            CreateTestSuiteDto dto
+        );
         Task<PagedResult<TestSuiteDto>> GetTestSuitesAsync(
             Guid projectId,
             string tenantId,
             int page,
             int limit,
-            string sort,
-            string filter
+            string? filter
         );
-        Task<TestSuiteDto> CreateTestSuiteAsync(
+        Task<TestSuiteDto> GetTestSuiteAsync(Guid testSuiteId, Guid projectId, string tenantId);
+        Task<TestSuiteDto> UpdateTestSuiteAsync(
+            Guid testSuiteId,
             Guid projectId,
-            TestSuiteCreateDto dto,
-            string tenantId
-        );
-        Task<PagedResult<TestCaseDto>> GetTestCasesAsync(
-            Guid testSuiteId,
             string tenantId,
-            int page,
-            int limit,
-            string sort,
-            string filter
+            UpdateTestSuiteDto dto
         );
-        Task<TestCaseDto> CreateTestCaseAsync(
-            Guid testSuiteId,
-            TestCaseCreateDto dto,
-            string tenantId
-        );
+        Task DeleteTestSuiteAsync(Guid testSuiteId, Guid projectId, string tenantId);
     }
 }

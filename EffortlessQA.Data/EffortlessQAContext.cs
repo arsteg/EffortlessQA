@@ -39,7 +39,7 @@ namespace EffortlessQA.Data
         public DbSet<DefectHistory> DefectHistories { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<Address> Address { get; set; }
-        public DbSet<TestFolder> TestFolder { get; set; }
+        public DbSet<TestFolder> TestFolders { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
