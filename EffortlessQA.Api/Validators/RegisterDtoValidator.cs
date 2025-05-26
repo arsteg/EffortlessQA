@@ -86,7 +86,7 @@ namespace EffortlessQA.Api.Validators
         }
     }
 
-    public class DefectCreateDtoValidator : AbstractValidator<DefectCreateDto>
+    public class DefectCreateDtoValidator : AbstractValidator<CreateDefectDto>
     {
         public DefectCreateDtoValidator()
         {

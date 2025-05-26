@@ -21,7 +21,7 @@ namespace EffortlessQA.Data.Dtos
         public DateTime? UpdatedAt { get; set; }
     }
 
-    public class DefectCreateDto
+    public class CreateDefectDto
     {
         [Required, MaxLength(200)]
         public string Title { get; set; }
@@ -53,7 +53,7 @@ namespace EffortlessQA.Data.Dtos
         public string TenantId { get; set; }
     }
 
-    public class DefectUpdateDto
+    public class UpdateDefectDto
     {
         [Required, MaxLength(200)]
         public string Title { get; set; }
