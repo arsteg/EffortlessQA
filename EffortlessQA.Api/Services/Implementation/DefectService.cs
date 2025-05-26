@@ -54,7 +54,7 @@ namespace EffortlessQA.Api.Services.Implementation
                 Description = dto.Description,
                 Severity = dto.Severity,
                 Status = dto.Status,
-                Attachments = dto.Attachments != null ? JsonDocument.Parse(dto.Attachments) : null,
+                // Attachments = dto.Attachments != null ? JsonDocument.Parse(dto.Attachments) : null,
                 ExternalId = dto.ExternalId,
                 TestRunResultId = dto.TestRunResultId,
                 TestCaseId = dto.TestCaseId,
@@ -134,7 +134,7 @@ namespace EffortlessQA.Api.Services.Implementation
                     Description = d.Description,
                     Severity = d.Severity,
                     Status = d.Status,
-                    Attachments = d.Attachments?.ToString(),
+                    //Attachments = d.Attachments?.ToString(),
                     ExternalId = d.ExternalId,
                     TestRunResultId = d.TestRunResultId,
                     TestCaseId = d.TestCaseId,
@@ -196,23 +196,23 @@ namespace EffortlessQA.Api.Services.Implementation
             if (defect == null)
                 throw new Exception("Defect not found.");
 
-            if (dto.TestRunResultId.HasValue)
-            {
-                var testRunResult = await _context.TestRunResults.FirstOrDefaultAsync(trr =>
-                    trr.Id == dto.TestRunResultId && trr.TenantId == tenantId
-                );
-                if (testRunResult == null)
-                    throw new Exception("Test run result not found.");
-            }
+            //if (dto.TestRunResultId.HasValue)
+            //{
+            //    var testRunResult = await _context.TestRunResults.FirstOrDefaultAsync(trr =>
+            //        trr.Id == dto.TestRunResultId && trr.TenantId == tenantId
+            //    );
+            //    if (testRunResult == null)
+            //        throw new Exception("Test run result not found.");
+            //}
 
-            if (dto.TestCaseId.HasValue)
-            {
-                var testCase = await _context.TestCases.FirstOrDefaultAsync(tc =>
-                    tc.Id == dto.TestCaseId && tc.TenantId == tenantId && !tc.IsDeleted
-                );
-                if (testCase == null)
-                    throw new Exception("Test case not found.");
-            }
+            //if (dto.TestCaseId.HasValue)
+            //{
+            //    var testCase = await _context.TestCases.FirstOrDefaultAsync(tc =>
+            //        tc.Id == dto.TestCaseId && tc.TenantId == tenantId && !tc.IsDeleted
+            //    );
+            //    if (testCase == null)
+            //        throw new Exception("Test case not found.");
+            //}
 
             if (dto.AssignedUserId.HasValue)
             {
@@ -226,16 +226,15 @@ namespace EffortlessQA.Api.Services.Implementation
             var oldStatus = defect.Status;
             defect.Title = dto.Title ?? defect.Title;
             defect.Description = dto.Description ?? defect.Description;
-            defect.Severity = dto.Severity ?? defect.Severity;
-            defect.Status = dto.Status ?? defect.Status;
-            defect.Attachments =
-                dto.Attachments != null ? JsonDocument.Parse(dto.Attachments) : defect.Attachments;
-            defect.ExternalId = dto.ExternalId ?? defect.ExternalId;
-            defect.TestRunResultId = dto.TestRunResultId ?? defect.TestRunResultId;
-            defect.TestCaseId = dto.TestCaseId ?? defect.TestCaseId;
-            defect.AssignedUserId = dto.AssignedUserId ?? defect.AssignedUserId;
-            defect.ResolutionNotes = dto.ResolutionNotes ?? defect.ResolutionNotes;
-            defect.ModifiedAt = DateTime.UtcNow;
+            //defect.Severity = dto.Severity ?? defect.Severity;
+            //defect.Status = dto.Status ?? defect.Status;
+            //defect.Attachments =  dto.Attachments != null ? JsonDocument.Parse(dto.Attachments) : defect.Attachments;
+            //defect.ExternalId = dto.ExternalId ?? defect.ExternalId;
+            //defect.TestRunResultId = dto.TestRunResultId ?? defect.TestRunResultId;
+            //defect.TestCaseId = dto.TestCaseId ?? defect.TestCaseId;
+            //defect.AssignedUserId = dto.AssignedUserId ?? defect.AssignedUserId;
+            //defect.ResolutionNotes = dto.ResolutionNotes ?? defect.ResolutionNotes;
+            //defect.ModifiedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 
@@ -334,7 +333,7 @@ namespace EffortlessQA.Api.Services.Implementation
                 Id = Guid.NewGuid(),
                 DefectId = defectId,
                 Action = action,
-                Details = details,
+                //Details = details,
                 CreatedAt = DateTime.UtcNow
             };
 
