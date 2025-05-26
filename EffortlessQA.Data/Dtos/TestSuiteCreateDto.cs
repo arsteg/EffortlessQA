@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 using EffortlessQA.Data.Entities;
 
 namespace EffortlessQA.Data.Dtos
@@ -17,7 +18,7 @@ namespace EffortlessQA.Data.Dtos
         [MaxLength(1000)]
         public string? Comments { get; set; }
 
-        public object? Attachments { get; set; }
+        public JsonDocument? Attachments { get; set; }
 
         [Required, MaxLength(50)]
         public string TenantId { get; set; }

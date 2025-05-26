@@ -1,4 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
+using EffortlessQA.Data.Entities;
 
 namespace EffortlessQA.Data.Dtos
 {
@@ -10,13 +12,13 @@ namespace EffortlessQA.Data.Dtos
         [MaxLength(1000)]
         public string? Description { get; set; }
 
-        public object? Steps { get; set; }
+        public JsonDocument? Steps { get; set; }
 
-        public object? ExpectedResults { get; set; }
+        public JsonDocument? ExpectedResults { get; set; }
 
         [Required, MaxLength(20)]
         [RegularExpression("High|Medium|Low")]
-        public string Priority { get; set; }
+        public PriorityLevel Priority { get; set; }
 
         public string[]? Tags { get; set; }
 

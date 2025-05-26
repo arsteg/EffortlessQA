@@ -1,14 +1,29 @@
+using System.Reflection;
 using System.Text;
+using EffortlessQA.Api.Extensions;
+using EffortlessQA.Api.Middleware;
+using EffortlessQA.Api.Services.Implementation;
+using EffortlessQA.Api.Services.Interface;
 using EffortlessQA.Data;
 using EffortlessQA.Data.Dtos;
 using EffortlessQA.Data.Entities;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add EF Core with PostgreSQL and specify migrations assembly
+// Configure Serilog
+Log.Logger = new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration).CreateLogger();
+builder.Host.UseSerilog();
+
+// Add EF Core with PostgreSQL
 builder
     .Services.AddDbContext<EffortlessQAContext>(
         (sp, options) =>
@@ -17,14 +32,19 @@ builder
             options.UseNpgsql(
                 builder.Configuration.GetConnectionString("DefaultConnection"),
                 b => b.MigrationsAssembly("EffortlessQA.Data")
-            ); // Specify migrations assembly
+            );
         }
     )
     .AddHttpContextAccessor();
 
-// Add Authentication
+// JWT Authentication
+var jwtSettings = builder.Configuration.GetSection("Jwt");
 builder
-    .Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .Services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
@@ -33,38 +53,138 @@ builder
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])
-            )
+            ValidIssuer = jwtSettings["Issuer"],
+            ValidAudience = jwtSettings["Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]))
         };
     });
 
-builder.Services.AddAuthorization();
+// Authorization with RBAC
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole(RoleType.Admin.ToString()));
+    options.AddPolicy(
+        "TesterOrAdmin",
+        policy => policy.RequireRole(RoleType.Tester.ToString(), RoleType.Admin.ToString())
+    );
+});
+
+// FluentValidation
+builder
+    .Services.AddFluentValidationAutoValidation()
+    .AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
+
+// Services
+builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddScoped<ITestSuiteService, TestSuiteService>();
+builder.Services.AddScoped<ITestRunService, TestRunService>();
+builder.Services.AddScoped<ITestRunResultService, TestRunResultService>();
+builder.Services.AddScoped<IDefectService, DefectService>();
+builder.Services.AddScoped<IRequirementService, RequirementService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddHttpContextAccessor();
+
+// CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(
+        "AllowSpecificOrigins",
+        builder => builder.WithOrigins("http://localhost:3000").AllowAnyHeader().AllowAnyMethod()
+    );
+});
+
+// Swagger
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc(
+        "v1",
+        new OpenApiInfo
+        {
+            Title = "EffortlessQA API",
+            Version = "v1",
+            Description =
+                "API for managing QA projects, test suites, test cases, test runs, defects, and requirements."
+        }
+    );
+    c.AddSecurityDefinition(
+        "Bearer",
+        new OpenApiSecurityScheme
+        {
+            In = ParameterLocation.Header,
+            Description = "Enter JWT token as 'Bearer {token}'",
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT"
+        }
+    );
+    //c.AddSecurityRequirement(
+    //    new OpenApiSecurityRequirement
+    //    {
+    //        {
+    //            new OpenApiSecurityScheme
+    //            {
+    //                Reference = new OpenApiReference
+    //                {
+    //                    Type = ReferenceType.SecurityScheme,
+    //                    Id = "Bearer"
+    //                }
+    //            },
+    //            new string[] { }
+    //        }
+    //    }
+    //);
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    //c.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
+});
 
 var app = builder.Build();
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseCors("AllowSpecificOrigins");
 
-// Example endpoint
-app.MapPost(
-    "/api/testsuites",
-    async (EffortlessQAContext db, TestSuiteCreateDto dto) =>
+// app.UseMiddleware<TenantMiddleware>(); // Temporarily disabled
+app.UseMiddleware<RequestLoggingMiddleware>();
+
+// Global exception handler
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
     {
-        var testSuite = new TestSuite
+        var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+        if (exception != null)
         {
-            Name = dto.Name,
+            Log.Error(exception, "Unhandled exception occurred.");
+            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            await context.Response.WriteAsJsonAsync(
+                new ApiResponse<object>
+                {
+                    Error = new ErrorResponse
+                    {
+                        Code = "InternalServerError",
+                        Message = app.Environment.IsDevelopment()
+                            ? $"{exception.Message}\nStackTrace: {exception.StackTrace}"
+                            : "An unexpected error occurred."
+                    }
+                }
+            );
+        }
+    });
+});
 
-            ProjectId = dto.ProjectId,
-            TenantId = dto.TenantId
-        };
-        db.TestSuites.Add(testSuite);
-        await db.SaveChangesAsync();
-        return Results.Created($"/api/testsuites/{testSuite.Id}", testSuite);
-    }
-); // Temporarily remove .RequireAuthorization() for testing
+// Root endpoint for testing
+app.MapGet("/", () => "EffortlessQA API is running. Access Swagger at /swagger.").WithName("Root");
+
+app.MapApiEndpoints();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "EffortlessQA API v1"));
+}
 
 app.Run();

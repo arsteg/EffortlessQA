@@ -1,4 +1,6 @@
-﻿namespace EffortlessQA.Data.Dtos
+﻿using EffortlessQA.Data.Entities;
+
+namespace EffortlessQA.Data.Dtos
 {
     public class TestCaseDto
     {
@@ -7,7 +9,7 @@
         public string? Description { get; set; }
         public object? Steps { get; set; } // JSON-compatible
         public object? ExpectedResults { get; set; }
-        public string Priority { get; set; }
+        public PriorityLevel Priority { get; set; }
         public string[]? Tags { get; set; }
         public Guid TestSuiteId { get; set; }
         public string TenantId { get; set; }
