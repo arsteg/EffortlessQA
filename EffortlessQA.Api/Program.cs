@@ -94,6 +94,7 @@ builder.Services.AddCors(options =>
 });
 
 // Swagger
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -107,37 +108,35 @@ builder.Services.AddSwaggerGen(c =>
                 "API for managing QA projects, test suites, test cases, test runs, defects, and requirements."
         }
     );
-    c.AddSecurityDefinition(
-        "Bearer",
-        new OpenApiSecurityScheme
+    // Temporarily disable security schemes
+    /*
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        In = ParameterLocation.Header,
+        Description = "Enter JWT token as 'Bearer {token}'",
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
+    });
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
         {
-            In = ParameterLocation.Header,
-            Description = "Enter JWT token as 'Bearer {token}'",
-            Name = "Authorization",
-            Type = SecuritySchemeType.Http,
-            Scheme = "bearer",
-            BearerFormat = "JWT"
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
         }
-    );
-    //c.AddSecurityRequirement(
-    //    new OpenApiSecurityRequirement
-    //    {
-    //        {
-    //            new OpenApiSecurityScheme
-    //            {
-    //                Reference = new OpenApiReference
-    //                {
-    //                    Type = ReferenceType.SecurityScheme,
-    //                    Id = "Bearer"
-    //                }
-    //            },
-    //            new string[] { }
-    //        }
-    //    }
-    //);
+    });
+    */
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-    //c.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
+    // c.IncludeXmlComments(xmlPath, includeControllerXmlComments = true);
 });
 
 var app = builder.Build();
