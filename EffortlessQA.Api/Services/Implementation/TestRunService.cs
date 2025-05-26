@@ -1,4 +1,5 @@
-﻿using EffortlessQA.Api.Services.Interface;
+﻿using System.Linq;
+using EffortlessQA.Api.Services.Interface;
 using EffortlessQA.Data;
 using EffortlessQA.Data.Dtos;
 using EffortlessQA.Data.Entities;
@@ -9,10 +10,62 @@ namespace EffortlessQA.Api.Services.Implementation
     public class TestRunService : ITestRunService
     {
         private readonly EffortlessQAContext _context;
+        private readonly IConfiguration _configuration;
 
-        public TestRunService(EffortlessQAContext context)
+        public TestRunService(EffortlessQAContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
+        }
+
+        public async Task<TestRunDto> CreateTestRunAsync(
+            Guid projectId,
+            string tenantId,
+            CreateTestRunDto dto
+        )
+        {
+            var project = await _context.Projects.FirstOrDefaultAsync(p =>
+                p.Id == projectId && p.TenantId == tenantId && !p.IsDeleted
+            );
+
+            if (project == null)
+                throw new Exception("Project not found.");
+
+            if (dto.AssignedTesterId.HasValue)
+            {
+                var tester = await _context.Users.FirstOrDefaultAsync(u =>
+                    u.Id == dto.AssignedTesterId && u.TenantId == tenantId && !u.IsDeleted
+                );
+                if (tester == null)
+                    throw new Exception("Assigned tester not found.");
+            }
+
+            var testRun = new TestRun
+            {
+                Id = Guid.NewGuid(),
+                Name = dto.Name,
+                Description = dto.Description,
+                AssignedTesterId = dto.AssignedTesterId,
+                ProjectId = projectId,
+                TenantId = tenantId,
+                CreatedAt = DateTime.UtcNow,
+                ModifiedAt = DateTime.UtcNow
+            };
+
+            await _context.TestRuns.AddAsync(testRun);
+            await _context.SaveChangesAsync();
+
+            return new TestRunDto
+            {
+                Id = testRun.Id,
+                Name = testRun.Name,
+                Description = testRun.Description,
+                AssignedTesterId = testRun.AssignedTesterId,
+                ProjectId = testRun.ProjectId,
+                TenantId = testRun.TenantId,
+                CreatedAt = testRun.CreatedAt,
+                UpdatedAt = testRun.ModifiedAt
+            };
         }
 
         public async Task<PagedResult<TestRunDto>> GetTestRunsAsync(
@@ -20,24 +73,31 @@ namespace EffortlessQA.Api.Services.Implementation
             string tenantId,
             int page,
             int limit,
-            string sort,
-            string filter
+            string? filter,
+            string[]? statuses
         )
         {
-            var query = _context
-                .TestRuns.AsNoTracking()
-                .Where(tr => tr.ProjectId == projectId && tr.TenantId == tenantId && !tr.IsDeleted);
+            var query = _context.TestRuns.Where(tr =>
+                tr.ProjectId == projectId && tr.TenantId == tenantId && !tr.IsDeleted
+            );
 
             if (!string.IsNullOrEmpty(filter))
             {
-                query = query.Where(tr =>
-                    tr.Name.Contains(filter) || tr.Description.Contains(filter)
-                );
+                query = query.Where(tr => tr.Name.Contains(filter));
             }
 
-            //query = query.OrderBy(sort);
+            // Assuming status is derived from TestRunResults (e.g., Pass, Fail, Pending)
+            if (statuses != null && statuses.Length > 0)
+            {
+                //query = query.Where(tr =>
+                //    tr.TestRunResults.Any(trr => statuses.Contains(trr.Status))
+                //);
+            }
+
+            query = query.OrderBy(tr => tr.Name);
+
             var totalCount = await query.CountAsync();
-            var items = await query
+            var testRuns = await query
                 .Skip((page - 1) * limit)
                 .Take(limit)
                 .Select(tr => new TestRunDto
@@ -47,51 +107,80 @@ namespace EffortlessQA.Api.Services.Implementation
                     Description = tr.Description,
                     AssignedTesterId = tr.AssignedTesterId,
                     ProjectId = tr.ProjectId,
-                    TenantId = tr.TenantId
+                    TenantId = tr.TenantId,
+                    CreatedAt = tr.CreatedAt,
+                    UpdatedAt = tr.ModifiedAt
                 })
                 .ToListAsync();
 
-            return new PagedResult<TestRunDto> { Items = items, TotalCount = totalCount };
+            return new PagedResult<TestRunDto>
+            {
+                Items = testRuns,
+                TotalCount = totalCount,
+                Page = page,
+                Limit = limit
+            };
         }
 
-        public async Task<TestRunDto> CreateTestRunAsync(
+        public async Task<TestRunDto> GetTestRunAsync(
+            Guid testRunId,
             Guid projectId,
-            TestRunCreateDto dto,
             string tenantId
         )
         {
-            var project = await _context.Projects.FindAsync(projectId);
-            if (project == null || project.TenantId != tenantId)
-                throw new Exception("Project not found or access denied.");
+            var testRun = await _context.TestRuns.FirstOrDefaultAsync(tr =>
+                tr.Id == testRunId
+                && tr.ProjectId == projectId
+                && tr.TenantId == tenantId
+                && !tr.IsDeleted
+            );
 
-            var testRun = new TestRun
+            if (testRun == null)
+                throw new Exception("Test run not found.");
+
+            return new TestRunDto
             {
-                Name = dto.Name,
-                Description = dto.Description,
-                AssignedTesterId = dto.AssignedTesterId,
-                ProjectId = projectId,
-                TenantId = tenantId
+                Id = testRun.Id,
+                Name = testRun.Name,
+                Description = testRun.Description,
+                AssignedTesterId = testRun.AssignedTesterId,
+                ProjectId = testRun.ProjectId,
+                TenantId = testRun.TenantId,
+                CreatedAt = testRun.CreatedAt,
+                UpdatedAt = testRun.ModifiedAt
             };
+        }
 
-            _context.TestRuns.Add(testRun);
-            await _context.SaveChangesAsync();
+        public async Task<TestRunDto> UpdateTestRunAsync(
+            Guid testRunId,
+            Guid projectId,
+            string tenantId,
+            UpdateTestRunDto dto
+        )
+        {
+            var testRun = await _context.TestRuns.FirstOrDefaultAsync(tr =>
+                tr.Id == testRunId
+                && tr.ProjectId == projectId
+                && tr.TenantId == tenantId
+                && !tr.IsDeleted
+            );
 
-            foreach (var testCaseId in dto.TestCaseIds)
+            if (testRun == null)
+                throw new Exception("Test run not found.");
+
+            if (dto.AssignedTesterId.HasValue)
             {
-                var testCase = await _context.TestCases.FindAsync(testCaseId);
-                if (testCase != null && testCase.TenantId == tenantId)
-                {
-                    _context.TestRunResults.Add(
-                        new TestRunResult
-                        {
-                            TestCaseId = testCaseId,
-                            TestRunId = testRun.Id,
-                            Status = TestExecutionStatus.Skipped,
-                            TenantId = tenantId
-                        }
-                    );
-                }
+                var tester = await _context.Users.FirstOrDefaultAsync(u =>
+                    u.Id == dto.AssignedTesterId && u.TenantId == tenantId && !u.IsDeleted
+                );
+                if (tester == null)
+                    throw new Exception("Assigned tester not found.");
             }
+
+            testRun.Name = dto.Name ?? testRun.Name;
+            testRun.Description = dto.Description ?? testRun.Description;
+            testRun.AssignedTesterId = dto.AssignedTesterId ?? testRun.AssignedTesterId;
+            testRun.ModifiedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 
@@ -102,8 +191,27 @@ namespace EffortlessQA.Api.Services.Implementation
                 Description = testRun.Description,
                 AssignedTesterId = testRun.AssignedTesterId,
                 ProjectId = testRun.ProjectId,
-                TenantId = testRun.TenantId
+                TenantId = testRun.TenantId,
+                CreatedAt = testRun.CreatedAt,
+                UpdatedAt = testRun.ModifiedAt
             };
+        }
+
+        public async Task DeleteTestRunAsync(Guid testRunId, Guid projectId, string tenantId)
+        {
+            var testRun = await _context.TestRuns.FirstOrDefaultAsync(tr =>
+                tr.Id == testRunId
+                && tr.ProjectId == projectId
+                && tr.TenantId == tenantId
+                && !tr.IsDeleted
+            );
+
+            if (testRun == null)
+                throw new Exception("Test run not found.");
+
+            testRun.IsDeleted = true;
+            testRun.ModifiedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
         }
     }
 }

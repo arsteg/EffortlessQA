@@ -4,14 +4,22 @@ namespace EffortlessQA.Api.Services.Interface
 {
     public interface ITestRunService
     {
+        Task<TestRunDto> CreateTestRunAsync(Guid projectId, string tenantId, CreateTestRunDto dto);
         Task<PagedResult<TestRunDto>> GetTestRunsAsync(
             Guid projectId,
             string tenantId,
             int page,
             int limit,
-            string sort,
-            string filter
+            string? filter,
+            string[]? statuses
         );
-        Task<TestRunDto> CreateTestRunAsync(Guid projectId, TestRunCreateDto dto, string tenantId);
+        Task<TestRunDto> GetTestRunAsync(Guid testRunId, Guid projectId, string tenantId);
+        Task<TestRunDto> UpdateTestRunAsync(
+            Guid testRunId,
+            Guid projectId,
+            string tenantId,
+            UpdateTestRunDto dto
+        );
+        Task DeleteTestRunAsync(Guid testRunId, Guid projectId, string tenantId);
     }
 }

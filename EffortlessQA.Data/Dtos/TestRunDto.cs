@@ -11,4 +11,18 @@
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
     }
+
+    public class CreateTestRunDto
+    {
+        public string Name { get; set; }
+        public string? Description { get; set; }
+        public Guid? AssignedTesterId { get; set; }
+    }
+
+    public class UpdateTestRunDto
+    {
+        public string? Name { get; set; }
+        public string? Description { get; set; }
+        public Guid? AssignedTesterId { get; set; }
+    }
 }
