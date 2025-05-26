@@ -26,21 +26,8 @@ namespace EffortlessQA.Data.Dtos
     {
         public List<T> Items { get; set; }
         public int TotalCount { get; set; }
-    }
-
-    public class RegisterDto
-    {
-        [Required, EmailAddress, StringLength(255)]
-        public string Email { get; set; }
-
-        [Required, StringLength(100)]
-        public string Name { get; set; }
-
-        [Required, StringLength(255, MinimumLength = 8)]
-        public string Password { get; set; }
-
-        [Required, StringLength(50)]
-        public string TenantId { get; set; }
+        public int Page { get; set; }
+        public int Limit { get; set; }
     }
 
     public class LoginDto

@@ -82,6 +82,7 @@ builder.Services.AddScoped<ITestRunResultService, TestRunResultService>();
 builder.Services.AddScoped<IDefectService, DefectService>();
 builder.Services.AddScoped<IRequirementService, RequirementService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddHttpContextAccessor();
 
 // CORS
