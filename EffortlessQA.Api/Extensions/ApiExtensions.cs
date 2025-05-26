@@ -16,6 +16,7 @@ namespace EffortlessQA.Api.Extensions
         public static string TESTRUN_TAG = "Test Run";
         public static string TESTRUN_RESULT_TAG = "Test Run Result";
         public static string DEFECTS_TAG = "Defects";
+        public const string TENANT_TAG = "Tenants";
 
         public static void MapApiEndpoints(this WebApplication app)
         {
