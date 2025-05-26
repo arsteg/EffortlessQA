@@ -22,6 +22,7 @@ namespace EffortlessQA.Api.Extensions
         public const string REPORTING_TAG = "Reporting";
         public const string SEARCH_TAG = "Search";
         public const string PERMISSION_ROLE_TAG = "Permissions & Roles";
+        public const string MISCELLANEOUS_TAG = "Miscellaneous";
 
         public static void MapApiEndpoints(this WebApplication app)
         {
