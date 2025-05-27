@@ -18,7 +18,6 @@ namespace EffortlessQA.Data.Dtos
         [Required, MinLength(6)]
         public string Password { get; set; }
 
-        [Required, MaxLength(50)]
-        public string TenantId { get; set; }
+        public TenantDto Tenant { get; set; }
     }
 }

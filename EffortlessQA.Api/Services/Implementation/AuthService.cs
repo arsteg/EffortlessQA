@@ -1,51 +1,218 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 using EffortlessQA.Api.Services.Interface;
 using EffortlessQA.Data;
 using EffortlessQA.Data.Dtos;
 using EffortlessQA.Data.Entities;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace EffortlessQA.Api.Services.Implementation
 {
     public class AuthService : IAuthService
     {
-        //private readonly UserManager<User> _userManager;
-        //private readonly SignInManager<User> _signInManager;
+        private readonly IEmailService _emailService;
         private readonly EffortlessQAContext _context;
         private readonly IConfiguration _configuration;
 
-        public AuthService(EffortlessQAContext context, IConfiguration configuration)
+        public AuthService(
+            EffortlessQAContext context,
+            IConfiguration configuration,
+            IEmailService emailService
+        )
         {
             //_userManager = userManager;
             // _signInManager = signInManager;
             _context = context;
             _configuration = configuration;
+            _emailService = emailService;
         }
 
         public async Task<UserDto> RegisterAsync(RegisterDto dto)
         {
-            var user = new User
+            // Validate input
+            if (
+                string.IsNullOrWhiteSpace(dto.Email)
+                || string.IsNullOrWhiteSpace(dto.Password)
+                || string.IsNullOrWhiteSpace(dto.Name)
+                || dto.Tenant == null
+            )
+                throw new Exception("Email, password, name, and tenant details are required.");
+
+            // Check if tenant email already exists
+            var existingTenant = await _context.Tenants.FirstOrDefaultAsync(t =>
+                t.Email == dto.Tenant.Email && !t.IsDeleted
+            );
+            if (existingTenant != null)
+                throw new Exception("A company with this email already exists.");
+
+            // Check if user email already exists
+            var existingUser = await _context.Users.FirstOrDefaultAsync(u =>
+                u.Email == dto.Email && !u.IsDeleted
+            );
+            if (existingUser != null)
+                throw new Exception("A user with this email already exists.");
+
+            // Generate unique TenantId
+            var tenantId = Guid.NewGuid().ToString("N").Substring(0, 50);
+            while (await _context.Tenants.AnyAsync(t => t.Id == tenantId))
             {
-                Name = dto.Email,
-                Email = dto.Email,
-                TenantId = dto.TenantId
-            };
+                tenantId = Guid.NewGuid().ToString("N").Substring(0, 50);
+            }
 
-            var result = await _context.Users.AddAsync(user);
-            //if (!result.Succeeded)
-            //    throw new Exception(string.Join(", ", result.Errors.Select(e => e.Description)));
+            // Begin transaction
+            using var transaction = await _context.Database.BeginTransactionAsync();
 
-            // await _context.Users.AddToRoleAsync(user, RoleType.Tester.ToString());
-
-            return new UserDto
+            try
             {
-                Id = user.Id,
-                Email = user.Email,
-                Name = user.Name,
-                TenantId = user.TenantId
-            };
+                // Create Tenant
+                var tenant = new Tenant
+                {
+                    Id = tenantId,
+                    Name = dto.Tenant.Name,
+                    ContactPerson = dto.Tenant.ContactPerson,
+                    Email = dto.Tenant.Email,
+                    Phone = dto.Tenant.Phone,
+                    BillingContactEmail = dto.Tenant.BillingContactEmail ?? dto.Tenant.Email,
+                    IsEmailConfirmed = false,
+                    CreatedAt = DateTime.UtcNow,
+                    ModifiedAt = DateTime.UtcNow,
+                    CreatedBy = Guid.Empty,
+                    ModifiedBy = Guid.Empty
+                };
+
+                await _context.Tenants.AddAsync(tenant);
+
+                // Create User
+                var user = new User
+                {
+                    Id = Guid.NewGuid(),
+                    Email = dto.Email,
+                    Name = dto.Name,
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+                    TenantId = tenantId,
+                    IsEmailConfirmed = false,
+                    CreatedAt = DateTime.UtcNow,
+                    ModifiedAt = DateTime.UtcNow,
+                    CreatedBy = Guid.Empty,
+                    ModifiedBy = Guid.Empty
+                };
+
+                await _context.Users.AddAsync(user);
+
+                // Assign Admin role
+                var role = new Role
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = user.Id,
+                    ProjectId = Guid.Empty, // No project yet
+                    RoleType = RoleType.Admin,
+                    TenantId = tenantId,
+                    CreatedAt = DateTime.UtcNow,
+                    ModifiedAt = DateTime.UtcNow,
+                    CreatedBy = user.Id,
+                    ModifiedBy = user.Id
+                };
+                await _context.Roles.AddAsync(role);
+
+                // Generate email confirmation tokens
+                var userToken = Guid.NewGuid().ToString();
+                var userConfirmation = new UserEmailConfirmation
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = user.Id,
+                    Token = userToken,
+                    CreatedAt = DateTime.UtcNow,
+                    ExpiresAt = DateTime.UtcNow.AddHours(24)
+                };
+                await _context.UserEmailConfirmations.AddAsync(userConfirmation);
+
+                var tenantToken = Guid.NewGuid().ToString();
+                var tenantConfirmation = new TenantEmailConfirmation
+                {
+                    Id = Guid.NewGuid(),
+                    TenantId = tenantId,
+                    Token = tenantToken,
+                    CreatedAt = DateTime.UtcNow,
+                    ExpiresAt = DateTime.UtcNow.AddHours(24)
+                };
+                await _context.TenantEmailConfirmations.AddAsync(tenantConfirmation);
+
+                // Generate confirmation links
+                var baseUrl =
+                    _configuration["AppSettings:BaseUrl"]
+                    ?? throw new Exception("BaseUrl is not configured.");
+                var userConfirmationLink =
+                    $"{baseUrl}/api/auth/confirm-user-email?userId={user.Id}&token={Uri.EscapeDataString(userToken)}";
+                var tenantConfirmationLink =
+                    $"{baseUrl}/api/auth/confirm-tenant-email?tenantId={tenantId}&token={Uri.EscapeDataString(tenantToken)}";
+
+                // Send confirmation emails
+                await _emailService.SendRegistrationConfirmationAsync(
+                    dto.Email,
+                    dto.Name,
+                    userConfirmationLink
+                );
+                await _emailService.SendTenantConfirmationAsync(
+                    dto.Tenant.Email,
+                    dto.Tenant.Name,
+                    tenantConfirmationLink
+                );
+
+                // Save changes
+                await _context.SaveChangesAsync();
+
+                // Log audit entries
+                var tenantAuditLog = new AuditLog
+                {
+                    Id = Guid.NewGuid(),
+                    Action = "TenantCreated",
+                    EntityType = "Tenant",
+                    EntityId = Guid.Parse(tenantId),
+                    UserId = user.Id,
+                    ProjectId = Guid.Empty,
+                    TenantId = tenantId,
+                    Details = JsonDocument.Parse(
+                        JsonSerializer.Serialize(new { Name = tenant.Name, Email = tenant.Email })
+                    ),
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _context.AuditLogs.AddAsync(tenantAuditLog);
+
+                var userAuditLog = new AuditLog
+                {
+                    Id = Guid.NewGuid(),
+                    Action = "UserCreated",
+                    EntityType = "User",
+                    EntityId = user.Id,
+                    UserId = user.Id,
+                    ProjectId = Guid.Empty,
+                    TenantId = tenantId,
+                    Details = JsonDocument.Parse(
+                        JsonSerializer.Serialize(new { Email = user.Email, Name = user.Name })
+                    ),
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _context.AuditLogs.AddAsync(userAuditLog);
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return new UserDto
+                {
+                    Id = user.Id,
+                    Email = user.Email,
+                    Name = user.Name,
+                    TenantId = user.TenantId
+                };
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task<string> LoginAsync(LoginDto dto)

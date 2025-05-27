@@ -41,6 +41,8 @@ namespace EffortlessQA.Data
         public DbSet<Address> Addresses { get; set; }
         public DbSet<TestFolder> TestFolders { get; set; }
         public DbSet<Country> Countries { get; set; }
+        public DbSet<UserEmailConfirmation> UserEmailConfirmations { get; set; }
+        public DbSet<TenantEmailConfirmation> TenantEmailConfirmations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

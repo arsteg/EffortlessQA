@@ -34,5 +34,6 @@ namespace EffortlessQA.Data.Entities
         public List<User> Users { get; set; } = new();
 
         public Address? Address { get; set; }
+        public bool IsEmailConfirmed { get; set; }
     }
 }

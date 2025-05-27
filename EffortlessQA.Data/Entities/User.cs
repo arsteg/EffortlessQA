@@ -33,5 +33,6 @@ namespace EffortlessQA.Data.Entities
         // Navigation properties
         public List<Role> Roles { get; set; } = new();
         public List<TestRun> AssignedTestRuns { get; set; } = new();
+        public bool IsEmailConfirmed { get; set; }
     }
 }
