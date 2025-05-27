@@ -58,20 +58,28 @@ namespace EffortlessQA.Data
                     continue;
                 }
 
+                // Apply filter only to entities that inherit from EntityBase and have a TenantId property
                 if (
                     typeof(EntityBase).IsAssignableFrom(entityType.ClrType)
                     && entityType.ClrType != typeof(Tenant)
-                    && entityType.ClrType != typeof(Permission)
                 )
                 {
-                    var parameter = Expression.Parameter(entityType.ClrType, "e");
-                    var tenantIdProperty = Expression.Property(parameter, "TenantId");
-                    var tenantIdValue = Expression.Constant(_tenantId);
-                    var filter = Expression.Lambda(
-                        Expression.Equal(tenantIdProperty, tenantIdValue),
-                        parameter
-                    );
-                    entityType.SetQueryFilter(filter);
+                    // Check if the entity has a TenantId property
+                    var tenantIdProperty = entityType.ClrType.GetProperty("TenantId");
+                    if (tenantIdProperty != null && tenantIdProperty.PropertyType == typeof(string))
+                    {
+                        var parameter = Expression.Parameter(entityType.ClrType, "e");
+                        var tenantIdPropertyAccess = Expression.Property(
+                            parameter,
+                            tenantIdProperty
+                        );
+                        var tenantIdValue = Expression.Constant(_tenantId);
+                        var filter = Expression.Lambda(
+                            Expression.Equal(tenantIdPropertyAccess, tenantIdValue),
+                            parameter
+                        );
+                        entityType.SetQueryFilter(filter);
+                    }
                 }
             }
 
@@ -141,14 +149,7 @@ namespace EffortlessQA.Data
                     d.DefectId,
                     d.CreatedAt
                 });
-            modelBuilder
-                .Entity<AuditLog>()
-                .HasIndex(a => new
-                {
-                    a.TenantId,
-                    a.ProjectId,
-                    a.CreatedAt
-                });
+            modelBuilder.Entity<AuditLog>().HasIndex(a => new { a.TenantId, a.CreatedAt });
 
             // Many-to-many configurations
             modelBuilder
@@ -245,9 +246,7 @@ namespace EffortlessQA.Data
                             {
                                 Action = $"{entityType.Name}Created",
                                 EntityType = entityType.Name,
-                                EntityId = (Guid)
-                                    entityType.GetProperty("Id")?.GetValue(entry.Entity),
-                                ProjectId = projectId ?? Guid.Empty,
+                                EntityId = GetEntityId(entityType, entry.Entity),
                                 TenantId = tenantId,
                                 Details = JsonDocument.Parse(JsonSerializer.Serialize(details)),
                                 CreatedBy = currentUserId ?? Guid.Empty,
@@ -265,6 +264,43 @@ namespace EffortlessQA.Data
             }
 
             return await base.SaveChangesAsync(cancellationToken);
+        }
+
+        // Helper method to get EntityId
+        private Guid GetEntityId(Type entityType, object entity)
+        {
+            var idProperty = entityType.GetProperty("Id");
+            if (idProperty == null)
+                throw new InvalidOperationException(
+                    $"Entity {entityType.Name} does not have an Id property."
+                );
+
+            var idValue = idProperty.GetValue(entity);
+            if (idValue == null)
+                throw new InvalidOperationException(
+                    $"Id property of entity {entityType.Name} is null."
+                );
+
+            if (idValue is Guid guidId)
+            {
+                return guidId;
+            }
+            else if (idValue is string stringId)
+            {
+                if (Guid.TryParse(stringId, out var parsedGuid))
+                {
+                    return parsedGuid;
+                }
+                throw new InvalidOperationException(
+                    $"Id property of entity {entityType.Name} is a string ('{stringId}') but cannot be parsed as a Guid."
+                );
+            }
+            else
+            {
+                throw new InvalidOperationException(
+                    $"Id property of entity {entityType.Name} is of unsupported type {idValue.GetType().Name}."
+                );
+            }
         }
     }
 }

@@ -168,7 +168,7 @@ namespace EffortlessQA.Api.Services.Implementation
                 throw new Exception("User not found.");
 
             var existingRole = await _context.Roles.FirstOrDefaultAsync(r =>
-                r.ProjectId == projectId && r.UserId == dto.UserId && !r.IsDeleted
+                r.UserId == dto.UserId && !r.IsDeleted
             );
 
             if (existingRole != null)
@@ -177,7 +177,7 @@ namespace EffortlessQA.Api.Services.Implementation
             var role = new Role
             {
                 UserId = dto.UserId,
-                ProjectId = projectId,
+
                 //RoleType = dto.RoleType,
                 TenantId = tenantId,
                 CreatedAt = DateTime.UtcNow,
@@ -198,7 +198,7 @@ namespace EffortlessQA.Api.Services.Implementation
                 throw new Exception("Project not found.");
 
             var role = await _context.Roles.FirstOrDefaultAsync(r =>
-                r.ProjectId == projectId && r.UserId == userId && !r.IsDeleted
+                r.UserId == userId && !r.IsDeleted
             );
 
             if (role == null)

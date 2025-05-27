@@ -21,16 +21,6 @@ namespace EffortlessQA.Data.Entities
         [Required]
         public Guid UserId { get; set; }
 
-        [ForeignKey("UserId")]
-        public User User { get; set; }
-
-        [Required]
-        public Guid ProjectId { get; set; }
-
-        [ForeignKey("ProjectId")]
-        // [Index]
-        public Project Project { get; set; }
-
         [Required, MaxLength(50)]
         //[Index]
         public string TenantId { get; set; }

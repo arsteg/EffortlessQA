@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EffortlessQA.Data.Migrations
 {
     [DbContext(typeof(EffortlessQAContext))]
-    [Migration("20250525073138_InitialCreate")]
+    [Migration("20250527070236_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -59,7 +59,7 @@ namespace EffortlessQA.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("CreatedBy")
+                    b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid");
 
                     b.Property<bool>("IsDeleted")
@@ -90,7 +90,7 @@ namespace EffortlessQA.Data.Migrations
                     b.HasIndex("TenantId")
                         .IsUnique();
 
-                    b.ToTable("Address");
+                    b.ToTable("Addresses");
                 });
 
             modelBuilder.Entity("EffortlessQA.Data.Entities.AuditLog", b =>
@@ -107,7 +107,7 @@ namespace EffortlessQA.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("CreatedBy")
+                    b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid");
 
                     b.Property<JsonDocument>("Details")
@@ -130,7 +130,7 @@ namespace EffortlessQA.Data.Migrations
                     b.Property<Guid?>("ModifiedBy")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("ProjectId")
+                    b.Property<Guid?>("ProjectId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("TenantId")
@@ -145,9 +145,7 @@ namespace EffortlessQA.Data.Migrations
 
                     b.HasIndex("ProjectId");
 
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("TenantId", "ProjectId", "CreatedAt");
+                    b.HasIndex("TenantId", "CreatedAt");
 
                     b.ToTable("AuditLogs");
                 });
@@ -172,7 +170,7 @@ namespace EffortlessQA.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Country");
+                    b.ToTable("Countries");
                 });
 
             modelBuilder.Entity("EffortlessQA.Data.Entities.Defect", b =>
@@ -190,7 +188,7 @@ namespace EffortlessQA.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("CreatedBy")
+                    b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Description")
@@ -267,7 +265,7 @@ namespace EffortlessQA.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("CreatedBy")
+                    b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("DefectId")
@@ -313,7 +311,7 @@ namespace EffortlessQA.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("CreatedBy")
+                    b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Description")
@@ -348,7 +346,7 @@ namespace EffortlessQA.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("CreatedBy")
+                    b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Description")
@@ -390,7 +388,7 @@ namespace EffortlessQA.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("CreatedBy")
+                    b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Description")
@@ -442,7 +440,7 @@ namespace EffortlessQA.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("CreatedBy")
+                    b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid");
 
                     b.Property<bool>("IsDeleted")
@@ -473,7 +471,7 @@ namespace EffortlessQA.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("CreatedBy")
+                    b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid");
 
                     b.Property<bool>("IsDeleted")
@@ -485,7 +483,7 @@ namespace EffortlessQA.Data.Migrations
                     b.Property<Guid?>("ModifiedBy")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("ProjectId")
+                    b.Property<Guid?>("ProjectId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("RoleType")
@@ -519,7 +517,7 @@ namespace EffortlessQA.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("CreatedBy")
+                    b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid");
 
                     b.Property<bool>("IsDeleted")
@@ -555,7 +553,7 @@ namespace EffortlessQA.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("CreatedBy")
+                    b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Description")
@@ -568,6 +566,9 @@ namespace EffortlessQA.Data.Migrations
                         .HasColumnType("character varying(255)");
 
                     b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsEmailConfirmed")
                         .HasColumnType("boolean");
 
                     b.Property<DateTime?>("ModifiedAt")
@@ -591,6 +592,44 @@ namespace EffortlessQA.Data.Migrations
                     b.ToTable("Tenants");
                 });
 
+            modelBuilder.Entity("EffortlessQA.Data.Entities.TenantEmailConfirmation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TenantEmailConfirmations");
+                });
+
             modelBuilder.Entity("EffortlessQA.Data.Entities.TestCase", b =>
                 {
                     b.Property<Guid>("Id")
@@ -600,7 +639,7 @@ namespace EffortlessQA.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("CreatedBy")
+                    b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Description")
@@ -666,7 +705,7 @@ namespace EffortlessQA.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("CreatedBy")
+                    b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Description")
@@ -699,7 +738,7 @@ namespace EffortlessQA.Data.Migrations
 
                     b.HasIndex("ProjectId");
 
-                    b.ToTable("TestFolder");
+                    b.ToTable("TestFolders");
                 });
 
             modelBuilder.Entity("EffortlessQA.Data.Entities.TestRun", b =>
@@ -714,7 +753,7 @@ namespace EffortlessQA.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("CreatedBy")
+                    b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Description")
@@ -770,7 +809,7 @@ namespace EffortlessQA.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("CreatedBy")
+                    b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid");
 
                     b.Property<bool>("IsDeleted")
@@ -817,7 +856,7 @@ namespace EffortlessQA.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("CreatedBy")
+                    b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Description")
@@ -869,7 +908,7 @@ namespace EffortlessQA.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("CreatedBy")
+                    b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Email")
@@ -878,6 +917,9 @@ namespace EffortlessQA.Data.Migrations
                         .HasColumnType("character varying(255)");
 
                     b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsEmailConfirmed")
                         .HasColumnType("boolean");
 
                     b.Property<DateTime?>("ModifiedAt")
@@ -918,6 +960,42 @@ namespace EffortlessQA.Data.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("EffortlessQA.Data.Entities.UserEmailConfirmation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("UserEmailConfirmations");
+                });
+
             modelBuilder.Entity("EffortlessQA.Data.Entities.UserProject", b =>
                 {
                     b.Property<Guid>("Id")
@@ -927,7 +1005,7 @@ namespace EffortlessQA.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("CreatedBy")
+                    b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid");
 
                     b.Property<bool>("IsDeleted")
@@ -982,21 +1060,9 @@ namespace EffortlessQA.Data.Migrations
 
             modelBuilder.Entity("EffortlessQA.Data.Entities.AuditLog", b =>
                 {
-                    b.HasOne("EffortlessQA.Data.Entities.Project", "Project")
+                    b.HasOne("EffortlessQA.Data.Entities.Project", null)
                         .WithMany("AuditLogs")
-                        .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("EffortlessQA.Data.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Project");
-
-                    b.Navigation("User");
+                        .HasForeignKey("ProjectId");
                 });
 
             modelBuilder.Entity("EffortlessQA.Data.Entities.Defect", b =>
@@ -1071,19 +1137,15 @@ namespace EffortlessQA.Data.Migrations
 
             modelBuilder.Entity("EffortlessQA.Data.Entities.Role", b =>
                 {
-                    b.HasOne("EffortlessQA.Data.Entities.Project", "Project")
+                    b.HasOne("EffortlessQA.Data.Entities.Project", null)
                         .WithMany("Roles")
-                        .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("ProjectId");
 
                     b.HasOne("EffortlessQA.Data.Entities.User", "User")
                         .WithMany("Roles")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Project");
 
                     b.Navigation("User");
                 });

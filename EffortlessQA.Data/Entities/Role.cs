@@ -15,12 +15,6 @@ namespace EffortlessQA.Data.Entities
         [ForeignKey("UserId")]
         public User User { get; set; }
 
-        [Required]
-        public Guid ProjectId { get; set; }
-
-        [ForeignKey("ProjectId")]
-        public Project Project { get; set; }
-
         [Required, MaxLength(20)]
         [RegularExpression("Admin|Tester", ErrorMessage = "Role must be Admin or Tester")]
         public RoleType RoleType { get; set; } // "Admin" or "Tester"

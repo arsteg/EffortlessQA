@@ -25,9 +25,7 @@ namespace EffortlessQA.Api.Services.Implementation
             string? entityTypeFilter
         )
         {
-            var query = _context.AuditLogs.Where(al =>
-                al.ProjectId == projectId && al.TenantId == tenantId
-            );
+            var query = _context.AuditLogs.Where(al => al.TenantId == tenantId);
 
             if (!string.IsNullOrEmpty(actionFilter))
             {
@@ -52,7 +50,7 @@ namespace EffortlessQA.Api.Services.Implementation
                     EntityType = al.EntityType,
                     EntityId = al.EntityId,
                     UserId = al.UserId,
-                    ProjectId = al.ProjectId,
+                    // ProjectId = al.ProjectId,
                     TenantId = al.TenantId,
                     //Details = al.Details?.ToString(),
                     CreatedAt = al.CreatedAt

@@ -56,11 +56,7 @@ namespace EffortlessQA.Api.Services.Implementation
                 throw new Exception("A user with this email already exists.");
 
             // Generate unique TenantId
-            var tenantId = Guid.NewGuid().ToString("N").Substring(0, 50);
-            while (await _context.Tenants.AnyAsync(t => t.Id == tenantId))
-            {
-                tenantId = Guid.NewGuid().ToString("N").Substring(0, 50);
-            }
+            var tenantId = Guid.NewGuid().ToString("N");
 
             // Begin transaction
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -107,7 +103,7 @@ namespace EffortlessQA.Api.Services.Implementation
                 {
                     Id = Guid.NewGuid(),
                     UserId = user.Id,
-                    ProjectId = Guid.Empty, // No project yet
+                    //ProjectId = Guid.Empty, // No project yet
                     RoleType = RoleType.Admin,
                     TenantId = tenantId,
                     CreatedAt = DateTime.UtcNow,
@@ -172,7 +168,6 @@ namespace EffortlessQA.Api.Services.Implementation
                     EntityType = "Tenant",
                     EntityId = Guid.Parse(tenantId),
                     UserId = user.Id,
-                    ProjectId = Guid.Empty,
                     TenantId = tenantId,
                     Details = JsonDocument.Parse(
                         JsonSerializer.Serialize(new { Name = tenant.Name, Email = tenant.Email })
@@ -188,7 +183,7 @@ namespace EffortlessQA.Api.Services.Implementation
                     EntityType = "User",
                     EntityId = user.Id,
                     UserId = user.Id,
-                    ProjectId = Guid.Empty,
+                    //ProjectId = Guid.Empty,
                     TenantId = tenantId,
                     Details = JsonDocument.Parse(
                         JsonSerializer.Serialize(new { Email = user.Email, Name = user.Name })
@@ -370,7 +365,7 @@ namespace EffortlessQA.Api.Services.Implementation
             var role = new Role
             {
                 UserId = user.Id,
-                ProjectId = dto.ProjectId,
+
                 RoleType = dto.RoleType,
                 TenantId = tenantId
             };

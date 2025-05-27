@@ -155,7 +155,7 @@ namespace EffortlessQA.Api.Services.Implementation
             {
                 Id = Guid.NewGuid(),
                 UserId = dto.UserId,
-                ProjectId = projectId,
+                //ProjectId = projectId,
                 RoleType = dto.RoleType,
                 TenantId = tenantId,
                 CreatedAt = DateTime.UtcNow,
@@ -169,7 +169,7 @@ namespace EffortlessQA.Api.Services.Implementation
             {
                 Id = role.Id,
                 UserId = role.UserId,
-                ProjectId = role.ProjectId,
+                // ProjectId = role.ProjectId,
                 //RoleType = role.RoleType,
                 //TenantId = role.TenantId,
                 CreatedAt = role.CreatedAt,
@@ -185,9 +185,7 @@ namespace EffortlessQA.Api.Services.Implementation
         )
         {
             var query = _context
-                .Roles.Where(r =>
-                    r.ProjectId == projectId && r.TenantId == tenantId && !r.IsDeleted
-                )
+                .Roles.Where(r => r.TenantId == tenantId && !r.IsDeleted)
                 .OrderBy(r => r.RoleType);
 
             var totalCount = await query.CountAsync();
@@ -198,7 +196,7 @@ namespace EffortlessQA.Api.Services.Implementation
                 {
                     Id = r.Id,
                     UserId = r.UserId,
-                    ProjectId = r.ProjectId,
+                    // ProjectId = r.ProjectId,
                     // RoleType = r.RoleType,
                     //TenantId = r.TenantId,
                     CreatedAt = r.CreatedAt,
@@ -223,7 +221,7 @@ namespace EffortlessQA.Api.Services.Implementation
         )
         {
             var role = await _context.Roles.FirstOrDefaultAsync(r =>
-                r.Id == roleId && r.ProjectId == projectId && r.TenantId == tenantId && !r.IsDeleted
+                r.Id == roleId && r.TenantId == tenantId && !r.IsDeleted
             );
 
             if (role == null)
@@ -251,7 +249,7 @@ namespace EffortlessQA.Api.Services.Implementation
             {
                 Id = role.Id,
                 UserId = role.UserId,
-                ProjectId = role.ProjectId,
+                //ProjectId = role.ProjectId,
                 //RoleType = role.RoleType,
                 // TenantId = role.TenantId,
                 //CreatedAt = role.CreatedAt,
@@ -262,7 +260,7 @@ namespace EffortlessQA.Api.Services.Implementation
         public async Task DeleteRoleAsync(Guid projectId, Guid roleId, string tenantId)
         {
             var role = await _context.Roles.FirstOrDefaultAsync(r =>
-                r.Id == roleId && r.ProjectId == projectId && r.TenantId == tenantId && !r.IsDeleted
+                r.Id == roleId && r.TenantId == tenantId && !r.IsDeleted
             );
 
             if (role == null)
@@ -281,7 +279,7 @@ namespace EffortlessQA.Api.Services.Implementation
         )
         {
             var role = await _context.Roles.FirstOrDefaultAsync(r =>
-                r.Id == roleId && r.ProjectId == projectId && r.TenantId == tenantId && !r.IsDeleted
+                r.Id == roleId && r.TenantId == tenantId && !r.IsDeleted
             );
             if (role == null)
                 throw new Exception("Role not found.");
@@ -321,7 +319,7 @@ namespace EffortlessQA.Api.Services.Implementation
                 rp.RoleId == roleId
                 && rp.PermissionId == permissionId
                 && !rp.IsDeleted
-                && rp.Role.ProjectId == projectId
+                // && rp.Role.ProjectId == projectId
                 && rp.Role.TenantId == tenantId
             );
 
