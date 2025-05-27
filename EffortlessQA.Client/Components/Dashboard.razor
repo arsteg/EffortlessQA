@@ -1,0 +1,43 @@
+﻿// EffortlessQA.Client/Pages/Dashboard.razor
+@using EffortlessQA.Client.Services
+@using MudBlazor
+@inject ReportingService ReportingService
+
+<MudGrid>
+    <MudItem xs="12" sm="6">
+        <MudCard>
+            <MudCardContent>
+                <MudText Typo="Typo.h6">Test Run Status</MudText>
+                <MudChart ChartType="ChartType.Bar" ChartSeries="@_testRunSeries" XAxisLabels="@_labels" />
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+    <MudItem xs="12" sm="6">
+        <MudCard>
+            <MudCardContent>
+                <MudText Typo="Typo.h6">Defect Counts</MudText>
+                <MudChart ChartType="ChartType.Pie" ChartSeries="@_defectSeries" LegendLabels="@_defectLabels" />
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private List<ChartSeries> _testRunSeries = new();
+    private string[] _labels = { "Passed", "Failed", "Pending" };
+    private List<ChartSeries> _defectSeries = new();
+    private string[] _defectLabels = { "High", "Medium", "Low" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var dashboardData = await ReportingService.GetDashboardDataAsync();
+        _testRunSeries = new List<ChartSeries>
+        {
+            new ChartSeries { Name = "Test Runs", Data = new double[] { dashboardData.PassedTests, dashboardData.FailedTests, dashboardData.PendingTests } }
+        };
+        _defectSeries = new List<ChartSeries>
+        {
+            new ChartSeries { Name = "Defects", Data = new double[] { dashboardData.HighPriorityDefects, dashboardData.MediumPriorityDefects, dashboardData.LowPriorityDefects } }
+        };
+    }
+}

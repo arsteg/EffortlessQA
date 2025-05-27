@@ -3,13 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EffortlessQA.Client", "EffortlessQA.Client\EffortlessQA.Client.csproj", "{C031D599-237A-467D-9C92-6FF3B997A68E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EffortlessQA.Client", "EffortlessQA.Client\EffortlessQA.Client.csproj", "{C031D599-237A-467D-9C92-6FF3B997A68E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EffortlessQA.Api", "EffortlessQA.Api\EffortlessQA.Api.csproj", "{96A68082-91F3-41B8-AE83-7BBD5D634571}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EffortlessQA.Api", "EffortlessQA.Api\EffortlessQA.Api.csproj", "{96A68082-91F3-41B8-AE83-7BBD5D634571}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EffortlessQA.Data", "EffortlessQA.Data\EffortlessQA.Data.csproj", "{C4FE1B32-1512-47BB-A620-F864DCAA96E7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EffortlessQA.Data", "EffortlessQA.Data\EffortlessQA.Data.csproj", "{C4FE1B32-1512-47BB-A620-F864DCAA96E7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EffortlessQA.Tests", "EffortlessQA.Tests\EffortlessQA.Tests.csproj", "{F8AEC8EB-BD6F-4B95-B335-0A6388DA1D7C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EffortlessQA.Tests", "EffortlessQA.Tests\EffortlessQA.Tests.csproj", "{F8AEC8EB-BD6F-4B95-B335-0A6388DA1D7C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -72,5 +72,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4018414C-22A5-4318-B419-D17003A4E69E}
 	EndGlobalSection
 EndGlobal

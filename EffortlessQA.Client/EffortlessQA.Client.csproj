@@ -9,6 +9,9 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.4" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.0.4" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+    <PackageReference Include="Mono.HttpUtility" Version="1.0.0.1" />
+    <PackageReference Include="MudBlazor" Version="8.6.0" />
   </ItemGroup>
 
   <ItemGroup>

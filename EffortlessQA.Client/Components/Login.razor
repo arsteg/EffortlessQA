@@ -1,0 +1,35 @@
+﻿// EffortlessQA.Client/Pages/Auth/Login.razor
+@using EffortlessQA.Client.Models
+@using EffortlessQA.Client.Services
+@using MudBlazor
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<MudCard Elevation="2" Class="pa-4 mx-auto" Style="max-width: 400px;">
+    <MudCardContent>
+        <MudText Typo="Typo.h5" GutterBottom="true">Login</MudText>
+        <MudTextField T="string" Label="Email" @bind-Value="_loginDto.Email" Required="true" />
+        <MudTextField T="string" Label="Password" @bind-Value="_loginDto.Password" InputType="InputType.Password" Required="true" Class="mt-4" />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-4" OnClick="@LoginAsync">Login</MudButton>
+        <MudButton Variant="Variant.Text" Class="mt-2" OnClick="@(() => Navigation.NavigateTo("/register"))">Register</MudButton>
+        <MudButton Variant="Variant.Text" Class="mt-2" OnClick="@(() => Navigation.NavigateTo("/password-reset"))">Forgot Password?</MudButton>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    private LoginDto _loginDto = new();
+
+    private async Task LoginAsync()
+    {
+        try
+        {
+            await AuthService.LoginAsync(_loginDto);
+            Navigation.NavigateTo("/dashboard");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Invalid credentials", Severity.Error);
+        }
+    }
+}

@@ -1,0 +1,94 @@
+﻿// EffortlessQA.Client/Pages/Requirements.razor
+@using EffortlessQA.Client.Models
+@using EffortlessQA.Client.Services
+@using MudBlazor
+@inject RequirementService RequirementService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<MudGrid>
+    <MudItem xs="12">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@OpenCreateDialog">Create Requirement</MudButton>
+    </MudItem>
+    <MudItem xs="12">
+        <MudTable Items="@_requirements" Hover="true" Breakpoint="Breakpoint.Sm">
+            <HeaderContent>
+                <MudTh>Title</MudTh>
+                <MudTh>Description</MudTh>
+                <MudTh>Project</MudTh>
+                <MudTh>Actions</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Title</MudTd>
+                <MudTd>@context.Description</MudTd>
+                <MudTd>@context.ProjectId</MudTd>
+                <MudTd>
+                    <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => EditRequirement(context.Id))">Edit</MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="@(() => DeleteRequirement(context.Id))">Delete</MudButton>
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudItem>
+</MudGrid>
+
+<MudDialog @bind-IsVisible="_showCreateDialog">
+    <DialogContent>
+        <MudTextField T="string" Label="Title" @bind-Value="_newRequirement.Title" Required="true" />
+        <MudTextField T="string" Label="Description" @bind-Value="_newRequirement.Description" Class="mt-4" />
+        <MudTextField T="int" Label="Project ID" @bind-Value="_newRequirement.ProjectId" Required="true" Class="mt-4" />
+        <MudTextField T="string" Label="Test Case IDs (comma-separated)" @bind-Value="_testCaseIds" Class="mt-4" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@CancelCreate">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@CreateRequirement">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private List<RequirementDto> _requirements = new();
+    private CreateRequirementDto _newRequirement = new();
+    private string _testCaseIds = string.Empty;
+    private bool _showCreateDialog;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _requirements = await RequirementService.GetRequirementsAsync();
+    }
+
+    private void OpenCreateDialog() => _showCreateDialog = true;
+    private void CancelCreate() => _showCreateDialog = false;
+
+    private async Task CreateRequirement()
+    {
+        try
+        {
+            _newRequirement.TestCaseIds = _testCaseIds.Split(',').Select(int.Parse).ToList();
+            await RequirementService.CreateRequirementAsync(_newRequirement);
+            _requirements = await RequirementService.GetRequirementsAsync();
+            _showCreateDialog = false;
+            _newRequirement = new();
+            _testCaseIds = string.Empty;
+            Snackbar.Add("Requirement created", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Failed to create requirement", Severity.Error);
+        }
+    }
+
+    private void EditRequirement(int id) => Navigation.NavigateTo($"/requirements/edit/{id}");
+
+    private async Task DeleteRequirement(int id)
+    {
+        try
+        {
+            await RequirementService.DeleteRequirementAsync(id);
+            _requirements = await RequirementService.GetRequirementsAsync();
+            Snackbar.Add("Requirement deleted", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Failed to delete requirement", Severity.Error);
+        }
+    }
+}

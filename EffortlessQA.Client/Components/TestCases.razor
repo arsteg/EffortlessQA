@@ -1,0 +1,144 @@
+﻿// EffortlessQA.Client/Pages/TestCases.razor
+@using EffortlessQA.Client.Services
+@using EffortlessQA.Client.Models
+@using EffortlessQA.Client.Extensions
+@using MudBlazor
+@inject TestCaseService TestCaseService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<MudGrid>
+    <MudItem xs="12">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@OpenCreateDialog">Create Test Case</MudButton>
+    </MudItem>
+    <MudItem xs="12">
+        <MudTable Items="@_testCases" Hover="true" Breakpoint="Breakpoint.Sm">
+            <HeaderContent>
+                <MudTh>Title</MudTh>
+                <MudTh>Description</MudTh>
+                <MudTh>Test Suite</MudTh>
+                <MudTh>Actions</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Title</MudTd>
+                <MudTd>@context.Description</MudTd>
+                <MudTd>@context.TestSuiteId</MudTd>
+                <MudTd>
+                    <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => EditTestCase(context.Id))">Edit</MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="@(() => DeleteTestCase(context.Id))">Delete</MudButton>
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudItem>
+</MudGrid>
+
+<MudDialog @bind-IsVisible="_showCreateDialog">
+    <DialogContent>
+        <MudForm @ref="_form" @bind-IsValid="@_formIsValid">
+            <MudTextField T="string" 
+                          Label="Title" 
+                          @bind-Value="_newTestCase.Title" 
+                          Required="true" 
+                          RequiredError="Title is required" 
+                          Validation="@(new Func<string, string>(ValidateTitle))" />
+            <MudTextField T="string" 
+                          Label="Description" 
+                          @bind-Value="_newTestCase.Description" 
+                          Class="mt-4" />
+            <MudTextField T="string" 
+                          Label="Steps" 
+                          @bind-Value="_newTestCase.Steps" 
+                          Class="mt-4" />
+            <MudTextField T="string" 
+                          Label="Expected Result" 
+                          @bind-Value="_newTestCase.ExpectedResult" 
+                          Class="mt-4" />
+            <MudTextField T="int" 
+                          Label="Test Suite ID" 
+                          @bind-Value="_newTestCase.TestSuiteId" 
+                          Required="true" 
+                          RequiredError="Test Suite ID is required" 
+                          Validation="@(new Func<int, string>(ValidateTestSuiteId))" 
+                          Class="mt-4" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@CancelCreate">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@CreateTestCase" Disabled="!_formIsValid">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private List<TestCaseDto> _testCases = new();
+    private CreateTestCaseDto _newTestCase = new();
+    private bool _showCreateDialog;
+    private MudForm _form;
+    private bool _formIsValid;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var suiteId = Navigation.GetQueryParameter<int>("suiteId");
+        _newTestCase.TestSuiteId = suiteId; // Pre-fill TestSuiteId if provided
+        _testCases = await TestCaseService.GetTestCasesAsync(suiteId != 0 ? suiteId : null);
+    }
+
+    private void OpenCreateDialog() => _showCreateDialog = true;
+    private void CancelCreate()
+    {
+        _showCreateDialog = false;
+        _newTestCase = new();
+        _form?.ResetValidation();
+    }
+
+    private async Task CreateTestCase()
+    {
+        if (!_formIsValid) return;
+
+        try
+        {
+            await TestCaseService.CreateTestCaseAsync(_newTestCase);
+            _testCases = await TestCaseService.GetTestCasesAsync(_newTestCase.TestSuiteId);
+            _showCreateDialog = false;
+            _newTestCase = new();
+            _form?.ResetValidation();
+            Snackbar.Add("Test Case created", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Failed to create test case", Severity.Error);
+        }
+    }
+
+    private void EditTestCase(int id) => Navigation.NavigateTo($"/test-cases/edit/{id}");
+
+    private async Task DeleteTestCase(int id)
+    {
+        try
+        {
+            await TestCaseService.DeleteTestCaseAsync(id);
+            var suiteId = Navigation.GetQueryParameter<int>("suiteId");
+            _testCases = await TestCaseService.GetTestCasesAsync(suiteId != 0 ? suiteId : null);
+            Snackbar.Add("Test Case deleted", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Failed to delete test case", Severity.Error);
+        }
+    }
+
+    private string ValidateTitle(string title)
+    {
+        if (string.IsNullOrWhiteSpace(title))
+            return "Title is required";
+        if (title.Length < 3)
+            return "Title must be at least 3 characters long";
+        return null;
+    }
+
+    private string ValidateTestSuiteId(int suiteId)
+    {
+        if (suiteId <= 0)
+            return "Test Suite ID must be a positive number";
+        return null;
+    }
+}

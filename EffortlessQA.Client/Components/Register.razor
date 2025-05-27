@@ -1,0 +1,38 @@
+﻿// EffortlessQA.Client/Pages/Auth/Register.razor
+@using EffortlessQA.Client.Models
+@using EffortlessQA.Client.Services
+@using MudBlazor
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<MudCard Elevation="2" Class="pa-4 mx-auto" Style="max-width: 400px;">
+    <MudCardContent>
+        <MudText Typo="Typo.h5" GutterBottom="true">Register</MudText>
+        <MudTextField T="string" Label="Email" @bind-Value="_registerDto.Email" Required="true" />
+        <MudTextField T="string" Label="Password" @bind-Value="_registerDto.Password" InputType="InputType.Password" Required="true" Class="mt-4" />
+        <MudTextField T="string" Label="First Name" @bind-Value="_registerDto.FirstName" Class="mt-4" />
+        <MudTextField T="string" Label="Last Name" @bind-Value="_registerDto.LastName" Class="mt-4" />
+        <MudTextField T="string" Label="Tenant Name" @bind-Value="_registerDto.TenantName" Class="mt-4" />
+        <MudTextField T="string" Label="Tenant Address" @bind-Value="_registerDto.TenantAddress" Class="mt-4" />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-4" OnClick="@RegisterAsync">Register</MudButton>
+        <MudButton Variant="Variant.Text" Class="mt-2" OnClick="@(() => Navigation.NavigateTo("/login"))">Login</MudButton>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    private RegisterDto _registerDto = new();
+
+    private async Task RegisterAsync()
+    {
+        try
+        {
+            await AuthService.RegisterAsync(_registerDto);
+            Navigation.NavigateTo("/setup");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Registration failed", Severity.Error);
+        }
+    }
+}

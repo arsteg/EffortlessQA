@@ -1,0 +1,84 @@
+﻿// EffortlessQA.Client/Pages/Reports.razor
+@using EffortlessQA.Client.Models
+@using EffortlessQA.Client.Services
+@using MudBlazor
+@inject ReportingService ReportingService
+@inject ISnackbar Snackbar
+
+<MudGrid>
+    <MudItem xs="12">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@GenerateTestRunReport">Generate Test Run Report</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@GenerateCoverageReport" Class="ml-2">Generate Coverage Report</MudButton>
+    </MudItem>
+    <MudItem xs="12">
+        <MudTable Items="@_reports" Hover="true" Breakpoint="Breakpoint.Sm">
+            <HeaderContent>
+                <MudTh>Type</MudTh>
+                <MudTh>Generated At</MudTh>
+                <MudTh>Actions</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Type</MudTd>
+                <MudTd>@context.GeneratedAt</MudTd>
+                <MudTd>
+                    <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => DownloadReport(context.Id))">Download</MudButton>
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private List<ReportDto> _reports = new();
+
+    public Reports()
+    {
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _reports = await ReportingService.GetReportsAsync();
+    }
+
+    private async Task GenerateTestRunReport()
+    {
+        try
+        {
+            await ReportingService.GenerateTestRunReportAsync();
+            _reports = await ReportingService.GetReportsAsync();
+            Snackbar.Add("Test Run Report generated", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Failed to generate report", Severity.Error);
+        }
+    }
+
+    private async Task GenerateCoverageReport()
+    {
+        try
+        {
+            await ReportingService.GenerateCoverageReportAsync();
+            _reports = await ReportingService.GetReportsAsync();
+            Snackbar.Add("Coverage Report generated", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Failed to generate report", Severity.Error);
+        }
+    }
+
+    private async Task DownloadReport(int id)
+    {
+        try
+        {
+            var reportUrl = await ReportingService.GetReportUrlAsync(id);
+            // Trigger download (e.g., via JavaScript interop or direct link)
+            Snackbar.Add("Report download started", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Failed to download report", Severity.Error);
+        }
+    }
+}

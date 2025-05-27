@@ -1,0 +1,87 @@
+﻿// EffortlessQA.Client/Pages/Projects.razor
+@using EffortlessQA.Client.Models
+@using EffortlessQA.Client.Services
+@using MudBlazor
+@inject ProjectService ProjectService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<MudGrid>
+    <MudItem xs="12">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@OpenCreateDialog">Create Project</MudButton>
+    </MudItem>
+    <MudItem xs="12">
+        <MudTable Items="@_projects" Hover="true" Breakpoint="Breakpoint.Sm">
+            <HeaderContent>
+                <MudTh>Name</MudTh>
+                <MudTh>Description</MudTh>
+                <MudTh>Actions</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Name</MudTd>
+                <MudTd>@context.Description</MudTd>
+                <MudTd>
+                    <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => EditProject(context.Id))">Edit</MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="@(() => DeleteProject(context.Id))">Delete</MudButton>
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudItem>
+</MudGrid>
+
+<MudDialog @bind-IsVisible="_showCreateDialog">
+    <DialogContent>
+        <MudTextField T="string" Label="Name" @bind-Value="_newProject.Name" Required="true" />
+        <MudTextField T="string" Label="Description" @bind-Value="_newProject.Description" Class="mt-4" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@CancelCreate">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@CreateProject">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private List<ProjectDto> _projects = new();
+    private CreateProjectDto _newProject = new();
+    private bool _showCreateDialog;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _projects = await ProjectService.GetProjectsAsync();
+    }
+
+    private void OpenCreateDialog() => _showCreateDialog = true;
+    private void CancelCreate() => _showCreateDialog = false;
+
+    private async Task CreateProject()
+    {
+        try
+        {
+            await ProjectService.CreateProjectAsync(_newProject);
+            _projects = await ProjectService.GetProjectsAsync();
+            _showCreateDialog = false;
+            _newProject = new();
+            Snackbar.Add("Project created", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Failed to create project", Severity.Error);
+        }
+    }
+
+    private void EditProject(int id) => Navigation.NavigateTo($"/projects/edit/{id}");
+
+    private async Task DeleteProject(int id)
+    {
+        try
+        {
+            await ProjectService.DeleteProjectAsync(id);
+            _projects = await ProjectService.GetProjectsAsync();
+            Snackbar.Add("Project deleted", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Failed to delete project", Severity.Error);
+        }
+    }
+}

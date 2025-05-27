@@ -1,0 +1,28 @@
+﻿// EffortlessQA.Client/Components/GlobalSearch.razor
+@using EffortlessQA.Client.Services
+@using MudBlazor
+@inject SearchService SearchService
+@inject NavigationManager Navigation
+
+<MudTextField T="string" 
+              Placeholder="Search..." 
+              Adornment="Adornment.End" 
+              AdornmentIcon="@Icons.Material.Filled.Search" 
+              OnAdornmentClick="Search" 
+              @bind-Value="_searchTerm" 
+              Immediate="true" 
+              Class="mr-4" />
+
+@code {
+    private string _searchTerm = string.Empty;
+
+    private async Task Search()
+    {
+        if (!string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            var results = await SearchService.GlobalSearchAsync(_searchTerm);
+            // Navigate to a search results page or display results in a dialog
+            Navigation.NavigateTo($"/search?term={_searchTerm}");
+        }
+    }
+}

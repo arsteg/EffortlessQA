@@ -1,0 +1,94 @@
+﻿// EffortlessQA.Client/Pages/TestRuns.razor
+@using EffortlessQA.Client.Models
+@using EffortlessQA.Client.Services
+@using MudBlazor
+@inject TestRunService TestRunService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<MudGrid>
+    <MudItem xs="12">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@OpenCreateDialog">Create Test Run</MudButton>
+    </MudItem>
+    <MudItem xs="12">
+        <MudTable Items="@_testRuns" Hover="true" Breakpoint="Breakpoint.Sm">
+            <HeaderContent>
+                <MudTh>Name</MudTh>
+                <MudTh>Description</MudTh>
+                <MudTh>Project</MudTh>
+                <MudTh>Actions</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Name</MudTd>
+                <MudTd>@context.Description</MudTd>
+                <MudTd>@context.ProjectId</MudTd>
+                <MudTd>
+                    <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => ViewResults(context.Id))">View Results</MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="@(() => DeleteTestRun(context.Id))">Delete</MudButton>
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudItem>
+</MudGrid>
+
+<MudDialog @bind-IsVisible="_showCreateDialog">
+    <DialogContent>
+        <MudTextField T="string" Label="Name" @bind-Value="_newTestRun.Name" Required="true" />
+        <MudTextField T="string" Label="Description" @bind-Value="_newTestRun.Description" Class="mt-4" />
+        <MudTextField T="int" Label="Project ID" @bind-Value="_newTestRun.ProjectId" Required="true" Class="mt-4" />
+        <MudTextField T="string" Label="Test Case IDs (comma-separated)" @bind-Value="_testCaseIds" Class="mt-4" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@CancelCreate">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@CreateTestRun">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private List<TestRunDto> _testRuns = new();
+    private CreateTestRunDto _newTestRun = new();
+    private string _testCaseIds = string.Empty;
+    private bool _showCreateDialog;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _testRuns = await TestRunService.GetTestRunsAsync();
+    }
+
+    private void OpenCreateDialog() => _showCreateDialog = true;
+    private void CancelCreate() => _showCreateDialog = false;
+
+    private async Task CreateTestRun()
+    {
+        try
+        {
+            _newTestRun.TestCaseIds = _testCaseIds.Split(',').Select(int.Parse).ToList();
+            await TestRunService.CreateTestRunAsync(_newTestRun);
+            _testRuns = await TestRunService.GetTestRunsAsync();
+            _showCreateDialog = false;
+            _newTestRun = new();
+            _testCaseIds = string.Empty;
+            Snackbar.Add("Test Run created", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Failed to create test run", Severity.Error);
+        }
+    }
+
+    private void ViewResults(int id) => Navigation.NavigateTo($"/test-runs/{id}/results");
+
+    private async Task DeleteTestRun(int id)
+    {
+        try
+        {
+            await TestRunService.DeleteTestRunAsync(id);
+            _testRuns = await TestRunService.GetTestRunsAsync();
+            Snackbar.Add("Test Run deleted", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Failed to delete test run", Severity.Error);
+        }
+    }
+}

@@ -1,0 +1,148 @@
+﻿// EffortlessQA.Client/Pages/Defects.razor
+@using EffortlessQA.Client.Services
+@using EffortlessQA.Client.Models
+@using MudBlazor
+@inject DefectService DefectService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<MudGrid>
+    <MudItem xs="12">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@OpenCreateDialog">Create Defect</MudButton>
+    </MudItem>
+    <MudItem xs="12">
+        <MudTable Items="@_defects" Hover="true" Breakpoint="Breakpoint.Sm">
+            <HeaderContent>
+                <MudTh>Title</MudTh>
+                <MudTh>Priority</MudTh>
+                <MudTh>Status</MudTh>
+                <MudTh>Actions</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Title</MudTd>
+                <MudTd>@context.Priority</MudTd>
+                <MudTd>@context.Status</MudTd>
+                <MudTd>
+                    <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => EditDefect(context.Id))">Edit</MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="@(() => DeleteDefect(context.Id))">Delete</MudButton>
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudItem>
+</MudGrid>
+
+<MudDialog @bind-IsVisible="_showCreateDialog">
+    <DialogContent>
+        <MudForm @ref="_form" @bind-IsValid="@_formIsValid">
+            <MudTextField T="string" 
+                          Label="Title" 
+                          @bind-Value="_newDefect.Title" 
+                          Required="true" 
+                          RequiredError="Title is required" 
+                          Validation="@(new Func<string, string>(ValidateTitle))" />
+            <MudTextField T="string" 
+                          Label="Description" 
+                          @bind-Value="_newDefect.Description" 
+                          Class="mt-4" />
+            <MudSelect T="string" 
+                       Label="Priority" 
+                       @bind-Value="_newDefect.Priority" 
+                       Required="true" 
+                       RequiredError="Priority is required">
+                <MudSelectItem Value="@("High")">High</MudSelectItem>
+                <MudSelectItem Value="@("Medium")">Medium</MudSelectItem>
+                <MudSelectItem Value="@("Low")">Low</MudSelectItem>
+            </MudSelect>
+            <MudSelect T="string" 
+                       Label="Status" 
+                       @bind-Value="_newDefect.Status" 
+                       Required="true" 
+                       RequiredError="Status is required">
+                <MudSelectItem Value="@("Open")">Open</MudSelectItem>
+                <MudSelectItem Value="@("Closed")">Closed</MudSelectItem>
+            </MudSelect>
+            <MudTextField T="int?" 
+                          Label="Assigned To (User ID)" 
+                          @bind-Value="_newDefect.AssignedTo" 
+                          Class="mt-4" 
+                          Validation="@(new Func<int?, string>(ValidateAssignedTo))" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@CancelCreate">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@CreateDefect" Disabled="!_formIsValid">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private List<DefectDto> _defects = new();
+    private CreateDefectDto _newDefect = new();
+    private bool _showCreateDialog;
+    private MudForm _form;
+    private bool _formIsValid;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _defects = await DefectService.GetDefectsAsync();
+    }
+
+    private void OpenCreateDialog() => _showCreateDialog = true;
+
+    private void CancelCreate()
+    {
+        _showCreateDialog = false;
+        _newDefect = new();
+        _form?.ResetValidation();
+    }
+
+    private async Task CreateDefect()
+    {
+        if (!_formIsValid) return;
+
+        try
+        {
+            await DefectService.CreateDefectAsync(_newDefect);
+            _defects = await DefectService.GetDefectsAsync();
+            _showCreateDialog = false;
+            _newDefect = new();
+            _form?.ResetValidation();
+            Snackbar.Add("Defect created", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Failed to create defect", Severity.Error);
+        }
+    }
+
+    private void EditDefect(int id) => Navigation.NavigateTo($"/defects/edit/{id}");
+
+    private async Task DeleteDefect(int id)
+    {
+        try
+        {
+            await DefectService.DeleteDefectAsync(id);
+            _defects = await DefectService.GetDefectsAsync();
+            Snackbar.Add("Defect deleted", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Failed to delete defect", Severity.Error);
+        }
+    }
+
+    private string ValidateTitle(string title)
+    {
+        if (string.IsNullOrWhiteSpace(title))
+            return "Title is required";
+        if (title.Length < 3)
+            return "Title must be at least 3 characters long";
+        return null;
+    }
+
+    private string ValidateAssignedTo(int? userId)
+    {
+        if (userId.HasValue && userId <= 0)
+            return "User ID must be a positive number";
+        return null;
+    }
+}

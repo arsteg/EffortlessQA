@@ -1,0 +1,88 @@
+﻿// EffortlessQA.Client/Pages/TestSuites.razor
+@using EffortlessQA.Client.Models
+@using EffortlessQA.Client.Services
+@using MudBlazor
+@inject TestSuiteService TestSuiteService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<MudGrid>
+    <MudItem xs="12">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@OpenCreateDialog">Create Test Suite</MudButton>
+    </MudItem>
+    <MudItem xs="12">
+        <MudTable Items="@_testSuites" Hover="true" Breakpoint="Breakpoint.Sm">
+            <HeaderContent>
+                <MudTh>Name</MudTh>
+                <MudTh>Description</MudTh>
+                <MudTh>Project</MudTh>
+                <MudTh>Actions</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Name</MudTd>
+                <MudTd>@context.Description</MudTd>
+                <MudTd>@context.ProjectId</MudTd>
+                <MudTd>
+                    <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => Navigation.NavigateTo($"/test-cases?suiteId={context.Id}"))">View Test Cases</MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="@(() => DeleteTestSuite(context.Id))">Delete</MudButton>
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudItem>
+</MudGrid>
+
+<MudDialog @bind-IsVisible="_showCreateDialog">
+    <DialogContent>
+        <MudTextField T="string" Label="Name" @bind-Value="_newTestSuite.Name" Required="true" />
+        <MudTextField T="string" Label="Description" @bind-Value="_newTestSuite.Description" Class="mt-4" />
+        <MudTextField T="int" Label="Project ID" @bind-Value="_newTestSuite.ProjectId" Required="true" Class="mt-4" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@CancelCreate">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@CreateTestSuite">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private List<TestSuiteDto> _testSuites = new();
+    private CreateTestSuiteDto _newTestSuite = new();
+    private bool _showCreateDialog;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _testSuites = await TestSuiteService.GetTestSuitesAsync();
+    }
+
+    private void OpenCreateDialog() => _showCreateDialog = true;
+    private void CancelCreate() => _showCreateDialog = false;
+
+    private async Task CreateTestSuite()
+    {
+        try
+        {
+            await TestSuiteService.CreateTestSuiteAsync(_newTestSuite);
+            _testSuites = await TestSuiteService.GetTestSuitesAsync();
+            _showCreateDialog = false;
+            _newTestSuite = new();
+            Snackbar.Add("Test Suite created", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Failed to create test suite", Severity.Error);
+        }
+    }
+
+    private async Task DeleteTestSuite(int id)
+    {
+        try
+        {
+            await TestSuiteService.DeleteTestSuiteAsync(id);
+            _testSuites = await TestSuiteService.GetTestSuitesAsync();
+            Snackbar.Add("Test Suite deleted", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Failed to delete test suite", Severity.Error);
+        }
+    }
+}

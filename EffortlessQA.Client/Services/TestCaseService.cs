@@ -1,5 +1,5 @@
 ﻿using System.Net.Http.Json;
-using EffortlessQA.Data.Dtos;
+using EffortlessQA.Client.Models;
 
 namespace EffortlessQA.Client.Services
 {
@@ -7,14 +7,27 @@ namespace EffortlessQA.Client.Services
     {
         private readonly HttpClient _httpClient;
 
-        public TestCaseService(HttpClient httpClient)
+        public TestCaseService(IHttpClientFactory httpClientFactory)
         {
-            _httpClient = httpClient;
+            _httpClient = httpClientFactory.CreateClient("EffortlessQA.Api");
         }
 
-        public async Task<List<TestCaseDto>> GetTestCasesAsync()
+        public async Task<List<TestCaseDto>> GetTestCasesAsync(int? suiteId = null)
         {
-            return await _httpClient.GetFromJsonAsync<List<TestCaseDto>>("/api/testcases");
+            var url = suiteId.HasValue ? $"/test-cases?suiteId={suiteId}" : "/test-cases";
+            return await _httpClient.GetFromJsonAsync<List<TestCaseDto>>(url) ?? new();
+        }
+
+        public async Task CreateTestCaseAsync(CreateTestCaseDto testCaseDto)
+        {
+            var response = await _httpClient.PostAsJsonAsync("/test-cases", testCaseDto);
+            response.EnsureSuccessStatusCode();
+        }
+
+        public async Task DeleteTestCaseAsync(int id)
+        {
+            var response = await _httpClient.DeleteAsync($"/test-cases/{id}");
+            response.EnsureSuccessStatusCode();
         }
     }
 }
