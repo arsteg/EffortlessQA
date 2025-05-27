@@ -1,4 +1,3 @@
-/* EffortlessQA.Client/wwwroot/css/app.css */
 :root {
     --mud-palette-primary: #007bff;
     --mud-palette-primary-text: #ffffff;
@@ -11,4 +10,8 @@ body {
 
 .mud-container {
     padding: 16px;
+}
+
+.mud-appbar {
+    background-color: var(--mud-palette-primary) !important;
 }

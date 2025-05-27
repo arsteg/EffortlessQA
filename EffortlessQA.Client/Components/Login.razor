@@ -1,4 +1,4 @@
-﻿// EffortlessQA.Client/Pages/Auth/Login.razor
+﻿@page "/login"
 @using EffortlessQA.Client.Models
 @using EffortlessQA.Client.Services
 @using MudBlazor
@@ -6,30 +6,80 @@
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 
-<MudCard Elevation="2" Class="pa-4 mx-auto" Style="max-width: 400px;">
-    <MudCardContent>
-        <MudText Typo="Typo.h5" GutterBottom="true">Login</MudText>
-        <MudTextField T="string" Label="Email" @bind-Value="_loginDto.Email" Required="true" />
-        <MudTextField T="string" Label="Password" @bind-Value="_loginDto.Password" InputType="InputType.Password" Required="true" Class="mt-4" />
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-4" OnClick="@LoginAsync">Login</MudButton>
-        <MudButton Variant="Variant.Text" Class="mt-2" OnClick="@(() => Navigation.NavigateTo("/register"))">Register</MudButton>
-        <MudButton Variant="Variant.Text" Class="mt-2" OnClick="@(() => Navigation.NavigateTo("/password-reset"))">Forgot Password?</MudButton>
-    </MudCardContent>
-</MudCard>
+<MudGrid Class="d-flex justify-center align-center" Style="min-height: 80vh;">
+    <MudItem xs="12" sm="6" md="4">
+        <MudCard Elevation="4" Class="pa-6">
+            <MudCardContent>
+                <MudText Typo="Typo.h5" GutterBottom="true" Align="Align.Center">Login</MudText>
+                <MudForm @ref="_form" @bind-IsValid="@_formIsValid">
+                    <MudTextField T="string"
+                                  Label="Email"
+                                  @bind-Value="_loginDto.Email"
+                                  Required="true"
+                                  RequiredError="Email is required"
+                                  Validation="@(new Func<string, string>(ValidateEmail))" />
+                    <MudTextField T="string"
+                                  Label="Password"
+                                  @bind-Value="_loginDto.Password"
+                                  InputType="InputType.Password"
+                                  Required="true"
+                                  RequiredError="Password is required"
+                                  Class="mt-4"
+                                  Validation="@(new Func<string, string>(ValidatePassword))" />
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Class="mt-4"
+                               OnClick="@LoginAsync"
+                               Disabled="!_formIsValid"
+                               FullWidth="true">Login</MudButton>
+                    <MudButton Variant="Variant.Text"
+                               Class="mt-2"
+                               OnClick="@(() => Navigation.NavigateTo("/register"))"
+                               FullWidth="true">Register</MudButton>
+                    <MudButton Variant="Variant.Text"
+                               Class="mt-2"
+                               OnClick="@(() => Navigation.NavigateTo("/password-reset"))"
+                               FullWidth="true">Forgot Password?</MudButton>
+                </MudForm>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+</MudGrid>
 
 @code {
     private LoginDto _loginDto = new();
+    private MudForm _form;
+    private bool _formIsValid;
 
     private async Task LoginAsync()
     {
+        if (!_formIsValid) return;
+
         try
         {
             await AuthService.LoginAsync(_loginDto);
             Navigation.NavigateTo("/dashboard");
+            Snackbar.Add("Login successful", Severity.Success);
         }
         catch (Exception ex)
         {
-            Snackbar.Add("Invalid credentials", Severity.Error);
+            Snackbar.Add($"Login failed: {ex.Message}", Severity.Error);
         }
+    }
+
+    private string ValidateEmail(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return "Email is required";
+        if (!System.Text.RegularExpressions.Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+            return "Invalid email format";
+        return null;
+    }
+
+    private string ValidatePassword(string password)
+    {
+        if (string.IsNullOrWhiteSpace(password))
+            return "Password is required";
+        return null;
     }
 }

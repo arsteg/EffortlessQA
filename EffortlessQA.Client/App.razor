@@ -1,5 +1,5 @@
-﻿// EffortlessQA.Client/App.razor
-<MudThemeProvider />
+﻿@using MudBlazor
+<MudThemeProvider Theme="@_customTheme" />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
@@ -9,9 +9,21 @@
         <FocusOnNavigate RouteData="@routeData" Selector="h1" />
     </Found>
     <NotFound>
-        <PageTitle>Not found</PageTitle>
+        <PageTitle>Not Found</PageTitle>
         <LayoutView Layout="typeof(MainLayout)">
             <p role="alert">Sorry, there's nothing at this address.</p>
         </LayoutView>
     </NotFound>
 </Router>
+
+@code {
+    private MudTheme _customTheme = new MudTheme
+    {
+            PaletteLight = new PaletteLight
+        {
+            Primary = "#007bff",
+            AppbarBackground = "#007bff",
+            DrawerBackground = "#ffffff"
+        }
+    };
+}
