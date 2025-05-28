@@ -105,14 +105,7 @@ namespace EffortlessQA.Data
             modelBuilder.Entity<Tenant>().HasIndex(t => t.Id);
             modelBuilder.Entity<User>().HasIndex(u => u.TenantId);
             modelBuilder.Entity<User>().HasIndex(u => u.Email).IsUnique();
-            modelBuilder
-                .Entity<UserProject>()
-                .HasIndex(u => new
-                {
-                    u.TenantId,
-                    u.UserId,
-                    u.ProjectId
-                });
+
             modelBuilder.Entity<Project>().HasIndex(p => p.TenantId);
             modelBuilder.Entity<Requirement>().HasIndex(r => new { r.TenantId, r.ProjectId });
             modelBuilder.Entity<TestSuite>().HasIndex(s => new { s.TenantId, s.ProjectId });

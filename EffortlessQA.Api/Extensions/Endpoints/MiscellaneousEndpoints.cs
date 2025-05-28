@@ -1,4 +1,5 @@
-﻿using EffortlessQA.Api.Services.Interface;
+﻿using System.Security.Claims;
+using EffortlessQA.Api.Services.Interface;
 using EffortlessQA.Data.Dtos;
 using Microsoft.AspNetCore.Mvc;
 
@@ -41,7 +42,7 @@ namespace EffortlessQA.Api.Extensions
                 )
                 .WithName("GetCountries")
                 .WithTags(MISCELLANEOUS_TAG)
-                .WithMetadata();
+                .WithMetadata(); // Replace .WithMetadata() with .WithOpenApi() for Swagger
 
             // POST /api/v1/tenants/{tenantId}/address
             app.MapPost(
@@ -50,14 +51,15 @@ namespace EffortlessQA.Api.Extensions
                         string tenantId,
                         [FromBody] CreateAddressDto dto,
                         IMiscellaneousService service,
-                        HttpContext context
+                        HttpContext httpContext // Use implicit HttpContext
                     ) =>
                     {
                         try
                         {
-                            var userTenantId = context.User.FindFirst("TenantId")?.Value;
+                            var userTenantId = httpContext.User.FindFirst("TenantId")?.Value;
                             if (string.IsNullOrEmpty(userTenantId) || userTenantId != tenantId)
                                 return Results.Unauthorized();
+
                             var address = await service.CreateTenantAddressAsync(tenantId, dto);
                             return Results.Ok(
                                 new ApiResponse<AddressDto>
@@ -94,14 +96,15 @@ namespace EffortlessQA.Api.Extensions
                         string tenantId,
                         [FromBody] UpdateAddressDto dto,
                         IMiscellaneousService service,
-                        HttpContext context
+                        HttpContext httpContext
                     ) =>
                     {
                         try
                         {
-                            var userTenantId = context.User.FindFirst("TenantId")?.Value;
+                            var userTenantId = httpContext.User.FindFirst("TenantId")?.Value;
                             if (string.IsNullOrEmpty(userTenantId) || userTenantId != tenantId)
                                 return Results.Unauthorized();
+
                             var address = await service.UpdateTenantAddressAsync(tenantId, dto);
                             return Results.Ok(
                                 new ApiResponse<AddressDto>
@@ -134,13 +137,14 @@ namespace EffortlessQA.Api.Extensions
             // GET /api/v1/setup/wizard
             app.MapGet(
                     "/api/v1/setup/wizard",
-                    async (IMiscellaneousService service, HttpContext context) =>
+                    async (IMiscellaneousService service, HttpContext httpContext) =>
                     {
                         try
                         {
-                            var tenantId = context.User.FindFirst("TenantId")?.Value;
+                            var tenantId = httpContext.User.FindFirst("TenantId")?.Value;
                             if (string.IsNullOrEmpty(tenantId))
                                 return Results.Unauthorized();
+
                             var wizardData = await service.GetSetupWizardDataAsync(tenantId);
                             return Results.Ok(
                                 new ApiResponse<SetupWizardDto>
@@ -169,6 +173,7 @@ namespace EffortlessQA.Api.Extensions
                     }
                 )
                 .WithName("GetSetupWizard")
+                .RequireAuthorization("AdminOnly") // Add authorization for consistency
                 .WithTags(MISCELLANEOUS_TAG)
                 .WithMetadata();
         }

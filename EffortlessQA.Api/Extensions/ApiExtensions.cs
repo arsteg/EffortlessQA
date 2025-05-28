@@ -26,14 +26,20 @@ namespace EffortlessQA.Api.Extensions
 
         public static void MapApiEndpoints(this WebApplication app)
         {
+            MapAuditLogEndpoints(app);
             MapAuthEndpoints(app);
+            MapDefectEndpoints(app);
+            MapMiscellaneousEndpoints(app);
+            MapPermissionRoleEndpoints(app);
             MapProjectEndpoints(app);
+            MapReportingEndpoints(app);
             MapRequirementEndpoints(app);
-            MapTestSuiteEndpoints(app);
-            //MapTestCaseEndpoints(app);
+            MapSearchEndpoints(app);
+            MapTestCaseEndpoints(app);
+            MapTestFolderEndpoints(app);
             MapTestRunEndpoints(app);
             MapTestRunResultEndpoints(app);
-            MapDefectEndpoints(app);
+            MapTestSuiteEndpoints(app);
         }
     }
 }

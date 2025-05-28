@@ -19,11 +19,18 @@ namespace EffortlessQA.Client.Services
 
         public async Task LoginAsync(LoginDto loginDto)
         {
-            var response = await _httpClient.PostAsJsonAsync("/auth/login", loginDto);
-            response.EnsureSuccessStatusCode();
-            var user = await response.Content.ReadFromJsonAsync<UserDto>();
-            _isAuthenticated = true;
-            _isAdmin = true; // Simplified; check roles from JWT in real implementation
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync("api/v1/auth/login", loginDto);
+                response.EnsureSuccessStatusCode();
+                var user = await response.Content.ReadFromJsonAsync<UserDto>();
+                _isAuthenticated = true;
+                _isAdmin = true; // Simplified; check roles from JWT in real implementation
+            }
+            catch (Exception ex)
+            {
+                _isAuthenticated = false;
+            }
         }
 
         public async Task RegisterAsync(RegisterDto registerDto)

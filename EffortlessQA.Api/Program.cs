@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text;
 using EffortlessQA.Api.Extensions;
+using EffortlessQA.Api.Extensions.Endpoints;
 using EffortlessQA.Api.Middleware;
 using EffortlessQA.Api.Services.Implementation;
 using EffortlessQA.Api.Services.Interface;
@@ -83,6 +84,16 @@ builder.Services.AddScoped<IDefectService, DefectService>();
 builder.Services.AddScoped<IRequirementService, RequirementService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IMiscellaneousService, MiscellaneousService>();
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+builder.Services.AddScoped<IPermissionRoleService, PermissionRoleService>();
+builder.Services.AddScoped<IReportingService, ReportingService>();
+builder.Services.AddScoped<ISearchService, SearchService>();
+builder.Services.AddScoped<ITenantService, TenantService>();
+builder.Services.AddScoped<ITestCaseService, TestCaseService>();
+builder.Services.AddScoped<ITestRunResultService, TestRunResultService>();
+builder.Services.AddScoped<ITestFolderService, TestFolderService>();
+
 builder.Services.AddHttpContextAccessor();
 
 // CORS

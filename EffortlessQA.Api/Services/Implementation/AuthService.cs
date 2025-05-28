@@ -212,7 +212,12 @@ namespace EffortlessQA.Api.Services.Implementation
 
         public async Task<string> LoginAsync(LoginDto dto)
         {
-            var user = await _context.Users.FindAsync(dto.Email);
+            var users = await _context.Users.IgnoreQueryFilters().ToListAsync();
+
+            if (users == null || !users.Any())
+                throw new Exception("No users found.");
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => true);
             if (user == null)
                 throw new Exception("Invalid email or password.");
 

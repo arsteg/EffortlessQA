@@ -1,59 +1,104 @@
-﻿
-@inherits LayoutComponentBase
+﻿@inherits LayoutComponentBase
 @using EffortlessQA.Client.Services
 @using MudBlazor
 @inject NavigationManager Navigation
 @inject AuthService AuthService
 
 <MudLayout>
-    <MudAppBar Elevation="1">
+    <!-- Top Bar -->
+    <MudAppBar Elevation="2" Dense="true">
+        <!-- Hamburger Menu for Sidebar -->
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
-        <MudText Typo="Typo.h5" Class="ml-3">EffortlessQA</MudText>
+        
+        <!-- Logo -->
+        <MudText Typo="Typo.h6" Class="ml-3">EffortlessQA</MudText>
+        
+        <!-- Global Search -->
         <MudSpacer />
         <GlobalSearch />
+        
+        <!-- Tenant Switcher (for multi-tenant admins) -->
+        @if (IsAuthenticated && IsAdmin)
+        {
+            <MudSelect T="string" Label="Tenant" Value="@SelectedTenant" ValueChanged="@OnTenantChanged" Class="mr-3" Dense="true">
+                @foreach (var tenant in Tenants)
+                {
+                    <MudSelectItem Value="@tenant">@tenant</MudSelectItem>
+                }
+            </MudSelect>
+        }
+        
+        <!-- User Profile Dropdown -->
         @if (IsAuthenticated)
         {
-            <MudMenu Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit">
+            <MudMenu Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit" Direction="Direction.Right" Dense="true">
+                <MudMenuItem OnClick="@ViewProfile">Profile</MudMenuItem>
                 <MudMenuItem OnClick="@Logout">Logout</MudMenuItem>
             </MudMenu>
         }
     </MudAppBar>
-    <MudDrawer @bind-Open="@_drawerOpen" Elevation="1">
+
+    <!-- Collapsible Sidebar -->
+    <MudDrawer @bind-Open="@_drawerOpen" Elevation="2" ClipMode="DrawerClipMode.Docked" Width="200px" Breakpoint="Breakpoint.Md">
         <MudNavMenu>
             @if (IsAuthenticated)
             {
-                <MudNavLink Href="/dashboard" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
-                <MudNavLink Href="/projects" Icon="@Icons.Material.Filled.Work">Projects</MudNavLink>
-                <MudNavLink Href="/test-suites" Icon="@Icons.Material.Filled.Folder">Test Suites</MudNavLink>
-                <MudNavLink Href="/test-cases" Icon="@Icons.Material.Filled.Description">Test Cases</MudNavLink>
-                <MudNavLink Href="/test-runs" Icon="@Icons.Material.Filled.PlayArrow">Test Runs</MudNavLink>
-                <MudNavLink Href="/defects" Icon="@Icons.Material.Filled.BugReport">Defects</MudNavLink>
-                <MudNavLink Href="/requirements" Icon="@Icons.Material.Filled.List">Requirements</MudNavLink>
-                <MudNavLink Href="/reports" Icon="@Icons.Material.Filled.BarChart">Reports</MudNavLink>
+                <MudNavLink Href="/dashboard" Icon="@Icons.Material.Filled.Dashboard" Match="NavLinkMatch.Prefix">Dashboard</MudNavLink>
+                <MudNavLink Href="/projects" Icon="@Icons.Material.Filled.Work" Match="NavLinkMatch.Prefix">Projects</MudNavLink>
+                <MudNavLink Href="/requirements" Icon="@Icons.Material.Filled.List" Match="NavLinkMatch.Prefix">Requirements</MudNavLink>
+                <MudNavLink Href="/test-suites" Icon="@Icons.Material.Filled.Folder" Match="NavLinkMatch.Prefix">Test Suites</MudNavLink>
+                <MudNavLink Href="/test-cases" Icon="@Icons.Material.Filled.Description" Match="NavLinkMatch.Prefix">Test Cases</MudNavLink>
+                <MudNavLink Href="/test-runs" Icon="@Icons.Material.Filled.PlayArrow" Match="NavLinkMatch.Prefix">Test Runs</MudNavLink>
+                <MudNavLink Href="/defects" Icon="@Icons.Material.Filled.BugReport" Match="NavLinkMatch.Prefix">Defects</MudNavLink>
+                <MudNavLink Href="/reports" Icon="@Icons.Material.Filled.BarChart" Match="NavLinkMatch.Prefix">Reports</MudNavLink>
+                <MudNavLink Href="/search" Icon="@Icons.Material.Filled.Search" Match="NavLinkMatch.Prefix">Search</MudNavLink>
                 @if (IsAdmin)
                 {
-                    <MudNavLink Href="/tenant" Icon="@Icons.Material.Filled.Business">Tenant</MudNavLink>
-                    <MudNavLink Href="/permissions" Icon="@Icons.Material.Filled.Security">Permissions</MudNavLink>
+                    <MudNavGroup Title="Settings" Icon="@Icons.Material.Filled.Settings" Expanded="false">
+                        <MudNavLink Href="/tenant" Icon="@Icons.Material.Filled.Business" Match="NavLinkMatch.Prefix">Tenant</MudNavLink>
+                        <MudNavLink Href="/permissions" Icon="@Icons.Material.Filled.Security" Match="NavLinkMatch.Prefix">Permissions</MudNavLink>
+                        <MudNavLink Href="/users" Icon="@Icons.Material.Filled.People" Match="NavLinkMatch.Prefix">Users</MudNavLink>
+                    </MudNavGroup>
                 }
             }
             else
             {
-                <MudNavLink Href="/login" Icon="@Icons.Material.Filled.Login">Login</MudNavLink>
-                <MudNavLink Href="/register" Icon="@Icons.Material.Filled.AppRegistration">Register</MudNavLink>
+                <MudNavLink Href="/login" Icon="@Icons.Material.Filled.Login" Match="NavLinkMatch.Prefix">Login</MudNavLink>
+                <MudNavLink Href="/register" Icon="@Icons.Material.Filled.AppRegistration" Match="NavLinkMatch.Prefix">Register</MudNavLink>
+                <MudNavLink Href="/password-reset" Icon="@Icons.Material.Filled.Lock" Match="NavLinkMatch.Prefix">Reset Password</MudNavLink>
             }
         </MudNavMenu>
     </MudDrawer>
-    <MudMainContent>
-        <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
-            @Body
+
+    <!-- Main Content Area -->
+    <MudMainContent Class="pt-2">
+        <!-- Breadcrumbs -->
+        <MudContainer MaxWidth="MaxWidth.Large" Class="mb-2">
+            <Breadcrumb />
+        </MudContainer>
+        
+        <!-- Content -->
+        <MudContainer MaxWidth="MaxWidth.Large" Class="mt-2">
+            <MudPaper Elevation="1" Class="pa-4">
+                @Body
+            </MudPaper>
         </MudContainer>
     </MudMainContent>
+
+    <!-- Footer -->
+    <MudPaper Elevation="1" Class="pa-2 mt-4">
+        <MudText Typo="Typo.caption" Align="Align.Center">
+            EffortlessQA v1.0.0 | <MudLink Href="https://api.effortlessqa.com/docs" Target="_blank">API Docs</MudLink>
+        </MudText>
+    </MudPaper>
 </MudLayout>
 
 @code {
     private bool _drawerOpen = true;
     private bool IsAuthenticated => AuthService.IsAuthenticated;
     private bool IsAdmin => AuthService.IsAdmin;
+    private string SelectedTenant { get; set; } = "Default Tenant";
+    private List<string> Tenants { get; set; } = new List<string> { "Default Tenant", "Org A", "Org B" }; // Mock data, replace with API call
 
     private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
 
@@ -61,5 +106,17 @@
     {
         await AuthService.LogoutAsync();
         Navigation.NavigateTo("/login");
+    }
+
+    private void ViewProfile()
+    {
+        Navigation.NavigateTo("/profile");
+    }
+
+    private async Task OnTenantChanged(string tenant)
+    {
+        SelectedTenant = tenant;
+        // TODO: Call API to switch tenant context
+        await Task.CompletedTask;
     }
 }
