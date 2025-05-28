@@ -19,7 +19,23 @@ namespace EffortlessQA.Data
             : base(options)
         {
             _httpContextAccessor = httpContextAccessor;
-            _tenantId = httpContextAccessor?.HttpContext?.User?.FindFirst("tenantId")?.Value;
+
+            // Check if the current request is for the login endpoint
+            var endpoint = _httpContextAccessor?.HttpContext?.Request.Path.Value;
+            if (
+                endpoint != null
+                && endpoint.Contains("/api/auth/login", StringComparison.OrdinalIgnoreCase)
+            )
+            {
+                _tenantId = null; // Bypass tenant filter for login
+            }
+            else
+            {
+                // Try to get TenantId from cookie first, then fall back to JWT
+                _tenantId =
+                    _httpContextAccessor?.HttpContext?.Request.Cookies["TenantId"]
+                    ?? _httpContextAccessor?.HttpContext?.User?.FindFirst("tenantId")?.Value;
+            }
         }
 
         public DbSet<Tenant> Tenants { get; set; }

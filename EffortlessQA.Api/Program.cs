@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Security.Claims;
 using System.Text;
 using EffortlessQA.Api.Extensions;
 using EffortlessQA.Api.Extensions.Endpoints;
@@ -38,8 +39,16 @@ builder
     )
     .AddHttpContextAccessor();
 
-// JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");
+var keyString = jwtSettings["Key"];
+var keyBytes = Encoding.UTF8.GetBytes(keyString ?? "");
+if (keyBytes.Length < 16)
+{
+    throw new InvalidOperationException(
+        $"JWT key must be at least 16 bytes (128 bits) for HS256. Current length: {keyBytes.Length} bytes."
+    );
+}
+
 builder
     .Services.AddAuthentication(options =>
     {
@@ -56,7 +65,9 @@ builder
             ValidateIssuerSigningKey = true,
             ValidIssuer = jwtSettings["Issuer"],
             ValidAudience = jwtSettings["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]))
+            IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
+            NameClaimType = ClaimTypes.NameIdentifier,
+            RoleClaimType = ClaimTypes.Role
         };
     });
 
@@ -105,7 +116,6 @@ builder.Services.AddCors(options =>
     );
 });
 
-// Swagger
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -158,7 +168,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseCors("AllowSpecificOrigins");
 
-// app.UseMiddleware<TenantMiddleware>(); // Temporarily disabled
+//app.UseMiddleware<TenantValidationMiddleware>(); // Temporarily disabled
 app.UseMiddleware<RequestLoggingMiddleware>();
 
 // Global exception handler

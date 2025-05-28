@@ -8,6 +8,8 @@ using EffortlessQA.Data.Dtos;
 using EffortlessQA.Data.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Serilog;
 
 namespace EffortlessQA.Api.Services.Implementation
 {
@@ -16,11 +18,13 @@ namespace EffortlessQA.Api.Services.Implementation
         private readonly IEmailService _emailService;
         private readonly EffortlessQAContext _context;
         private readonly IConfiguration _configuration;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public AuthService(
             EffortlessQAContext context,
             IConfiguration configuration,
-            IEmailService emailService
+            IEmailService emailService,
+            IHttpContextAccessor httpContextAccessor
         )
         {
             //_userManager = userManager;
@@ -28,6 +32,7 @@ namespace EffortlessQA.Api.Services.Implementation
             _context = context;
             _configuration = configuration;
             _emailService = emailService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<UserDto> RegisterAsync(RegisterDto dto)
@@ -212,20 +217,29 @@ namespace EffortlessQA.Api.Services.Implementation
 
         public async Task<string> LoginAsync(LoginDto dto)
         {
-            var users = await _context.Users.IgnoreQueryFilters().ToListAsync();
-
-            if (users == null || !users.Any())
-                throw new Exception("No users found.");
-
-            var user = await _context.Users.FirstOrDefaultAsync(u => true);
-            if (user == null)
+            var user = await _context
+                .Users.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(u => u.Email == dto.Email && !u.IsDeleted);
+            if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
                 throw new Exception("Invalid email or password.");
 
-            //var result = await _signInManager.PasswordSignInAsync(user, dto.Password, false, false);
-            //if (!result.Succeeded)
-            //    throw new Exception("Invalid email or password.");
+            // Generate JWT token
+            var token = GenerateJwtToken(user);
 
-            return GenerateJwtToken(user);
+            // Set TenantId in a secure cookie
+            _httpContextAccessor?.HttpContext?.Response.Cookies.Append(
+                "TenantId",
+                user.TenantId,
+                new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.Strict,
+                    Expires = DateTimeOffset.UtcNow.AddHours(1) // Match JWT expiration
+                }
+            );
+
+            return token;
         }
 
         public async Task<string> OAuthLoginAsync(OAuthLoginDto dto, string provider)
@@ -464,26 +478,47 @@ namespace EffortlessQA.Api.Services.Implementation
 
         private string GenerateJwtToken(User user)
         {
+            var keyString = _configuration["Jwt:Key"];
+            if (string.IsNullOrEmpty(keyString))
+            {
+                Log.Error("JWT key is null or empty in configuration.");
+                throw new InvalidOperationException("JWT key is null or empty in configuration.");
+            }
+
+            var keyBytes = Encoding.UTF8.GetBytes(keyString);
+            if (keyBytes.Length < 32) // Enforce 256-bit (32-byte) minimum
+            {
+                Log.Error(
+                    "JWT key is too short: {KeyLength} bytes, expected at least 32 bytes.",
+                    keyBytes.Length
+                );
+                throw new InvalidOperationException(
+                    $"JWT key is too short: {keyBytes.Length} bytes, expected at least 32 bytes."
+                );
+            }
+
+            Log.Information("JWT key length: {KeyLength} bytes", keyBytes.Length); // Debug log
+
             var claims = new[]
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                new Claim("TenantId", user.TenantId),
+                new Claim("tenantId", user.TenantId),
                 new Claim(
                     ClaimTypes.Role,
                     user.Roles.FirstOrDefault()?.RoleType.ToString() ?? RoleType.Tester.ToString()
                 )
             };
 
-            //var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
-            //var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var key = new SymmetricSecurityKey(keyBytes);
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],
                 audience: _configuration["Jwt:Audience"],
                 claims: claims,
                 expires: DateTime.Now.AddHours(1),
-                signingCredentials: null // creds
+                signingCredentials: creds
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
