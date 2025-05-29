@@ -28,5 +28,24 @@ namespace EffortlessQA.Client.Services
             var response = await _httpClient.DeleteAsync($"/projects/{id}");
             response.EnsureSuccessStatusCode();
         }
+
+        public async Task<PagedResult<ProjectDto>> GetPagedProjectsAsync(ProjectQuery query)
+        {
+            var url =
+                $"/projects/paged?searchTerm={Uri.EscapeDataString(query.SearchTerm ?? "")}"
+                + $"&status={Uri.EscapeDataString(query.Status ?? "")}"
+                + $"&sortBy={query.SortBy}&sortDirection={query.SortDirection}"
+                + $"&page={query.Page}&pageSize={query.PageSize}";
+            return await _httpClient.GetFromJsonAsync<PagedResult<ProjectDto>>(url) ?? new();
+        }
+
+        public async Task UpdateProjectAsync(ProjectDto projectDto)
+        {
+            var response = await _httpClient.PutAsJsonAsync(
+                $"/projects/{projectDto.Id}",
+                projectDto
+            );
+            response.EnsureSuccessStatusCode();
+        }
     }
 }
