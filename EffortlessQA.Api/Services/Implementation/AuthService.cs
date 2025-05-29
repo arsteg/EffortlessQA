@@ -41,7 +41,7 @@ namespace EffortlessQA.Api.Services.Implementation
             if (
                 string.IsNullOrWhiteSpace(dto.Email)
                 || string.IsNullOrWhiteSpace(dto.Password)
-                || string.IsNullOrWhiteSpace(dto.Name)
+                || string.IsNullOrWhiteSpace(dto.FirstName)
                 || dto.Tenant == null
             )
                 throw new Exception("Email, password, name, and tenant details are required.");
@@ -91,7 +91,8 @@ namespace EffortlessQA.Api.Services.Implementation
                 {
                     Id = Guid.NewGuid(),
                     Email = dto.Email,
-                    Name = dto.Name,
+                    FirstName = dto.FirstName,
+                    LastName = dto.LastName,
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
                     TenantId = tenantId,
                     IsEmailConfirmed = false,
@@ -153,7 +154,7 @@ namespace EffortlessQA.Api.Services.Implementation
                 // Send confirmation emails
                 await _emailService.SendRegistrationConfirmationAsync(
                     dto.Email,
-                    dto.Name,
+                    dto.FirstName,
                     userConfirmationLink
                 );
                 await _emailService.SendTenantConfirmationAsync(
@@ -191,7 +192,7 @@ namespace EffortlessQA.Api.Services.Implementation
                     //ProjectId = Guid.Empty,
                     TenantId = tenantId,
                     Details = JsonDocument.Parse(
-                        JsonSerializer.Serialize(new { Email = user.Email, Name = user.Name })
+                        JsonSerializer.Serialize(new { Email = user.Email, Name = user.FirstName })
                     ),
                     CreatedAt = DateTime.UtcNow
                 };
@@ -204,7 +205,8 @@ namespace EffortlessQA.Api.Services.Implementation
                 {
                     Id = user.Id,
                     Email = user.Email,
-                    Name = user.Name,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
                     TenantId = user.TenantId
                 };
             }
@@ -253,7 +255,7 @@ namespace EffortlessQA.Api.Services.Implementation
                 user = new User
                 {
                     Email = userInfo.Email,
-                    Name = userInfo.Name,
+                    FirstName = userInfo.Name,
                     TenantId = dto.TenantId,
                     OAuthProvider = provider,
                     OAuthId = userInfo.OAuthId
@@ -282,7 +284,8 @@ namespace EffortlessQA.Api.Services.Implementation
             {
                 Id = user.Id,
                 Email = user.Email,
-                Name = user.Name,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
                 TenantId = user.TenantId
             };
         }
@@ -295,7 +298,7 @@ namespace EffortlessQA.Api.Services.Implementation
             if (user == null)
                 throw new Exception("User not found.");
 
-            user.Name = dto.Name ?? user.Name;
+            user.FirstName = dto.Name ?? user.FirstName;
             user.Email = dto.Email ?? user.Email;
             user.ModifiedAt = DateTime.UtcNow;
             user.ModifiedBy = userId;
@@ -306,7 +309,8 @@ namespace EffortlessQA.Api.Services.Implementation
             {
                 Id = user.Id,
                 Email = user.Email,
-                Name = user.Name,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
                 TenantId = user.TenantId
             };
         }
@@ -357,7 +361,7 @@ namespace EffortlessQA.Api.Services.Implementation
                 user = new User
                 {
                     Email = dto.Email,
-                    Name = dto.Name,
+                    FirstName = dto.Name,
                     TenantId = tenantId
                 };
                 var tempPassword = GenerateTempPassword();
@@ -395,7 +399,8 @@ namespace EffortlessQA.Api.Services.Implementation
             {
                 Id = user.Id,
                 Email = user.Email,
-                Name = user.Name,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
                 TenantId = user.TenantId
             };
         }
@@ -412,18 +417,18 @@ namespace EffortlessQA.Api.Services.Implementation
 
             if (!string.IsNullOrEmpty(filter))
             {
-                query = query.Where(u => u.Name.Contains(filter) || u.Email.Contains(filter));
+                query = query.Where(u => u.FirstName.Contains(filter) || u.Email.Contains(filter));
             }
 
             if (!string.IsNullOrEmpty(sort))
             {
                 query = sort.ToLower() switch
                 {
-                    "name" => query.OrderBy(u => u.Name),
-                    "-name" => query.OrderByDescending(u => u.Name),
+                    "name" => query.OrderBy(u => u.FirstName),
+                    "-name" => query.OrderByDescending(u => u.FirstName),
                     "email" => query.OrderBy(u => u.Email),
                     "-email" => query.OrderByDescending(u => u.Email),
-                    _ => query.OrderBy(u => u.Name)
+                    _ => query.OrderBy(u => u.FirstName)
                 };
             }
 
@@ -435,7 +440,8 @@ namespace EffortlessQA.Api.Services.Implementation
                 {
                     Id = u.Id,
                     Email = u.Email,
-                    Name = u.Name,
+                    FirstName = u.FirstName,
+                    LastName = u.LastName,
                     TenantId = u.TenantId
                 })
                 .ToListAsync();

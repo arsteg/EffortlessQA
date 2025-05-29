@@ -15,7 +15,8 @@ namespace EffortlessQA.Data.Entities
         public string Email { get; set; }
 
         [Required, MaxLength(100)]
-        public string Name { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
 
         [MaxLength(255)]
         public string? PasswordHash { get; set; } // Nullable for OAuth users

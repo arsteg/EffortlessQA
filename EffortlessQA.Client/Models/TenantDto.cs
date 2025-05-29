@@ -2,8 +2,13 @@
 {
     public class TenantDto
     {
-        public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Address { get; set; } = string.Empty;
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public string? Description { get; set; }
+        public string? ContactPerson { get; set; }
+        public string? BillingContactEmail { get; set; }
+        public string Email { get; set; }
+
+        public long? Phone { get; set; }
     }
 }

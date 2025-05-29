@@ -8,7 +8,7 @@ namespace EffortlessQA.Api.Validators
         public RegisterDtoValidator()
         {
             RuleFor(x => x.Email).NotEmpty().EmailAddress().MaximumLength(255);
-            RuleFor(x => x.Name).NotEmpty().MaximumLength(100);
+            RuleFor(x => x.FirstName).NotEmpty().MaximumLength(100);
             RuleFor(x => x.Password).NotEmpty().MinimumLength(8).MaximumLength(255);
             //RuleFor(x => x.TenantId).NotEmpty().MaximumLength(50);
         }

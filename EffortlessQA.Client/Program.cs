@@ -15,7 +15,7 @@ builder.Services.AddHttpClient(
     client =>
     {
         client.BaseAddress = new Uri(
-            builder.Configuration["ApiBaseUrl"] ?? "https://localhost:7196/"
+            builder.Configuration["ApiBaseUrl"] ?? "https://localhost:7196/api/v1/auth/"
         );
     }
 );

@@ -913,22 +913,26 @@ namespace EffortlessQA.Data.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("IsEmailConfirmed")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime?>("ModifiedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("ModifiedBy")
                         .HasColumnType("uuid");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("OAuthId")
                         .HasMaxLength(255)
@@ -1034,8 +1038,6 @@ namespace EffortlessQA.Data.Migrations
 
                     b.HasIndex("UserId", "ProjectId")
                         .IsUnique();
-
-                    b.HasIndex("TenantId", "UserId", "ProjectId");
 
                     b.ToTable("UserProjects");
                 });

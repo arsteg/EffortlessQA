@@ -1,5 +1,4 @@
-﻿// EffortlessQA.Client/Pages/Auth/Register.razor
-@page "/register"
+﻿@page "/register"
 @using EffortlessQA.Client.Models
 @using EffortlessQA.Client.Services
 @using MudBlazor
@@ -10,12 +9,21 @@
 <MudCard Elevation="2" Class="pa-4 mx-auto" Style="max-width: 400px;">
     <MudCardContent>
         <MudText Typo="Typo.h5" GutterBottom="true">Register</MudText>
+        <!-- User Information -->
         <MudTextField T="string" Label="Email" @bind-Value="_registerDto.Email" Required="true" />
+        <MudTextField T="string" Label="First Name" @bind-Value="_registerDto.FirstName" Required="true" />
+        <MudTextField T="string" Label="Last Name" @bind-Value="_registerDto.LastName" Required="true" />
+       
         <MudTextField T="string" Label="Password" @bind-Value="_registerDto.Password" InputType="InputType.Password" Required="true" Class="mt-4" />
-        <MudTextField T="string" Label="First Name" @bind-Value="_registerDto.FirstName" Class="mt-4" />
-        <MudTextField T="string" Label="Last Name" @bind-Value="_registerDto.LastName" Class="mt-4" />
-        <MudTextField T="string" Label="Tenant Name" @bind-Value="_registerDto.TenantName" Class="mt-4" />
-        <MudTextField T="string" Label="Tenant Address" @bind-Value="_registerDto.TenantAddress" Class="mt-4" />
+
+        <!-- Tenant Information -->
+        <MudTextField T="string" Label="Tenant Name" @bind-Value="_registerDto.Tenant.Name" Required="true" Class="mt-4" />
+        <MudTextField T="string" Label="Tenant Description" @bind-Value="_registerDto.Tenant.Description" Class="mt-4" />
+        <MudTextField T="string" Label="Contact Person" @bind-Value="_registerDto.Tenant.ContactPerson" Class="mt-4" />
+        <MudTextField T="string" Label="Billing Contact Email" @bind-Value="_registerDto.Tenant.BillingContactEmail" Class="mt-4" />
+        <MudTextField T="string" Label="Tenant Email" @bind-Value="_registerDto.Tenant.Email" Class="mt-4" />
+
+        <!-- Buttons -->
         <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-4" OnClick="@RegisterAsync">Register</MudButton>
         <MudButton Variant="Variant.Text" Class="mt-2" OnClick="@(() => Navigation.NavigateTo("/login"))">Login</MudButton>
     </MudCardContent>

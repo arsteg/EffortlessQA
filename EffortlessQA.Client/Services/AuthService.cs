@@ -21,7 +21,7 @@ namespace EffortlessQA.Client.Services
         {
             try
             {
-                var response = await _httpClient.PostAsJsonAsync("api/v1/auth/login", loginDto);
+                var response = await _httpClient.PostAsJsonAsync("login", loginDto);
                 response.EnsureSuccessStatusCode();
                 var user = await response.Content.ReadFromJsonAsync<UserDto>();
                 _isAuthenticated = true;
@@ -35,8 +35,12 @@ namespace EffortlessQA.Client.Services
 
         public async Task RegisterAsync(RegisterDto registerDto)
         {
-            var response = await _httpClient.PostAsJsonAsync("/auth/register", registerDto);
-            response.EnsureSuccessStatusCode();
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync("register", registerDto);
+                response.EnsureSuccessStatusCode();
+            }
+            catch (Exception ex) { }
         }
 
         public async Task LogoutAsync()

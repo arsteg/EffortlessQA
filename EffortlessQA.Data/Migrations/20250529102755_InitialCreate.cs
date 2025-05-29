@@ -280,7 +280,8 @@ namespace EffortlessQA.Data.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Email = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    FirstName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    LastName = table.Column<string>(type: "text", nullable: false),
                     PasswordHash = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     OAuthProvider = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     OAuthId = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
@@ -767,11 +768,6 @@ namespace EffortlessQA.Data.Migrations
                 name: "IX_UserProjects_ProjectId",
                 table: "UserProjects",
                 column: "ProjectId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_UserProjects_TenantId_UserId_ProjectId",
-                table: "UserProjects",
-                columns: new[] { "TenantId", "UserId", "ProjectId" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserProjects_UserId_ProjectId",
