@@ -2,6 +2,7 @@
 @page "/defects"
 @using EffortlessQA.Client.Services
 @using EffortlessQA.Client.Models
+@using EffortlessQA.Data.Dtos
 @using MudBlazor
 @inject DefectService DefectService
 @inject NavigationManager Navigation
@@ -54,14 +55,14 @@
                 <MudSelectItem Value="@("Medium")">Medium</MudSelectItem>
                 <MudSelectItem Value="@("Low")">Low</MudSelectItem>
             </MudSelect>
-            <MudSelect T="string" 
+         @*    <MudSelect T="string" 
                        Label="Status" 
                        @bind-Value="_newDefect.Status" 
                        Required="true" 
                        RequiredError="Status is required">
                 <MudSelectItem Value="@("Open")">Open</MudSelectItem>
                 <MudSelectItem Value="@("Closed")">Closed</MudSelectItem>
-            </MudSelect>
+            </MudSelect> *@
             <MudTextField T="int?" 
                           Label="Assigned To (User ID)" 
                           @bind-Value="_newDefect.AssignedTo" 
@@ -115,9 +116,9 @@
         }
     }
 
-    private void EditDefect(int id) => Navigation.NavigateTo($"/defects/edit/{id}");
+    private void EditDefect(Guid id) => Navigation.NavigateTo($"/defects/edit/{id}");
 
-    private async Task DeleteDefect(int id)
+    private async Task DeleteDefect(Guid id)
     {
         try
         {

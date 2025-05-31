@@ -2,6 +2,7 @@
 @using EffortlessQA.Client.Components.dialogs
 @using EffortlessQA.Client.Models
 @using EffortlessQA.Client.Services
+@using EffortlessQA.Data.Dtos
 @using MudBlazor
 @using System.Net.Http.Json
 @inject ProjectService ProjectService
@@ -231,7 +232,7 @@
     private MudForm _form;
     private bool _formIsValid;
     private string _userIds = string.Empty;
-    private Dictionary<int, ProjectDto> _originalProjects = new();
+    private Dictionary<Guid, ProjectDto> _originalProjects = new();
     private bool _autoRefreshEnabled;
     private CancellationTokenSource _autoRefreshCts = new();
 
@@ -285,8 +286,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadProjects();
-        StartAutoRefresh();
+        //await LoadProjects();
+        //StartAutoRefresh();
     }
 
     // protected override void Dispose(bool disposing)
@@ -322,18 +323,22 @@
         _isLoading = true;
         try
         {
-            var query = new ProjectQuery
-            {
-                SearchTerm = _searchTerm,
-                Status = _filterStatus,
-                SortBy = state.SortLabel,
-                SortDirection = state.SortDirection == SortDirection.Ascending ? "asc" : "desc",
-                Page = state.Page + 1,
-                PageSize = state.PageSize
-            };
+            
+            _projects = await ProjectService.GetProjectsAsync();
 
-            var result = await ProjectService.GetPagedProjectsAsync(query);
-            return new TableData<ProjectDto> { TotalItems = result.Data.TotalCount, Items = result.Data.Items };
+            // var query = new ProjectQuery
+            // {
+            //     SearchTerm = _searchTerm,
+            //     Status = _filterStatus,
+            //     SortBy = state.SortLabel,
+            //     SortDirection = state.SortDirection == SortDirection.Ascending ? "asc" : "desc",
+            //     Page = state.Page + 1,
+            //     PageSize = state.PageSize
+            // };
+
+            //var result = await ProjectService.GetPagedProjectsAsync(query);
+            //return new TableData<ProjectDto> { TotalItems = result.Data.TotalCount, Items = result.Data.Items };
+            return new TableData<ProjectDto> { TotalItems = 7, Items = _projects };
         }
         catch (Exception ex)
         {
@@ -368,9 +373,9 @@
 
         try
         {
-            _newProject.UserIds = string.IsNullOrWhiteSpace(_userIds)
-                ? new List<int>()
-                : _userIds.Split(',').Select(x => int.Parse(x.Trim())).ToList();
+            // _newProject.UserIds = string.IsNullOrWhiteSpace(_userIds)
+            //     ? new List<int>()
+            //     : _userIds.Split(',').Select(x => int.Parse(x.Trim())).ToList();
             await ProjectService.CreateProjectAsync(_newProject);
             await _table.ReloadServerData();
             _showCreateDialog = false;
@@ -426,7 +431,7 @@
         }
     }
 
-    private async Task DeleteProject(int id)
+    private async Task DeleteProject(Guid id)
     {
         var parameters = new DialogParameters { { "ContentText", "Are you sure you want to delete this project?" } };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
@@ -541,10 +546,7 @@
                     {
                         Name = parts[1],
                         Description = parts[2],
-                        Status = parts.Length > 3 ? parts[3] : "Active",
-                        UserIds = parts.Length > 4 && !string.IsNullOrEmpty(parts[4])
-                            ? parts[4].Split(';').Select(x => int.Parse(x.Trim())).ToList()
-                            : new List<int>()
+                        Status = parts.Length > 3 ? parts[3] : "Active"                        
                     };
                     await ProjectService.CreateProjectAsync(project);
                 }

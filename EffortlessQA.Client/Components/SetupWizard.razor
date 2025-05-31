@@ -1,6 +1,7 @@
 ﻿// EffortlessQA.Client/Components/SetupWizard.razor
 @using EffortlessQA.Client.Services
 @using EffortlessQA.Client.Models
+@using EffortlessQA.Data.Dtos
 @using MudBlazor
 @inject TenantService TenantService
 @inject NavigationManager Navigation
@@ -17,10 +18,10 @@
                           Required="true" 
                           RequiredError="Tenant Name is required" 
                           Validation="@(new Func<string, string>(ValidateTenantName))" />
-            <MudTextField T="string" 
+           @*  <MudTextField T="string" 
                           Label="Tenant Address" 
                           @bind-Value="_tenant.Address" 
-                          Class="mt-4" />
+                          Class="mt-4" /> *@
             <MudButton Variant="Variant.Filled" 
                        Color="Color.Primary" 
                        Class="mt-4" 

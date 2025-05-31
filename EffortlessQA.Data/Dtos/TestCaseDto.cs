@@ -26,6 +26,10 @@ namespace EffortlessQA.Data.Dtos
         public PriorityLevel Priority { get; set; }
         public string[]? Tags { get; set; }
         public Guid? FolderId { get; set; }
+
+        public string ExpectedResult { get; set; } = string.Empty;
+
+        public int TestSuiteId { get; set; }
     }
 
     public class UpdateTestCaseDto

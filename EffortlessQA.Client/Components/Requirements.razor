@@ -2,6 +2,7 @@
 @page "/requirements"
 @using EffortlessQA.Client.Models
 @using EffortlessQA.Client.Services
+@using EffortlessQA.Data.Dtos
 @using MudBlazor
 @inject RequirementService RequirementService
 @inject NavigationManager Navigation
@@ -63,7 +64,7 @@
     {
         try
         {
-            _newRequirement.TestCaseIds = _testCaseIds.Split(',').Select(int.Parse).ToList();
+            //_newRequirement.TestCaseIds = _testCaseIds.Split(',').Select(int.Parse).ToList();
             await RequirementService.CreateRequirementAsync(_newRequirement);
             _requirements = await RequirementService.GetRequirementsAsync();
             _showCreateDialog = false;
@@ -77,9 +78,9 @@
         }
     }
 
-    private void EditRequirement(int id) => Navigation.NavigateTo($"/requirements/edit/{id}");
+    private void EditRequirement(Guid id) => Navigation.NavigateTo($"/requirements/edit/{id}");
 
-    private async Task DeleteRequirement(int id)
+    private async Task DeleteRequirement(Guid id)
     {
         try
         {

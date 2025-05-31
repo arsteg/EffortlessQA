@@ -38,8 +38,8 @@ namespace EffortlessQA.Api.Services.Implementation
                 Name = project.Name,
                 Description = project.Description,
                 TenantId = project.TenantId,
-                CreatedAt = project.CreatedAt,
-                UpdatedAt = project.ModifiedAt
+                //CreatedAt = project.CreatedAt,
+                //UpdatedAt = project.ModifiedAt
             };
         }
 
@@ -68,9 +68,7 @@ namespace EffortlessQA.Api.Services.Implementation
                     Id = p.Id,
                     Name = p.Name,
                     Description = p.Description,
-                    TenantId = p.TenantId,
-                    CreatedAt = p.CreatedAt,
-                    UpdatedAt = p.ModifiedAt
+                    TenantId = p.TenantId
                 })
                 .ToListAsync();
 
@@ -98,8 +96,8 @@ namespace EffortlessQA.Api.Services.Implementation
                 Name = project.Name,
                 Description = project.Description,
                 TenantId = project.TenantId,
-                CreatedAt = project.CreatedAt,
-                UpdatedAt = project.ModifiedAt
+                //CreatedAt = project.CreatedAt,
+                //UpdatedAt = project.ModifiedAt
             };
         }
 
@@ -128,8 +126,8 @@ namespace EffortlessQA.Api.Services.Implementation
                 Name = project.Name,
                 Description = project.Description,
                 TenantId = project.TenantId,
-                CreatedAt = project.CreatedAt,
-                UpdatedAt = project.ModifiedAt
+                //CreatedAt = project.CreatedAt,
+                //UpdatedAt = project.ModifiedAt
             };
         }
 

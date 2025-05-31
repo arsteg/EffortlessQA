@@ -2,6 +2,7 @@
 using System.Net.Http.Json;
 using Blazored.LocalStorage;
 using EffortlessQA.Client.Models;
+using EffortlessQA.Data.Dtos;
 
 namespace EffortlessQA.Client.Services
 {

@@ -2,6 +2,7 @@
 @page "/test-runs"
 @using EffortlessQA.Client.Models
 @using EffortlessQA.Client.Services
+@using EffortlessQA.Data.Dtos
 @using MudBlazor
 @inject TestRunService TestRunService
 @inject NavigationManager Navigation
@@ -77,9 +78,9 @@
         }
     }
 
-    private void ViewResults(int id) => Navigation.NavigateTo($"/test-runs/{id}/results");
+    private void ViewResults(Guid id) => Navigation.NavigateTo($"/test-runs/{id}/results");
 
-    private async Task DeleteTestRun(int id)
+    private async Task DeleteTestRun(Guid id)
     {
         try
         {

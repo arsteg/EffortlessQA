@@ -17,7 +17,9 @@
     {
         public string Title { get; set; }
         public string? Description { get; set; }
+        public int ProjectId { get; set; }
         public string[]? Tags { get; set; }
+        public List<Guid> TestCaseIds { get; set; } = new();
     }
 
     public class UpdateRequirementDto

@@ -1,5 +1,6 @@
 ﻿using System.Net.Http.Json;
 using EffortlessQA.Client.Models;
+using EffortlessQA.Data.Dtos;
 
 namespace EffortlessQA.Client.Services
 {
@@ -23,7 +24,7 @@ namespace EffortlessQA.Client.Services
             response.EnsureSuccessStatusCode();
         }
 
-        public async Task DeleteTestSuiteAsync(int id)
+        public async Task DeleteTestSuiteAsync(Guid id)
         {
             var response = await _httpClient.DeleteAsync($"/test-suites/{id}");
             response.EnsureSuccessStatusCode();

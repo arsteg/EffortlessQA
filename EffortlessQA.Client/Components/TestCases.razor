@@ -3,6 +3,7 @@
 @using EffortlessQA.Client.Services
 @using EffortlessQA.Client.Models
 @using EffortlessQA.Client.Extensions
+@using EffortlessQA.Data.Dtos
 @using MudBlazor
 @inject TestCaseService TestCaseService
 @inject NavigationManager Navigation
@@ -110,9 +111,9 @@
         }
     }
 
-    private void EditTestCase(int id) => Navigation.NavigateTo($"/test-cases/edit/{id}");
+    private void EditTestCase(Guid id) => Navigation.NavigateTo($"/test-cases/edit/{id}");
 
-    private async Task DeleteTestCase(int id)
+    private async Task DeleteTestCase(Guid id)
     {
         try
         {

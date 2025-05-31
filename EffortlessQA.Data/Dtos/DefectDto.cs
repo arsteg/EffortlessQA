@@ -19,6 +19,11 @@ namespace EffortlessQA.Data.Dtos
         public string TenantId { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+
+        public string Priority { get; set; } = string.Empty;
+
+        public int? AssignedTo { get; set; }
+        public int ProjectId { get; set; }
     }
 
     public class CreateDefectDto
@@ -51,6 +56,9 @@ namespace EffortlessQA.Data.Dtos
 
         [Required, MaxLength(50)]
         public string TenantId { get; set; }
+        public int? AssignedTo { get; set; }
+
+        public string Priority { get; set; } = string.Empty;
     }
 
     public class UpdateDefectDto

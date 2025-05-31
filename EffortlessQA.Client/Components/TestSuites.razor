@@ -2,6 +2,7 @@
 @page "/test-suites"
 @using EffortlessQA.Client.Models
 @using EffortlessQA.Client.Services
+@using EffortlessQA.Data.Dtos
 @using MudBlazor
 @inject TestSuiteService TestSuiteService
 @inject NavigationManager Navigation
@@ -73,7 +74,7 @@
         }
     }
 
-    private async Task DeleteTestSuite(int id)
+    private async Task DeleteTestSuite(Guid id)
     {
         try
         {

@@ -13,50 +13,35 @@ namespace EffortlessQA.Client.Models
         public int PageSize { get; set; } = 10;
     }
 
-    public class PagedResult<T>
-    {
-        public PagedResultData<T> Data { get; set; } = new();
-        public MetaDto Meta { get; set; } = new();
-        public object Error { get; set; }
-    }
+    //public class ProjectDto
+    //{
+    //    [JsonPropertyName("id")]
+    //    public int Id { get; set; }
 
-    public class PagedResultData<T>
-    {
-        [JsonPropertyName("projects")]
-        public List<T> Items { get; set; } = new();
+    //    [JsonPropertyName("name")]
+    //    public string Name { get; set; } = string.Empty;
 
-        [JsonPropertyName("total_count")]
-        public int TotalCount { get; set; }
-    }
+    //    [JsonPropertyName("description")]
+    //    public string Description { get; set; } = string.Empty;
 
-    public class ProjectDto
-    {
-        public int Id { get; set; }
+    //    [JsonPropertyName("tenantId")]
+    //    public int TenantId { get; set; }
 
-        [JsonPropertyName("name")]
-        public string Name { get; set; } = string.Empty;
+    //    //[JsonPropertyName("created_at")]
+    //    //public DateTime CreatedAt { get; set; }
 
-        [JsonPropertyName("description")]
-        public string Description { get; set; } = string.Empty;
+    //    //[JsonPropertyName("updated_at")]
+    //    //public DateTime? UpdatedAt { get; set; }
 
-        [JsonPropertyName("tenant_id")]
-        public int TenantId { get; set; }
+    //    //[JsonPropertyName("is_editing")]
+    //    public bool IsEditing { get; set; }
+    //}
 
-        [JsonPropertyName("created_at")]
-        public DateTime CreatedAt { get; set; }
-
-        [JsonPropertyName("updated_at")]
-        public DateTime? UpdatedAt { get; set; }
-
-        [JsonPropertyName("is_editing")]
-        public bool IsEditing { get; set; }
-    }
-
-    public class CreateProjectDto
-    {
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public string Status { get; set; } = "Active";
-        public List<int> UserIds { get; set; } = new();
-    }
+    //public class CreateProjectDto
+    //{
+    //    public string Name { get; set; } = string.Empty;
+    //    public string Description { get; set; } = string.Empty;
+    //    public string Status { get; set; } = "Active";
+    //    public List<int> UserIds { get; set; } = new();
+    //}
 }
