@@ -137,12 +137,7 @@
                                 @context.Description
                             }
                         </MudTd>
-                        <MudTd Style="text-align: center;">
-                            <MudChip T="string"
-                                     Color="@(context.Status == "Active" ? Color.Success : Color.Warning)"
-                                     Size="Size.Small"
-                                     Variant="Variant.Filled">@context.Status</MudChip>
-                        </MudTd>
+                       
                         <MudTd Style="text-align: center;">
                             @if (context.IsEditing)
                             {
@@ -189,7 +184,7 @@
     </MudGrid>
 </MudContainer>
 
-<MudDialog @bind-IsVisible="_showCreateDialog" Options="new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true }">
+<MudDialog @bind-Visible="_showCreateDialog" Options="new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true }">
     <DialogContent>
         <MudGrid Class="pa-4">
             <MudItem xs="12">
@@ -212,25 +207,8 @@
                                   Variant="Variant.Outlined"
                                   Clearable="true"
                                   HelperText="Describe the project briefly"
-                                  Class="mud-input-rounded" />
-                    <MudSelect T="string"
-                               Label="Status"
-                               @bind-Value="_newProject.Status"
-                               Required="true"
-                               RequiredError="Status is required"
-                               Variant="Variant.Outlined"
-                               Class="mud-input-rounded">
-                        <MudSelectItem Value="@("Active")">Active</MudSelectItem>
-                        <MudSelectItem Value="@("Inactive")">Inactive</MudSelectItem>
-                    </MudSelect>
-                    <MudTextField T="string"
-                                  Label="User IDs (optional)"
-                                  @bind-Value="_userIds"
-                                  Validation="@(new Func<string, string>(ValidateUserIds))"
-                                  Variant="Variant.Outlined"
-                                  Clearable="true"
-                                  HelperText="Comma-separated IDs, e.g., 1,2,3"
-                                  Class="mud-input-rounded" />
+                                  Class="mud-input-rounded" />                   
+                    
                 </MudForm>
             </MudItem>
         </MudGrid>
@@ -355,7 +333,7 @@
             };
 
             var result = await ProjectService.GetPagedProjectsAsync(query);
-            return new TableData<ProjectDto> { TotalItems = result.TotalCount, Items = result.Items };
+            return new TableData<ProjectDto> { TotalItems = result.Data.TotalCount, Items = result.Data.Items };
         }
         catch (Exception ex)
         {
@@ -415,7 +393,7 @@
             Id = project.Id,
             Name = project.Name,
             Description = project.Description,
-            Status = project.Status,
+            //Status = project.Status,
             TenantId = project.TenantId
         };
     }
@@ -442,7 +420,7 @@
             var original = _originalProjects[project.Id];
             project.Name = original.Name;
             project.Description = original.Description;
-            project.Status = original.Status;
+            //project.Status = original.Status;
             project.IsEditing = false;
             _originalProjects.Remove(project.Id);
         }

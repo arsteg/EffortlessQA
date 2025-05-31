@@ -512,7 +512,7 @@ namespace EffortlessQA.Api.Services.Implementation
                 new Claim("tenantId", user.TenantId),
                 new Claim(
                     ClaimTypes.Role,
-                    user.Roles.FirstOrDefault()?.RoleType.ToString() ?? RoleType.Tester.ToString()
+                    user.Roles.FirstOrDefault()?.RoleType.ToString() ?? RoleType.Admin.ToString()
                 )
             };
 
