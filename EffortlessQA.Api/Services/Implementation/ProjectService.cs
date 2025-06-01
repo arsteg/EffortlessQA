@@ -52,12 +52,48 @@ namespace EffortlessQA.Api.Services.Implementation
         {
             var query = _context.Projects.Where(p => p.TenantId == tenantId && !p.IsDeleted);
 
+            // Parse the filter parameter
+            string? nameFilter = null;
+            string? sortField = null;
+            bool sortAscending = true;
+
             if (!string.IsNullOrEmpty(filter))
             {
-                query = query.Where(p => p.Name.Contains(filter));
+                // Example filter format: "sort:name:asc" or "name:searchTerm"
+                var filterParts = filter.Split(':');
+                if (filterParts.Length == 3 && filterParts[0].ToLower() == "sort")
+                {
+                    sortField = filterParts[1].ToLower();
+                    sortAscending = filterParts[2].ToLower() == "asc";
+                }
+                else if (filterParts.Length == 2 && filterParts[0].ToLower() == "name")
+                {
+                    nameFilter = filterParts[1];
+                }
+                else
+                {
+                    nameFilter = filter; // Fallback: treat filter as a name search
+                }
             }
 
-            query = query.OrderBy(p => p.Name);
+            // Apply name filter if provided
+            if (!string.IsNullOrEmpty(nameFilter))
+            {
+                query = query.Where(p => p.Name.ToLower().Contains(nameFilter.ToLower()));
+            }
+
+            // Apply sorting
+            if (sortField == "name")
+            {
+                query = sortAscending
+                    ? query.OrderBy(p => p.Name)
+                    : query.OrderByDescending(p => p.Name);
+            }
+            else
+            {
+                // Default sorting
+                query = query.OrderBy(p => p.Name);
+            }
 
             var totalCount = await query.CountAsync();
             var projects = await query

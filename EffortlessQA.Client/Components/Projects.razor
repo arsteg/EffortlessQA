@@ -102,8 +102,7 @@
                         </MudTh>
                         <MudTh>
                             <MudTableSortLabel SortLabel="description" T="ProjectDto">Description</MudTableSortLabel>
-                        </MudTh>
-                        <MudTh Style="width: 100px; text-align: center;">Status</MudTh>
+                        </MudTh>                       
                         <MudTh Style="width: 100px; text-align: center;">Actions</MudTh>
                     </HeaderContent>
                     <RowTemplate>
@@ -324,21 +323,21 @@
         try
         {
             
-            _projects = await ProjectService.GetProjectsAsync();
+            //_projects = await ProjectService.GetProjectsAsync();
 
-            // var query = new ProjectQuery
-            // {
-            //     SearchTerm = _searchTerm,
-            //     Status = _filterStatus,
-            //     SortBy = state.SortLabel,
-            //     SortDirection = state.SortDirection == SortDirection.Ascending ? "asc" : "desc",
-            //     Page = state.Page + 1,
-            //     PageSize = state.PageSize
-            // };
+            var query = new ProjectQuery
+            {
+                SearchTerm = _searchTerm,
+                Status = _filterStatus,
+                SortBy = state.SortLabel,
+                SortDirection = state.SortDirection == SortDirection.Ascending ? "asc" : "desc",
+                Page = state.Page + 1,
+                PageSize = state.PageSize
+            };
 
-            //var result = await ProjectService.GetPagedProjectsAsync(query);
-            //return new TableData<ProjectDto> { TotalItems = result.Data.TotalCount, Items = result.Data.Items };
-            return new TableData<ProjectDto> { TotalItems = 7, Items = _projects };
+            var result = await ProjectService.GetPagedProjectsAsync(query);
+            return new TableData<ProjectDto> { TotalItems = result.TotalCount, Items = result.Items};
+           // return new TableData<ProjectDto> { TotalItems = _projects.Count, Items = _projects };
         }
         catch (Exception ex)
         {
