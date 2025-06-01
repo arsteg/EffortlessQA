@@ -19,7 +19,7 @@ namespace EffortlessQA.Client.Services
             try
             {
                 // Construct the correct endpoint
-                var url = $"{_httpClient.BaseAddress?.ToString()}projects?page=1&size=1000";
+                var url = $"projects?page=1&size=1000";
                 Console.WriteLine($"Calling API: {url}");
 
                 // Send the HTTP GET request
@@ -103,10 +103,7 @@ namespace EffortlessQA.Client.Services
         {
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(
-                    _httpClient.BaseAddress?.ToString() + "projects",
-                    projectDto
-                );
+                var response = await _httpClient.PostAsJsonAsync("projects", projectDto);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex) { }
@@ -114,7 +111,7 @@ namespace EffortlessQA.Client.Services
 
         public async Task DeleteProjectAsync(Guid id)
         {
-            var response = await _httpClient.DeleteAsync($"/projects/{id}");
+            var response = await _httpClient.DeleteAsync($"projects/{id}");
             response.EnsureSuccessStatusCode();
         }
 
@@ -123,7 +120,7 @@ namespace EffortlessQA.Client.Services
             try
             {
                 var url =
-                    $"{_httpClient.BaseAddress?.ToString()}projects?page={query.Page}&limit={query.PageSize}"
+                    $"projects?page={query.Page}&limit={query.PageSize}"
                     + $"&filter={Uri.EscapeDataString(BuildFilter(query) ?? "")}";
 
                 Console.WriteLine($"Request URL: {url}");
@@ -169,8 +166,6 @@ namespace EffortlessQA.Client.Services
             var filters = new List<string>();
             if (!string.IsNullOrEmpty(query.SearchTerm))
                 filters.Add($"name:{query.SearchTerm}");
-            if (!string.IsNullOrEmpty(query.Status))
-                filters.Add($"status:{query.Status}");
             if (!string.IsNullOrEmpty(query.SortBy))
                 filters.Add($"sort:{query.SortBy}:{query.SortDirection}");
             return string.Join(",", filters);
@@ -179,7 +174,7 @@ namespace EffortlessQA.Client.Services
         public async Task UpdateProjectAsync(ProjectDto projectDto)
         {
             var response = await _httpClient.PutAsJsonAsync(
-                $"/projects/{projectDto.Id}",
+                $"projects/{projectDto.Id}",
                 projectDto
             );
             response.EnsureSuccessStatusCode();

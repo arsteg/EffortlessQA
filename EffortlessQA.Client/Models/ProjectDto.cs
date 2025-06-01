@@ -6,7 +6,6 @@ namespace EffortlessQA.Client.Models
     public class ProjectQuery
     {
         public string SearchTerm { get; set; } = string.Empty;
-        public string Status { get; set; } = string.Empty;
         public string SortBy { get; set; } = string.Empty;
         public string SortDirection { get; set; } = "asc";
         public int Page { get; set; } = 1;

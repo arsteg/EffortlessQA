@@ -59,20 +59,30 @@ namespace EffortlessQA.Api.Services.Implementation
 
             if (!string.IsNullOrEmpty(filter))
             {
-                // Example filter format: "sort:name:asc" or "name:searchTerm"
-                var filterParts = filter.Split(':');
-                if (filterParts.Length == 3 && filterParts[0].ToLower() == "sort")
+                // Split filter by commas to handle multiple conditions
+                var filterConditions = filter
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(f => f.Trim())
+                    .ToList();
+
+                foreach (var condition in filterConditions)
                 {
-                    sortField = filterParts[1].ToLower();
-                    sortAscending = filterParts[2].ToLower() == "asc";
-                }
-                else if (filterParts.Length == 2 && filterParts[0].ToLower() == "name")
-                {
-                    nameFilter = filterParts[1];
-                }
-                else
-                {
-                    nameFilter = filter; // Fallback: treat filter as a name search
+                    // Split each condition by colons
+                    var filterParts = condition.Split(':');
+                    if (filterParts.Length == 3 && filterParts[0].ToLower() == "sort")
+                    {
+                        sortField = filterParts[1].ToLower();
+                        sortAscending = filterParts[2].ToLower() == "asc";
+                    }
+                    else if (filterParts.Length == 2 && filterParts[0].ToLower() == "name")
+                    {
+                        nameFilter = filterParts[1];
+                    }
+                    else
+                    {
+                        // Fallback: treat the condition as a name search if it doesn't match expected formats
+                        nameFilter = condition;
+                    }
                 }
             }
 

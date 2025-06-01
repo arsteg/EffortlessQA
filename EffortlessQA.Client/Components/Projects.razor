@@ -36,17 +36,7 @@
                                       Clearable="true"
                                       Class="mud-input-rounded" />
                     </MudItem>
-                    <MudItem xs="12" sm="6" md="4">
-                        <MudSelect T="string"
-                                   Label="Filter by Status"
-                                   @bind-Value="_filterStatus"
-                                   Variant="Variant.Outlined"
-                                   Class="mud-input-rounded">
-                            <MudSelectItem Value="@("")">All</MudSelectItem>
-                            <MudSelectItem Value="@("Active")">Active</MudSelectItem>
-                            <MudSelectItem Value="@("Inactive")">Inactive</MudSelectItem>
-                        </MudSelect>
-                    </MudItem>
+                   
                     <MudItem xs="12" sm="12" md="4" Class="d-flex align-center justify-end gap-3">
                         <MudButton Variant="Variant.Filled"
                                    Color="Color.Primary"
@@ -327,8 +317,7 @@
 
             var query = new ProjectQuery
             {
-                SearchTerm = _searchTerm,
-                Status = _filterStatus,
+                SearchTerm = _searchTerm,              
                 SortBy = state.SortLabel,
                 SortDirection = state.SortDirection == SortDirection.Ascending ? "asc" : "desc",
                 Page = state.Page + 1,
