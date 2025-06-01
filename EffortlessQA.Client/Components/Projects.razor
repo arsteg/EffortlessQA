@@ -393,6 +393,21 @@
 
     private async Task SaveInlineEdit(ProjectDto project)
     {
+        // Validate Name
+        var nameValidationResult = ValidateName(project.Name);
+        if (nameValidationResult != null)
+        {
+            Snackbar.Add(nameValidationResult, Severity.Error);
+            return;
+        }
+
+        // Optional: Validate Description (e.g., non-empty)
+        if (string.IsNullOrWhiteSpace(project.Description))
+        {
+            Snackbar.Add("Description cannot be empty", Severity.Error);
+            return;
+        }
+
         try
         {
             await ProjectService.UpdateProjectAsync(project);
