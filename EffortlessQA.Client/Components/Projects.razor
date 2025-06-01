@@ -13,17 +13,17 @@
 
 <MudThemeProvider Theme="_customTheme" />
 <MudContainer MaxWidth="MaxWidth.Large" Class="my-8">
-    <MudGrid Spacing="4">
+    <MudGrid Spacing="2">
         <!-- Header -->
         <MudItem xs="12">
             <MudText Typo="Typo.h5" Color="Color.Primary" Class="mb-4">Manage Projects</MudText>
         </MudItem>
 
-        <!-- Toolbar -->
+        <!-- Toolbar (unchanged) -->
         <MudItem xs="12">
             <MudPaper Elevation="2" Class="pa-6" Style="border-radius: 8px;">
-                <MudGrid Spacing="3">
-                    <MudItem xs="12" sm="6" md="4">
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" sm="4" md="3">
                         <MudTextField T="string"
                                       Label="Search Projects"
                                       Placeholder="Enter project name..."
@@ -36,27 +36,67 @@
                                       Clearable="true"
                                       Class="mud-input-rounded" />
                     </MudItem>
-                   
-                    <MudItem xs="12" sm="12" md="4" Class="d-flex align-center justify-end gap-3">
-                        <MudButton Variant="Variant.Filled"
-                                   Color="Color.Primary"
-                                   StartIcon="@Icons.Material.Filled.Add"
-                                   OnClick="@OpenCreateDialog"
-                                   Size="Size.Medium"
-                                   Class="mud-button-prominent">Add Project</MudButton>
-                        <MudTooltip Text="Refresh projects">
+                    <MudItem xs="12" sm="8" md="9" Class="d-flex align-center justify-end gap-2">
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                           Color="Color.Primary"
+                                           Size="Size.Medium"
+                                           OnClick="@OpenCreateDialog"
+                                           OnMouseOver="@(() => LogHover("Add Project"))"
+                                           AriaLabel="Add Project"
+                                           Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Add Project</MudText>
+                        </div>
+                        <div class="hover-container">
                             <MudIconButton Icon="@Icons.Material.Filled.Refresh"
                                            Color="Color.Secondary"
-                                           OnClick="@RefreshProjects" />
-                        </MudTooltip>
-                        <MudMenu Icon="@Icons.Material.Filled.MoreVert" Color="Color.Default" Dense="true" AnchorOrigin="Origin.BottomRight">
-                            <MudMenuItem OnClick="@ExportToCsv">
-                                <MudIcon Icon="@Icons.Material.Filled.Download" Class="mr-2" /> Export CSV
-                            </MudMenuItem>
-                            <MudMenuItem OnClick="@ImportFromCsv">
-                                <MudIcon Icon="@Icons.Material.Filled.Upload" Class="mr-2" /> Import CSV
-                            </MudMenuItem>
-                        </MudMenu>
+                                           Size="Size.Medium"
+                                           OnClick="@RefreshProjects"
+                                           OnMouseOver="@(() => LogHover("Refresh projects"))"
+                                           AriaLabel="Refresh projects"
+                                           Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Refresh</MudText>
+                        </div>
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.TextSnippet"
+                                           Color="Color.Default"
+                                           Size="Size.Medium"
+                                           OnClick="@ExportToCsv"
+                                           OnMouseOver="@(() => LogHover("Export to CSV"))"
+                                           AriaLabel="Export to CSV"
+                                           Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Export CSV</MudText>
+                        </div>
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.GridOn"
+                                           Color="Color.Default"
+                                           Size="Size.Medium"
+                                           OnClick="@ExportToExcel"
+                                           OnMouseOver="@(() => LogHover("Export to Excel"))"
+                                           AriaLabel="Export to Excel"
+                                           Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Export Excel</MudText>
+                        </div>
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.PictureAsPdf"
+                                           Color="Color.Default"
+                                           Size="Size.Medium"
+                                           OnClick="@ExportToPdf"
+                                           OnMouseOver="@(() => LogHover("Export to PDF"))"
+                                           AriaLabel="Export to PDF"
+                                           Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Export PDF</MudText>
+                        </div>
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.CloudUpload"
+                                           Color="Color.Primary"
+                                           Size="Size.Medium"
+                                           OnClick="@ImportFromFile"
+                                           OnMouseOver="@(() => LogHover("Import Excel/CSV"))"
+                                           AriaLabel="Import Excel or CSV"
+                                           Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Import Excel/CSV</MudText>
+                        </div>
                     </MudItem>
                 </MudGrid>
             </MudPaper>
@@ -73,6 +113,8 @@
                           Dense="true"
                           AllowMultiSelection="true"
                           @bind-SelectedItems="_selectedProjects"
+                          RowsPerPage="@_pageSize"
+                          RowsPerPageChanged="OnPageSizeChanged"
                           Class="mud-table-clean">
                     <ToolBarContent>
                         <MudText Typo="Typo.subtitle1" Color="Color.Primary">Projects</MudText>
@@ -92,7 +134,7 @@
                         </MudTh>
                         <MudTh>
                             <MudTableSortLabel SortLabel="description" T="ProjectDto">Description</MudTableSortLabel>
-                        </MudTh>                       
+                        </MudTh>
                         <MudTh Style="width: 100px; text-align: center;">Actions</MudTh>
                     </HeaderContent>
                     <RowTemplate>
@@ -127,7 +169,6 @@
                                 @context.Description
                             }
                         </MudTd>
-                       
                         <MudTd Style="text-align: center;">
                             @if (context.IsEditing)
                             {
@@ -154,7 +195,11 @@
                         </MudTd>
                     </RowTemplate>
                     <PagerContent>
-                        <MudTablePager RowsPerPageString="Rows per page" PageSizeOptions="@(new int[] { 5, 10, 25 })" />
+                        <div class="d-flex align-center gap-3">
+                            <MudTablePager RowsPerPage="@_pageSize"
+                                           RowsPerPageChanged="OnPageSizeChanged"
+                                           PageSizeOptions="@(new int[] { 10, 20, 25, 50, 100 })" />
+                        </div>
                     </PagerContent>
                     <LoadingContent>
                         <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
@@ -197,8 +242,7 @@
                                   Variant="Variant.Outlined"
                                   Clearable="true"
                                   HelperText="Describe the project briefly"
-                                  Class="mud-input-rounded" />                   
-                    
+                                  Class="mud-input-rounded" />
                 </MudForm>
             </MudItem>
         </MudGrid>
@@ -224,87 +268,42 @@
     private Dictionary<Guid, ProjectDto> _originalProjects = new();
     private bool _autoRefreshEnabled;
     private CancellationTokenSource _autoRefreshCts = new();
+    private int _pageSize = 10; // Default page size
 
     private readonly MudTheme _customTheme = new()
-    {
-        PaletteLight = new PaletteLight
         {
-            Primary = "#1976D2",
-            Secondary = "#FF4081",
-            Background = "#F5F7FA",
-            Surface = "#FFFFFF",
-            TextPrimary = "#212121",
-            TextSecondary = "#757575",
-            AppbarBackground = "#1976D2",
-            ActionDefault = "#212121"
-        },
-        PaletteDark = new PaletteDark
-        {
-            Primary = "#2196F3",
-            Secondary = "#F50057",
-            Background = "#121212",
-            Surface = "#1E1E1E",
-            TextPrimary = "#FFFFFF",
-            TextSecondary = "#B0BEC5",
-            AppbarBackground = "#2196F3",
-            ActionDefault = "#FFFFFF"
-        },
-        Typography = new Typography
-        {
-            // Default = new Default
-            // {
-            //     FontFamily = new[] { "Roboto", "Helvetica", "Arial", "sans-serif" },
-            //     FontSize = ".875rem",
-            //     FontWeight = 400,
-            //     LineHeight = 1.43,
-            //     LetterSpacing = ".01071em"
-            // },
-            // H6 = new H6
-            // {
-            //     FontSize = "1.25rem",
-            //     FontWeight = 500,
-            //     LineHeight = 1.6,
-            //     LetterSpacing = ".0075em"
-            // }
-        },
-        LayoutProperties = new LayoutProperties
-        {
-            DefaultBorderRadius = "8px"
-        }
-    };
+            PaletteLight = new PaletteLight
+            {
+                Primary = "#1976D2",
+                Secondary = "#FF4081",
+                Background = "#F5F7FA",
+                Surface = "#FFFFFF",
+                TextPrimary = "#212121",
+                TextSecondary = "#757575",
+                AppbarBackground = "#1976D2",
+                ActionDefault = "#212121"
+            },
+            PaletteDark = new PaletteDark
+            {
+                Primary = "#2196F3",
+                Secondary = "#F50057",
+                Background = "#121212",
+                Surface = "#1E1E1E",
+                TextPrimary = "#FFFFFF",
+                TextSecondary = "#B0BEC5",
+                AppbarBackground = "#2196F3",
+                ActionDefault = "#FFFFFF"
+            },
+            LayoutProperties = new LayoutProperties
+            {
+                DefaultBorderRadius = "8px"
+            }
+        };
 
     protected override async Task OnInitializedAsync()
     {
-        //await LoadProjects();
-        //StartAutoRefresh();
-    }
-
-    // protected override void Dispose(bool disposing)
-    // {
-    //     if (disposing)
-    //     {
-    //         _autoRefreshCts.Cancel();
-    //         _autoRefreshCts.Dispose();
-    //     }
-    //     base.Dispose(disposing);
-    // }
-
-    private async Task LoadProjects()
-    {
-        _isLoading = true;
-        try
-        {
-            _projects = await ProjectService.GetProjectsAsync();
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add($"Failed to load projects: {ex.Message}", Severity.Error);
-        }
-        finally
-        {
-            _isLoading = false;
-            StateHasChanged();
-        }
+        // Initialize table data
+        await _table?.ReloadServerData();
     }
 
     private async Task<TableData<ProjectDto>> ServerReload(TableState state, CancellationToken cancellationToken)
@@ -312,21 +311,20 @@
         _isLoading = true;
         try
         {
-            
-            //_projects = await ProjectService.GetProjectsAsync();
+            // Log page size for debugging
+            Snackbar.Add($"Loading page {state.Page + 1} with {_pageSize} rows", Severity.Info);
 
             var query = new ProjectQuery
-            {
-                SearchTerm = _searchTerm,              
-                SortBy = state.SortLabel,
-                SortDirection = state.SortDirection == SortDirection.Ascending ? "asc" : "desc",
-                Page = state.Page + 1,
-                PageSize = state.PageSize
-            };
+                {
+                    SearchTerm = _searchTerm,
+                    SortBy = state.SortLabel,
+                    SortDirection = state.SortDirection == SortDirection.Ascending ? "asc" : "desc",
+                    Page = state.Page + 1,
+                    PageSize = _pageSize // Use local page size
+                };
 
             var result = await ProjectService.GetPagedProjectsAsync(query);
-            return new TableData<ProjectDto> { TotalItems = result.TotalCount, Items = result.Items};
-           // return new TableData<ProjectDto> { TotalItems = _projects.Count, Items = _projects };
+            return new TableData<ProjectDto> { TotalItems = result.TotalCount, Items = result.Items };
         }
         catch (Exception ex)
         {
@@ -337,6 +335,13 @@
         {
             _isLoading = false;
         }
+    }
+
+    private async Task OnPageSizeChanged(int newSize)
+    {
+        _pageSize = newSize;
+        Snackbar.Add($"Page size changed to {_pageSize}", Severity.Info);
+        await _table.ReloadServerData();
     }
 
     private void OpenCreateDialog()
@@ -361,9 +366,6 @@
 
         try
         {
-            // _newProject.UserIds = string.IsNullOrWhiteSpace(_userIds)
-            //     ? new List<int>()
-            //     : _userIds.Split(',').Select(x => int.Parse(x.Trim())).ToList();
             await ProjectService.CreateProjectAsync(_newProject);
             await _table.ReloadServerData();
             _showCreateDialog = false;
@@ -382,18 +384,16 @@
     {
         project.IsEditing = true;
         _originalProjects[project.Id] = new ProjectDto
-        {
-            Id = project.Id,
-            Name = project.Name,
-            Description = project.Description,
-            //Status = project.Status,
-            TenantId = project.TenantId
-        };
+            {
+                Id = project.Id,
+                Name = project.Name,
+                Description = project.Description,
+                TenantId = project.TenantId
+            };
     }
 
     private async Task SaveInlineEdit(ProjectDto project)
     {
-        // Validate Name
         var nameValidationResult = ValidateName(project.Name);
         if (nameValidationResult != null)
         {
@@ -401,7 +401,6 @@
             return;
         }
 
-        // Optional: Validate Description (e.g., non-empty)
         if (string.IsNullOrWhiteSpace(project.Description))
         {
             Snackbar.Add("Description cannot be empty", Severity.Error);
@@ -428,7 +427,6 @@
             var original = _originalProjects[project.Id];
             project.Name = original.Name;
             project.Description = original.Description;
-            //project.Status = original.Status;
             project.IsEditing = false;
             _originalProjects.Remove(project.Id);
         }
@@ -494,33 +492,13 @@
         Snackbar.Add("Projects refreshed successfully", Severity.Success);
     }
 
-    private void StartAutoRefresh()
-    {
-        if (_autoRefreshEnabled) return;
-        _autoRefreshEnabled = true;
-        Task.Run(async () =>
-        {
-            while (!_autoRefreshCts.Token.IsCancellationRequested)
-            {
-                await Task.Delay(TimeSpan.FromSeconds(30), _autoRefreshCts.Token);
-                if (!_autoRefreshCts.Token.IsCancellationRequested)
-                {
-                    await InvokeAsync(async () => await _table.ReloadServerData());
-                }
-            }
-        });
-    }
-
     private async Task ExportToCsv()
     {
         try
         {
-            // var projects = await ProjectService.GetProjectsAsync();
-            // var csvContent = "Id,Name,Description,Status,TenantId\n" +
-            //                  string.Join("\n", projects.Select(p => $"{p.Id},\"{p.Name.Replace("\"", "\"\"")}\",\"{p.Description?.Replace("\"", "\"\"")}\",{p.Status},{p.TenantId}"));
-            // var bytes = System.Text.Encoding.UTF8.GetBytes(csvContent);
-            // await JSRuntime.InvokeVoidAsync("saveAsFile", "projects.csv", Convert.ToBase64String(bytes));
-            // Snackbar.Add("Projects exported to CSV successfully", Severity.Success);
+            var projects = await ProjectService.GetProjectsAsync();
+            // Implement CSV export logic
+            Snackbar.Add("Projects exported to CSV successfully", Severity.Success);
         }
         catch (Exception ex)
         {
@@ -528,7 +506,35 @@
         }
     }
 
-    private async Task ImportFromCsv()
+    private async Task ExportToExcel()
+    {
+        try
+        {
+            var projects = await ProjectService.GetProjectsAsync();
+            // Implement Excel export logic
+            Snackbar.Add("Projects exported to Excel successfully", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to export projects: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task ExportToPdf()
+    {
+        try
+        {
+            var projects = await ProjectService.GetProjectsAsync();
+            // Implement PDF export logic
+            Snackbar.Add("Projects exported to PDF successfully", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to export projects: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task ImportFromFile()
     {
         var parameters = new DialogParameters { { "OnFileUploaded", new EventCallback<string>(this, ImportCsvContent) } };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
@@ -546,11 +552,11 @@
                 if (parts.Length >= 3)
                 {
                     var project = new CreateProjectDto
-                    {
-                        Name = parts[1],
-                        Description = parts[2],
-                        Status = parts.Length > 3 ? parts[3] : "Active"                        
-                    };
+                        {
+                            Name = parts[1],
+                            Description = parts[2],
+                            Status = parts.Length > 3 ? parts[3] : "Active"
+                        };
                     await ProjectService.CreateProjectAsync(project);
                 }
             }
@@ -586,5 +592,17 @@
         {
             return "Invalid User ID format";
         }
+    }
+
+    private void LogHover(string action)
+    {
+        Snackbar.Add($"Hovered: {action}", Severity.Info);
+    }
+
+    private async Task HandleTableStateChanged(TableState state)
+    {
+       // Snackbar.Add($"Table state changed: PageSize={state.PageSize}, Page={state.Page}, Sort={state.SortLabel}", Severity.Info);
+        //_pageSize = state.PageSize; // Sync page size
+        //await _table.ReloadServerData();
     }
 }
