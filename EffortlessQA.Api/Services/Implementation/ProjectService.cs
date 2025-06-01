@@ -99,6 +99,12 @@ namespace EffortlessQA.Api.Services.Implementation
                     ? query.OrderBy(p => p.Name)
                     : query.OrderByDescending(p => p.Name);
             }
+            else if (sortField == "description")
+            {
+                query = sortAscending
+                    ? query.OrderBy(p => p.Description)
+                    : query.OrderByDescending(p => p.Description);
+            }
             else
             {
                 // Default sorting
