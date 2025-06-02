@@ -1,5 +1,4 @@
 ﻿using System.Net.Http.Json;
-using EffortlessQA.Client.Models;
 using EffortlessQA.Data.Dtos;
 
 namespace EffortlessQA.Client.Services

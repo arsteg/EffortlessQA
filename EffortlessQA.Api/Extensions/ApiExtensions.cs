@@ -23,6 +23,7 @@ namespace EffortlessQA.Api.Extensions
         public const string SEARCH_TAG = "Search";
         public const string PERMISSION_ROLE_TAG = "Permissions & Roles";
         public const string MISCELLANEOUS_TAG = "Miscellaneous";
+        public const string COMMON_TAG = "Common";
 
         public static void MapApiEndpoints(this WebApplication app)
         {
@@ -40,6 +41,7 @@ namespace EffortlessQA.Api.Extensions
             MapTestRunEndpoints(app);
             MapTestRunResultEndpoints(app);
             MapTestSuiteEndpoints(app);
+            MapCommonEndpoints(app);
         }
     }
 }
