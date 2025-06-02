@@ -1,5 +1,7 @@
-﻿using System.Net.Http.Json;
+﻿using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using EffortlessQA.Client.Models;
 using EffortlessQA.Data.Dtos;
 
@@ -9,158 +11,242 @@ namespace EffortlessQA.Client.Services
     {
         private readonly HttpClient _httpClient;
 
+        #region Constructor
+
         public ProjectService(IHttpClientFactory httpClientFactory)
         {
             _httpClient = httpClientFactory.CreateClient("EffortlessQA.Api");
         }
 
-        public async Task<List<ProjectDto>> GetProjectsAsync()
+        #endregion
+
+        #region CRUD Operations
+
+        public async Task<List<ProjectDto>> GetProjectsAsync(
+            string searchTerm = null,
+            CancellationToken cancellationToken = default
+        )
+        {
+            var query = new ProjectQuery
+            {
+                Page = 1,
+                PageSize = 1000,
+                SearchTerm = searchTerm
+            };
+            var result = await GetPagedProjectsAsync(query, cancellationToken);
+            return result.Items ?? new List<ProjectDto>();
+        }
+
+        public async Task<PagedResult<ProjectDto>> GetPagedProjectsAsync(
+            ProjectQuery query,
+            CancellationToken cancellationToken = default
+        )
         {
             try
             {
-                // Construct the correct endpoint
-                var url = $"projects?page=1&size=1000";
-                Console.WriteLine($"Calling API: {url}");
-
-                // Send the HTTP GET request
-                var response = await _httpClient.GetAsync(url);
-
-                // Log the response status and content for debugging
-                var responseContent = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"Response Status: {response.StatusCode}");
-                Console.WriteLine($"Response Content: {responseContent}");
-
-                // Check if the response is successful
-                if (!response.IsSuccessStatusCode)
-                {
-                    throw new HttpRequestException(
-                        $"API call failed with status {response.StatusCode}: {responseContent}",
-                        null,
-                        response.StatusCode
-                    );
-                }
-
-                // Deserialize the JSON response
-                var options = new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true,
-                    // Allow trailing commas and comments for flexibility
-                    ReadCommentHandling = JsonCommentHandling.Skip,
-                    AllowTrailingCommas = true
-                };
-
-                try
-                {
-                    var apiResponse = await response.Content.ReadFromJsonAsync<
-                        ApiResponse<PagedResult<ProjectDto>>
-                    >(options);
-                    if (apiResponse == null)
-                    {
-                        throw new JsonException("Deserialized API response is null.");
-                    }
-
-                    if (apiResponse != null)
-                    {
-                        //throw new ApiException(
-                        //    $"API returned an error: {apiResponse.Error.Code} - {apiResponse.Error.Message}"
-                        //);
-                    }
-
-                    // Extract the project list from the nested structure
-                    var projects = apiResponse.Data.Items ?? new List<ProjectDto>();
-                    //Console.WriteLine($"Parsed {projects.Count} projects from response.");
-                    return projects;
-                }
-                catch (JsonException ex)
-                {
-                    // Log detailed JSON parsing error
-                    Console.WriteLine($"JSON Parsing Error: {ex.Message}");
-                    Console.WriteLine($"Response Content: {responseContent}");
-                    throw new JsonException(
-                        $"Failed to parse API response JSON: {ex.Message}. Raw response: {responseContent}",
-                        ex
-                    );
-                }
-            }
-            catch (HttpRequestException ex)
-            {
-                // Handle HTTP-related errors (e.g., 401, 403, 500)
-                Console.WriteLine($"HTTP Error: {ex.Message}, Status: {ex.StatusCode}");
-                throw new Exception(
-                    $"Failed to fetch projects from API: {ex.Message}{(ex.StatusCode.HasValue ? $" (Status: {ex.StatusCode})" : "")}",
-                    ex
-                );
-            }
-            catch (Exception ex)
-            {
-                // Catch any other unexpected errors
-                Console.WriteLine($"Unexpected Error: {ex.Message}\nStackTrace: {ex.StackTrace}");
-                throw new Exception($"Unexpected error while fetching projects: {ex.Message}", ex);
-            }
-        }
-
-        public async Task CreateProjectAsync(CreateProjectDto projectDto)
-        {
-            try
-            {
-                var response = await _httpClient.PostAsJsonAsync("projects", projectDto);
-                response.EnsureSuccessStatusCode();
-            }
-            catch (Exception ex) { }
-        }
-
-        public async Task DeleteProjectAsync(Guid id)
-        {
-            var response = await _httpClient.DeleteAsync($"projects/{id}");
-            response.EnsureSuccessStatusCode();
-        }
-
-        public async Task<PagedResult<ProjectDto>> GetPagedProjectsAsync(ProjectQuery query)
-        {
-            try
-            {
+                if (query == null)
+                    throw new ArgumentNullException(nameof(query));
                 var url =
-                    $"projects?page={query.Page}&limit={query.PageSize}"
-                    + $"&filter={Uri.EscapeDataString(BuildFilter(query) ?? "")}";
-
+                    $"projects?page={query.Page}&size={query.PageSize}&filter={Uri.EscapeDataString(BuildFilter(query) ?? "")}";
                 Console.WriteLine($"Request URL: {url}");
-                var response = await _httpClient.GetAsync(url);
-                var responseContent = await response.Content.ReadAsStringAsync();
+
+                var response = await _httpClient.GetAsync(url, cancellationToken);
+                var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
                 Console.WriteLine($"Response: {response.StatusCode} - {responseContent}");
 
                 if (!response.IsSuccessStatusCode)
                 {
                     throw new HttpRequestException(
-                        $"API call failed: {response.StatusCode} - {responseContent}"
+                        $"API call failed: {response.StatusCode} - {responseContent}",
+                        null,
+                        response.StatusCode
                     );
                 }
 
-                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true,
+                    ReadCommentHandling = JsonCommentHandling.Skip,
+                    AllowTrailingCommas = true
+                };
+
                 var apiResponse = await response.Content.ReadFromJsonAsync<
                     ApiResponse<PagedResult<ProjectDto>>
-                >(options);
-                return apiResponse?.Data ?? new PagedResult<ProjectDto>();
+                >(options, cancellationToken);
+                //Console.WriteLine($"API Response: Success={apiResponse?.Success}, Error={apiResponse?.Error?.Code} - {apiResponse?.Error?.Message}");
+                Console.WriteLine($"Data Items: {apiResponse?.Data?.Items?.Count ?? 0}");
+
+                if (apiResponse == null || apiResponse.Error != null)
+                {
+                    throw new Exception(
+                        $"API returned an error: {apiResponse?.Error?.Code ?? "Unknown"} - {apiResponse?.Error?.Message ?? "No response"}"
+                    );
+                }
+
+                return apiResponse.Data ?? new PagedResult<ProjectDto>();
             }
             catch (HttpRequestException ex)
                 when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
+                Console.WriteLine($"Unauthorized Error: {ex.Message}");
                 throw new Exception(
-                    "You do not have permission to access projects. Contact an administrator."
+                    "You do not have permission to access projects. Contact an administrator.",
+                    ex
                 );
             }
             catch (JsonException ex)
             {
                 Console.WriteLine($"JSON Parsing Error: {ex.Message}");
-                throw new Exception($"Failed to parse API response: {ex.Message}");
+                throw new Exception($"Failed to parse API response: {ex.Message}", ex);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error: {ex.Message}");
-                throw;
+                Console.WriteLine($"Unexpected Error: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                throw new Exception($"Unexpected error while fetching projects: {ex.Message}", ex);
             }
         }
 
-        // Helper method to build filter from ProjectQuery
+        public async Task CreateProjectAsync(
+            CreateProjectDto projectDto,
+            CancellationToken cancellationToken = default
+        )
+        {
+            try
+            {
+                if (projectDto == null)
+                    throw new ArgumentNullException(nameof(projectDto));
+                if (string.IsNullOrWhiteSpace(projectDto.Name))
+                    throw new ArgumentException(
+                        "Project name is required.",
+                        nameof(projectDto.Name)
+                    );
+
+                var response = await _httpClient.PostAsJsonAsync(
+                    $"projects",
+                    projectDto,
+                    cancellationToken
+                );
+                var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                Console.WriteLine(
+                    $"CreateProject Response: {response.StatusCode} - {responseContent}"
+                );
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new HttpRequestException(
+                        $"Failed to create project: {response.StatusCode} - {responseContent}",
+                        null,
+                        response.StatusCode
+                    );
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.WriteLine($"HTTP Error: {ex.Message}, Status: {ex.StatusCode}");
+                throw new Exception(
+                    $"Failed to create project: {ex.Message}{(ex.StatusCode.HasValue ? $" (Status: {ex.StatusCode})" : "")}",
+                    ex
+                );
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Unexpected Error: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                throw new Exception($"Unexpected error while creating project: {ex.Message}", ex);
+            }
+        }
+
+        public async Task UpdateProjectAsync(
+            ProjectDto projectDto,
+            CancellationToken cancellationToken = default
+        )
+        {
+            try
+            {
+                if (projectDto == null)
+                    throw new ArgumentNullException(nameof(projectDto));
+                if (string.IsNullOrWhiteSpace(projectDto.Name))
+                    throw new ArgumentException(
+                        "Project name is required.",
+                        nameof(projectDto.Name)
+                    );
+
+                var response = await _httpClient.PutAsJsonAsync(
+                    $"projects/{projectDto.Id}",
+                    projectDto,
+                    cancellationToken
+                );
+                var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                Console.WriteLine(
+                    $"UpdateProject Response: {response.StatusCode} - {responseContent}"
+                );
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new HttpRequestException(
+                        $"Failed to update project: {response.StatusCode} - {responseContent}",
+                        null,
+                        response.StatusCode
+                    );
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.WriteLine($"HTTP Error: {ex.Message}, Status: {ex.StatusCode}");
+                throw new Exception(
+                    $"Failed to update project: {ex.Message}{(ex.StatusCode.HasValue ? $" (Status: {ex.StatusCode})" : "")}",
+                    ex
+                );
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Unexpected Error: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                throw new Exception($"Unexpected error while updating project: {ex.Message}", ex);
+            }
+        }
+
+        public async Task DeleteProjectAsync(Guid id, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                if (id == Guid.Empty)
+                    throw new ArgumentException("Project ID cannot be empty.", nameof(id));
+
+                var response = await _httpClient.DeleteAsync($"projects/{id}", cancellationToken);
+                var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                Console.WriteLine(
+                    $"DeleteProject Response: {response.StatusCode} - {responseContent}"
+                );
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new HttpRequestException(
+                        $"Failed to delete project: {response.StatusCode} - {responseContent}",
+                        null,
+                        response.StatusCode
+                    );
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.WriteLine($"HTTP Error: {ex.Message}, Status: {ex.StatusCode}");
+                throw new Exception(
+                    $"Failed to delete project: {ex.Message}{(ex.StatusCode.HasValue ? $" (Status: {ex.StatusCode})" : "")}",
+                    ex
+                );
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Unexpected Error: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                throw new Exception($"Unexpected error while deleting project: {ex.Message}", ex);
+            }
+        }
+
+        #endregion
+
+
+
+        #region Helpers
+
         private string BuildFilter(ProjectQuery query)
         {
             var filters = new List<string>();
@@ -171,13 +257,6 @@ namespace EffortlessQA.Client.Services
             return string.Join(",", filters);
         }
 
-        public async Task UpdateProjectAsync(ProjectDto projectDto)
-        {
-            var response = await _httpClient.PutAsJsonAsync(
-                $"projects/{projectDto.Id}",
-                projectDto
-            );
-            response.EnsureSuccessStatusCode();
-        }
+        #endregion
     }
 }
