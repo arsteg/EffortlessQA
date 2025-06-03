@@ -21,12 +21,16 @@ namespace EffortlessQA.Data.Entities
         public Guid ProjectId { get; set; }
 
         [ForeignKey("ProjectId")]
-        // [Index]
         public Project Project { get; set; }
 
         [Required, MaxLength(50)]
-        // [Index]
         public string TenantId { get; set; }
+
+        // Self-referencing nullable foreign key to parent requirement
+        public Guid? ParentRequirementId { get; set; }
+
+        [ForeignKey("ParentRequirementId")]
+        public Requirement? ParentRequirement { get; set; }
 
         // Navigation property
         public List<RequirementTestCase> RequirementTestCases { get; set; } = new();
