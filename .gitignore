@@ -54,3 +54,6 @@ TestResult.xml
 nunit-*.xml
 /.vs
 /Documents
+
+# Local Netlify folder
+.netlify

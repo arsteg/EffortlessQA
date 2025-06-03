@@ -30,7 +30,8 @@ builder
         client =>
         {
             client.BaseAddress = new Uri(
-                builder.Configuration["ApiBaseUrl"] ?? "https://localhost:7196/api/v1/"
+                builder.Configuration["ApiBaseUrl"]
+                    ?? "https://effortlessqa-api-a9606f6fb190.herokuapp.com/api/v1/"
             );
             client.DefaultRequestHeaders.Accept.Add(
                 new MediaTypeWithQualityHeaderValue("application/json")
