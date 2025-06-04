@@ -9,7 +9,14 @@ namespace EffortlessQA.Api.Services.Interface
             string tenantId,
             CreateRequirementDto dto
         );
-        Task<PagedResult<RequirementDto>> GetRequirementsAsync(
+		Task<PagedResult<RequirementDto>> GetRequirementsAsync(
+			string tenantId,
+			int page,
+			int limit,
+			string? filter,
+			string[]? tags
+		);
+		Task<PagedResult<RequirementDto>> GetRequirementsAsync(
             Guid projectId,
             string tenantId,
             int page,

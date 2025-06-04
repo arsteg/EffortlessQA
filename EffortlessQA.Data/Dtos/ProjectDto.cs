@@ -7,6 +7,7 @@
         public string? Description { get; set; }
         public string TenantId { get; set; }
         public bool IsEditing { get; set; }
+        public Guid? ParentRequirementId { get; set; }
     }
 
     public class CreateProjectDto

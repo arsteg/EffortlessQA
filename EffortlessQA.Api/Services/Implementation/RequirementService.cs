@@ -39,8 +39,9 @@ namespace EffortlessQA.Api.Services.Implementation
                 ProjectId = projectId,
                 TenantId = tenantId,
                 CreatedAt = DateTime.UtcNow,
-                ModifiedAt = DateTime.UtcNow
-            };
+                ModifiedAt = DateTime.UtcNow,
+				ParentRequirementId = dto.ParentRequirementId
+			};
 
             await _context.Requirements.AddAsync(requirement);
             await _context.SaveChangesAsync();
@@ -54,11 +55,125 @@ namespace EffortlessQA.Api.Services.Implementation
                 ProjectId = requirement.ProjectId,
                 TenantId = requirement.TenantId,
                 CreatedAt = requirement.CreatedAt,
-                UpdatedAt = requirement.ModifiedAt
-            };
+                UpdatedAt = requirement.ModifiedAt,
+				ParentRequirementId = requirement.ParentRequirementId
+			};
         }
 
-        public async Task<PagedResult<RequirementDto>> GetRequirementsAsync(
+		public async Task<PagedResult<RequirementDto>> GetRequirementsAsync(
+	            string tenantId,
+	            int page,
+	            int limit,
+	            string? filter,
+	            string[]? tags
+            )
+		{
+			var query = _context.Requirements.Where(r => r.TenantId == tenantId && !r.IsDeleted);
+
+			// Parse the filter parameter
+			string? titleFilter = null;
+			string? sortField = null;
+			bool sortAscending = true;
+
+			if (!string.IsNullOrEmpty(filter))
+			{
+				// Split filter by commas to handle multiple conditions
+				var filterConditions = filter
+					.Split(',',StringSplitOptions.RemoveEmptyEntries)
+					.Select(f => f.Trim())
+					.ToList();
+
+				foreach (var condition in filterConditions)
+				{
+					// Split each condition by colons
+					var filterParts = condition.Split(':');
+					if (filterParts.Length == 3 && filterParts[0].ToLower() == "sort")
+					{
+						sortField = filterParts[1].ToLower();
+						sortAscending = filterParts[2].ToLower() == "asc";
+					}
+					else if (filterParts.Length == 2 && filterParts[0].ToLower() == "title")
+					{
+						titleFilter = filterParts[1];
+					}
+					else
+					{
+						// Fallback: treat the condition as a title search if it doesn't match expected formats
+						titleFilter = condition;
+					}
+				}
+			}
+
+			// Apply title filter if provided (case-insensitive)
+			if (!string.IsNullOrEmpty(titleFilter))
+			{
+				query = query.Where(r => r.Title.ToLower().Contains(titleFilter.ToLower()));
+			}
+
+			// Apply tags filter if provided
+			if (tags != null && tags.Length > 0)
+			{
+				query = query.Where(r => r.Tags != null && tags.Any(t => r.Tags.Contains(t)));
+			}
+
+			// Apply sorting
+			if (sortField == "title")
+			{
+				query = sortAscending
+					? query.OrderBy(r => r.Title)
+					: query.OrderByDescending(r => r.Title);
+			}
+			else if (sortField == "description")
+			{
+				query = sortAscending
+					? query.OrderBy(r => r.Description)
+					: query.OrderByDescending(r => r.Description);
+			}
+			else if (sortField == "createdat")
+			{
+				query = sortAscending
+					? query.OrderBy(r => r.CreatedAt)
+					: query.OrderByDescending(r => r.CreatedAt);
+			}
+			else if (sortField == "updatedat")
+			{
+				query = sortAscending
+					? query.OrderBy(r => r.ModifiedAt)
+					: query.OrderByDescending(r => r.ModifiedAt);
+			}
+			else
+			{
+				// Default sorting
+				query = query.OrderBy(r => r.Title);
+			}
+
+			var totalCount = await query.CountAsync();
+			var requirements = await query
+				.Skip((page - 1) * limit)
+				.Take(limit)
+				.Select(r => new RequirementDto
+				{
+					Id = r.Id,
+					Title = r.Title,
+					Description = r.Description,
+					Tags = r.Tags,
+					ProjectId = r.ProjectId,
+					TenantId = r.TenantId,
+					CreatedAt = r.CreatedAt,
+					UpdatedAt = r.ModifiedAt,
+					ParentRequirementId = r.ParentRequirementId
+				})
+				.ToListAsync();
+
+			return new PagedResult<RequirementDto>
+			{
+				Items = requirements,
+				TotalCount = totalCount,
+				Page = page,
+				Limit = limit
+			};
+		}
+		public async Task<PagedResult<RequirementDto>> GetRequirementsAsync(
             Guid projectId,
             string tenantId,
             int page,
