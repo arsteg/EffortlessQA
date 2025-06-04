@@ -112,11 +112,14 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy(
         "AllowSpecificOrigins",
-        builder =>
-            builder
-                .WithOrigins("https://effortlessqa.netlify.app")
-                .AllowAnyHeader()
-                .AllowAnyMethod()
+        policy =>
+        {
+            var allowedOrigins = builder.Environment.IsDevelopment()
+                ? new[] { "https://localhost:7129", "https://localhost:7129/" } // Allow both with/without trailing slash
+                : new[] { "https://effortlessqa.netlify.app", "https://effortlessqa.netlify.app/" }; // Production
+
+            policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials(); // Required for authenticated requests
+        }
     );
 });
 

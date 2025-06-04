@@ -24,15 +24,18 @@ builder.Services.AddMudServices(config =>
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddTransient<AuthTokenHandler>();
 
+// Determine the environment and select the appropriate API URL
+var apiBaseUrl = builder.HostEnvironment.IsDevelopment()
+    ? builder.Configuration["ApiBaseUrl:Local"] ?? "https://localhost:7196/api/v1/"
+    : builder.Configuration["ApiBaseUrl:Production"]
+        ?? "https://effortlessqa-api-a9606f6fb190.herokuapp.com/api/v1/";
+
 builder
     .Services.AddHttpClient(
         "EffortlessQA.Api",
         client =>
         {
-            client.BaseAddress = new Uri(
-                builder.Configuration["ApiBaseUrl"]
-                    ?? "https://effortlessqa-api-a9606f6fb190.herokuapp.com/api/v1/"
-            );
+            client.BaseAddress = new Uri(apiBaseUrl);
             client.DefaultRequestHeaders.Accept.Add(
                 new MediaTypeWithQualityHeaderValue("application/json")
             );
