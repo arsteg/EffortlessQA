@@ -112,7 +112,11 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy(
         "AllowSpecificOrigins",
-        builder => builder.WithOrigins("https://localhost:7129").AllowAnyHeader().AllowAnyMethod()
+        builder =>
+            builder
+                .WithOrigins("https://effortlessqa.netlify.app")
+                .AllowAnyHeader()
+                .AllowAnyMethod()
     );
 });
 
