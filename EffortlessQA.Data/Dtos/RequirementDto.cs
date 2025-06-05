@@ -1,5 +1,5 @@
-﻿using EffortlessQA.Data.Entities;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+using EffortlessQA.Data.Entities;
 
 namespace EffortlessQA.Data.Dtos
 {
@@ -30,22 +30,24 @@ namespace EffortlessQA.Data.Dtos
         public string[]? Tags { get; set; }
         public Guid ProjectId { get; set; }
         public string TenantId { get; set; }
+        public Guid? ParentRequirementId { get; set; }
+        public List<Guid>? TestCaseIds { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
-        public List<Guid> TestCaseIds { get; set; } = new();
-		public bool IsEditing { get; set; }
-		public Guid? ParentRequirementId { get; set; }
-	}
+        public List<RequirementDto> Children { get; set; } = new();
+        public bool IsEditing { get; set; }
+    }
 
     public class CreateRequirementDto
     {
         public string Title { get; set; }
         public string? Description { get; set; }
-        public Guid ProjectId { get; set; }
         public string[]? Tags { get; set; }
-        public List<Guid> TestCaseIds { get; set; } = new();
-		public Guid? ParentRequirementId { get; set; }
-	}
+        public Guid ProjectId { get; set; }
+        public string TenantId { get; set; }
+        public Guid? ParentRequirementId { get; set; }
+        public List<RequirementTestCase>? RequirementTestCases { get; set; } = new();
+    }
 
     public class UpdateRequirementDto
     {
