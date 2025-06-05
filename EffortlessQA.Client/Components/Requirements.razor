@@ -134,7 +134,7 @@
                         }
                     </ToolBarContent>
                     <HeaderContent>
-                        <MudTh></MudTh> <!-- For expand/collapse -->
+                        <MudTh Style="width: 40px;"></MudTh> <!-- For expand/collapse -->
                         <MudTh>
                             <MudTableSortLabel SortLabel="title" T="RequirementDto" InitialDirection="SortDirection.Ascending">Title</MudTableSortLabel>
                         </MudTh>
@@ -145,15 +145,17 @@
                         <MudTh>Project</MudTh>
                         <MudTh>Parent Requirement</MudTh>
                         <MudTh>Test Cases</MudTh>
-                        <MudTh Style="width: 100px; text-align: center;">Actions</MudTh>
+                        <MudTh Style="width: 120px; text-align: center;">Actions</MudTh>
                     </HeaderContent>
                     <RowTemplate>
-                        <MudTd>
+                        <MudTd Style="vertical-align: middle;">
                             @if (context.Children.Any())
                             {
-                                <MudIconButton Icon="@(_expandedRequirements.Contains(context.Id) ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
-                                               Size="Size.Small"
-                                               OnClick="@(() => ToggleExpand(context.Id))" />
+                                <div style="display: flex; align-items: center;">
+                                    <MudIconButton Icon="@(_expandedRequirements.Contains(context.Id) ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                                                   Size="Size.Small"
+                                                   OnClick="@(() => ToggleExpand(context.Id))" />
+                                </div>
                             }
                         </MudTd>
                         <MudTd>
@@ -188,7 +190,7 @@
                             }
                         </MudTd>
                         <MudTd>
-                            @(context.Tags != null ? string.Join(", ", context.Tags) : "")
+                            @(context.Tags != null ? string.Join(", ",context.Tags) : "")
                         </MudTd>
                         <MudTd>
                             @(_projects.FirstOrDefault(p => p.Id == context.ProjectId)?.Name ?? "None")
@@ -216,10 +218,10 @@
                             }
                             else
                             {
-                                @(context.TestCaseIds != null ? string.Join(", ", context.TestCaseIds.Select(id => _availableTestCases.FirstOrDefault(tc => tc.Id == id)?.Title ?? id.ToString())) : "")
+                                @(context.TestCaseIds != null ? string.Join(", ",context.TestCaseIds.Select(id => _availableTestCases.FirstOrDefault(tc => tc.Id == id)?.Title ?? id.ToString())) : "")
                             }
                         </MudTd>
-                        <MudTd Style="text-align: center;">
+                        <MudTd Style="display: flex; justify-content: center; gap: 8px; vertical-align: middle;">
                             @if (context.IsEditing)
                             {
                                 <MudIconButton Icon="@Icons.Material.Filled.Save"
@@ -233,6 +235,10 @@
                             }
                             else
                             {
+                                <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                               Color="Color.Success"
+                                               Size="Size.Small"
+                                               OnClick="@(() => OpenCreateDialogEditAsync(context.Id))" />
                                 <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                                Color="Color.Primary"
                                                Size="Size.Small"
@@ -249,16 +255,18 @@
                         {
                             @foreach (var child in context.Children)
                             {
-                                <tr class="child-row" style="padding-left: @(20 * GetDepth(child))px;">
-                                    <td>
+                                <tr class="child-row">
+                                    <td style="vertical-align: middle; padding-left: @(20 * GetDepth(child))px;">
                                         @if (child.Children.Any())
                                         {
-                                            <MudIconButton Icon="@(_expandedRequirements.Contains(child.Id) ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
-                                                           Size="Size.Small"
-                                                           OnClick="@(() => ToggleExpand(child.Id))" />
+                                            <div style="display: flex; align-items: center;">
+                                                <MudIconButton Icon="@(_expandedRequirements.Contains(child.Id) ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                                                               Size="Size.Small"
+                                                               OnClick="@(() => ToggleExpand(child.Id))" />
+                                            </div>
                                         }
                                     </td>
-                                    <td>
+                                    <td style="vertical-align: middle;">
                                         @if (child.IsEditing)
                                         {
                                             <MudTextField T="string"
@@ -274,7 +282,7 @@
                                             @child.Title
                                         }
                                     </td>
-                                    <td>
+                                    <td style="vertical-align: middle;">
                                         @if (child.IsEditing)
                                         {
                                             <MudTextField T="string"
@@ -289,16 +297,16 @@
                                             @child.Description
                                         }
                                     </td>
-                                    <td>
-                                        @(child.Tags != null ? string.Join(", ", child.Tags) : "")
+                                    <td style="vertical-align: middle;">
+                                        @(child.Tags != null ? string.Join(", ",child.Tags) : "")
                                     </td>
-                                    <td>
+                                    <td style="vertical-align: middle;">
                                         @(_projects.FirstOrDefault(p => p.Id == child.ProjectId)?.Name ?? "None")
                                     </td>
-                                    <td>
+                                    <td style="vertical-align: middle;">
                                         @(_parentRequirements.FirstOrDefault(r => r.Id == child.ParentRequirementId)?.Title ?? "None")
                                     </td>
-                                    <td>
+                                    <td style="vertical-align: middle;">
                                         @if (child.IsEditing)
                                         {
                                             <MudSelect T="string"
@@ -318,10 +326,10 @@
                                         }
                                         else
                                         {
-                                            @(child.TestCaseIds != null ? string.Join(", ", child.TestCaseIds.Select(id => _availableTestCases.FirstOrDefault(tc => tc.Id == id)?.Title ?? id.ToString())) : "")
+                                            @(child.TestCaseIds != null ? string.Join(", ",child.TestCaseIds.Select(id => _availableTestCases.FirstOrDefault(tc => tc.Id == id)?.Title ?? id.ToString())) : "")
                                         }
                                     </td>
-                                    <td style="text-align: center;">
+                                    <td style="display: flex; justify-content: center; gap: 8px; vertical-align: middle;">
                                         @if (child.IsEditing)
                                         {
                                             <MudIconButton Icon="@Icons.Material.Filled.Save"
@@ -335,6 +343,10 @@
                                         }
                                         else
                                         {
+                                            <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                                           Color="Color.Success"
+                                                           Size="Size.Small"
+                                                           OnClick="@(() => OpenCreateDialogEditAsync(child.Id))" />
                                             <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                                            Color="Color.Primary"
                                                            Size="Size.Small"
@@ -348,7 +360,7 @@
                                 </tr>
                                 @if (_expandedRequirements.Contains(child.Id))
                                 {
-                                    @RenderChildRows(child, 2)
+                                    @RenderChildRows(child,2)
                                 }
                             }
                         }
@@ -356,7 +368,7 @@
                     <PagerContent>
                         <div class="d-flex align-center gap-3">
                             <MudText Typo="Typo.body2" Class="mr-2">Rows per page:</MudText>
-                            @foreach (var size in new int[] { 10, 25, 50, 100 })
+                            @foreach (var size in new int[] { 10,25,50,100 })
                             {
                                 <MudButton Variant="@(_pageSize == size ? Variant.Filled : Variant.Outlined)"
                                            Color="Color.Primary"
@@ -395,74 +407,46 @@
                 <MudText Typo="Typo.h6" Color="Color.Primary" Class="mb-4">Create New Requirement</MudText>
                 <MudForm @ref="_form" @bind-IsValid="_formIsValid" Class="d-flex flex-column gap-4">
                     <MudTextField T="string"
-                                  Label="Requirement Title"
-                                  @bind-Value="_newRequirement.Title"
-                                  Required="true"
-                                  RequiredError="Title is required"
-                                  Validation="@(new Func<string, string>(ValidateTitle))"
-                                  Variant="Variant.Outlined"
-                                  Clearable="true"
-                                  HelperText="Enter a unique requirement title (min 3 characters)"
-                                  Class="mud-input-rounded" />
+                    Label="Requirement Title"
+                    @bind-Value="_newRequirement.Title"
+                    Required="true"
+                    RequiredError="Title is required"
+                    Validation="@(new Func<string, string>(ValidateTitle))"
+                    Variant="Variant.Outlined"
+                    Clearable="true"
+                    HelperText="Enter a unique requirement title (min 3 characters)"
+                    Class="mud-input-rounded" />
                     <MudTextField T="string"
-                                  Label="Description"
-                                  @bind-Value="_newRequirement.Description"
-                                  Lines="4"
-                                  Variant="Variant.Outlined"
-                                  Clearable="true"
-                                  HelperText="Describe the requirement briefly"
-                                  Class="mud-input-rounded" />
+                    Label="Description"
+                    @bind-Value="_newRequirement.Description"
+                    Lines="4"
+                    Variant="Variant.Outlined"
+                    Clearable="true"
+                    HelperText="Describe the requirement briefly"
+                    Class="mud-input-rounded" />
                     <MudTextField T="string"
-                                  Label="Tags"
-                                  @bind-Value="_tagsInput"
-                                  Placeholder="Comma-separated tags"
-                                  Variant="Variant.Outlined"
-                                  Clearable="true"
-                                  HelperText="Enter tags separated by commas"
-                                  Class="mud-input-rounded" />
-                    <MudSelect T="Guid"
-                               Label="Project"
-                               @bind-Value="_newRequirement.ProjectId"
-                               Required="true"
-                               RequiredError="Project is required"
-                               Variant="Variant.Outlined"
-                               Class="mud-input-rounded"
-                               AnchorOrigin="Origin.BottomCenter"
-                               TransformOrigin="Origin.TopCenter"
-                               ToStringFunc="@(id => _projects?.FirstOrDefault(p => p.Id == id)?.Name ?? "Unknown Project")">
-                        @foreach (var project in _projects)
-                        {
-                            <MudSelectItem Value="@project.Id">@(project.Name ?? $"Project ID: {project.Id}")</MudSelectItem>
-                        }
-                    </MudSelect>
-                    <MudSelect T="Guid?"
-                               Label="Parent Requirement"
-                               @bind-Value="_newRequirement.ParentRequirementId"
-                               Variant="Variant.Outlined"
-                               Class="mud-input-rounded"
-                               AnchorOrigin="Origin.BottomCenter"
-                               TransformOrigin="Origin.TopCenter"
-                               ToStringFunc="@(id => id.HasValue ? _parentRequirements?.FirstOrDefault(r => r.Id == id.Value)?.Title ?? "Unknown Requirement" : "None")">
-                        <MudSelectItem Value="@((Guid?)null)">None</MudSelectItem>
-                        @foreach (var requirement in _parentRequirements)
-                        {
-                            <MudSelectItem Value="@requirement.Id">@(requirement.Title ?? $"Requirement ID: {requirement.Id}")</MudSelectItem>
-                        }
-                    </MudSelect>
-                    <MudSelect T="string"
-                               Label="Test Cases"
-                               @bind-Value="_testCasesInput"
-                               Variant="Variant.Outlined"
-                               Class="mud-input-rounded"
-                               AnchorOrigin="Origin.BottomCenter"
-                               TransformOrigin="Origin.TopCenter"
-                               MultiSelection="true"
-                               Placeholder="Select test cases">
-                        @foreach (var testCase in _availableTestCases)
-                        {
-                            <MudSelectItem Value="@testCase.Id.ToString()">@(testCase.Title ?? $"Test Case ID: {testCase.Id}")</MudSelectItem>
-                        }
-                    </MudSelect>
+                    Label="Tags"
+                    @bind-Value="_tagsInput"
+                    Placeholder="Comma-separated tags"
+                    Variant="Variant.Outlined"
+                    Clearable="true"
+                    HelperText="Enter tags separated by commas"
+                    Class="mud-input-rounded" />
+                    @* <MudSelect T="Guid" *@
+                    @*            Label="Project" *@
+                    @*            @bind-Value="_newRequirement.ProjectId" *@
+                    @*            Required="true" *@
+                    @*            RequiredError="Project is required" *@
+                    @*            Variant="Variant.Outlined" *@
+                    @*            Class="mud-input-rounded" *@
+                    @*            AnchorOrigin="Origin.BottomCenter" *@
+                    @*            TransformOrigin="Origin.TopCenter" *@
+                    @*            ToStringFunc="@(id => _projects?.FirstOrDefault(p => p.Id == id)?.Name ?? "Unknown Project")"> *@
+                    @*     @foreach (var project in _projects) *@
+                    @*     { *@
+                    @*         <MudSelectItem Value="@project.Id">@(project.Name ?? $"Project ID: {project.Id}")</MudSelectItem> *@
+                    @*     } *@
+                    @* </MudSelect> *@
                 </MudForm>
             </MudItem>
         </MudGrid>
@@ -496,17 +480,17 @@
 
     private readonly MudTheme _customTheme = new()
             {
-                // Palette = new Palette
-                // {
-                //     Primary = "#1976D2",
-                //     Secondary = "#FF4081",
-                //     Background = "#F5F7FA",
-                //     Surface = "#FFFFFF",
-                //     TextPrimary = "#212121",
-                //     TextSecondary = "#757575",
-                //     AppbarBackground = "#1976D2",
-                //     ActionDefault = "#212121"
-                // },
+        // Palette = new Palette
+        // {
+        //     Primary = "#1976D2",
+        //     Secondary = "#FF4081",
+        //     Background = "#F5F7FA",
+        //     Surface = "#FFFFFF",
+        //     TextPrimary = "#212121",
+        //     TextSecondary = "#757575",
+        //     AppbarBackground = "#1976D2",
+        //     ActionDefault = "#212121"
+        // },
                 PaletteDark = new PaletteDark
                 {
                     Primary = "#2196F3",
@@ -520,21 +504,21 @@
                 },
                 Typography = new Typography
                 {
-                    // Default = new Default
-                    // {
-                    //     FontFamily = new[] { "Roboto", "Helvetica", "Arial", "sans-serif" },
-                    //     FontSize = ".875rem",
-                    //     FontWeight = 400,
-                    //     LineHeight = 1.43,
-                    //     LetterSpacing = ".01071em"
-                    // },
-                    // H6 = new H6
-                    // {
-                    //     FontSize = "1.25rem",
-                    //     FontWeight = 500,
-                    //     LineHeight = 1.6,
-                    //     LetterSpacing = ".0075em"
-                    // }
+            // Default = new Default
+            // {
+            //     FontFamily = new[] { "Roboto", "Helvetica", "Arial", "sans-serif" },
+            //     FontSize = ".875rem",
+            //     FontWeight = 400,
+            //     LineHeight = 1.43,
+            //     LetterSpacing = ".01071em"
+            // },
+            // H6 = new H6
+            // {
+            //     FontSize = "1.25rem",
+            //     FontWeight = 500,
+            //     LineHeight = 1.6,
+            //     LetterSpacing = ".0075em"
+            // }
                 },
                 LayoutProperties = new LayoutProperties
                 {
@@ -547,7 +531,8 @@
     protected override async Task OnInitializedAsync()
     {
         _projects = await ProjectService.GetProjectsAsync();
-        _parentRequirements = (await RequirementService.GetRequirementsAsync()).ToList();
+        var allRequirements = await RequirementService.GetRequirementsAsync();
+        _parentRequirements = FlattenRequirements(allRequirements).ToList();
         //_availableTestCases = await RequirementService.GetAvailableTestCasesAsync();
         await _table?.ReloadServerData();
     }
@@ -566,10 +551,10 @@
                 filter += $"{(string.IsNullOrEmpty(filter) ? "" : ",")}sort:{state.SortLabel}:{(state.SortDirection == SortDirection.Ascending ? "asc" : "desc")}";
 
             var result = await RequirementService.GetRequirementsAsync(
-          
+
             page: state.Page + 1,100,""
-           
-           
+
+
             );
 
             return new TableData<RequirementDto>
@@ -612,6 +597,8 @@
     private async Task RefreshRequirementsAsync()
     {
         await _table.ReloadServerData();
+        var allRequirements = await RequirementService.GetRequirementsAsync();
+        _parentRequirements = FlattenRequirements(allRequirements).ToList();
         Snackbar.Add("Requirements refreshed successfully", Severity.Success);
     }
 
@@ -758,10 +745,19 @@
         _tagsInput = string.Empty;
         _testCasesInput = string.Empty;
         _projects = await ProjectService.GetProjectsAsync();
-        _newRequirement.ProjectId = _projects.FirstOrDefault()?.Id ?? default;
-        _parentRequirements = (await RequirementService.GetRequirementsAsync()).ToList();
+        // _newRequirement.ProjectId = _projects.FirstOrDefault()?.Id ?? default;
         //_availableTestCases = await RequirementService.GetAvailableTestCasesAsync();
         _newRequirement.TenantId = _tenantId;
+        _showCreateDialog = true;
+        await Task.Run(() => _form?.ResetValidation());
+    }
+    private async Task OpenCreateDialogEditAsync(Guid RequirementParentId)
+    {
+        _newRequirement = new CreateRequirementDto();
+        _tagsInput = string.Empty;
+        _testCasesInput = string.Empty;
+        _newRequirement.TenantId = _tenantId;
+        _newRequirement.ParentRequirementId = RequirementParentId;
         _showCreateDialog = true;
         await Task.Run(() => _form?.ResetValidation());
     }
@@ -1138,7 +1134,7 @@
                 @(_projects.FirstOrDefault(p => p.Id == child.ProjectId)?.Name ?? "None")
             </td>
             <td>
-                @(_parentRequirements.FirstOrDefault(r => r.Id == child.ParentRequirementId)?.Title ?? "None")
+                @(_parentRequirements.FirstOrDefault(r => r.Id == child.ParentRequirementId)?.Title ?? "N/A")
             </td>
             <td>
                 @if (child.IsEditing)
@@ -1177,6 +1173,10 @@
             }
             else
             {
+                <MudIconButton Icon="@Icons.Material.Filled.Add"
+                               Color="Color.Success"
+                               Size="Size.Small"
+                               OnClick="@(() => OpenCreateDialogEditAsync(child.Id))" />
                 <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                Color="Color.Primary"
                                Size="Size.Small"

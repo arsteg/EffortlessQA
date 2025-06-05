@@ -43,8 +43,8 @@ namespace EffortlessQA.Data.Dtos
         public string Title { get; set; }
         public string? Description { get; set; }
         public string[]? Tags { get; set; }
-        public Guid ProjectId { get; set; }
-        public string TenantId { get; set; }
+        public Guid ProjectId { get; set; } = Guid.Parse("114d1646-8a22-495b-9734-2cdc6dae1361");
+		public string TenantId { get; set; }
         public Guid? ParentRequirementId { get; set; }
         public List<RequirementTestCase>? RequirementTestCases { get; set; } = new();
     }
