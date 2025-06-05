@@ -55,5 +55,6 @@ builder.Services.AddScoped<PermissionService>();
 builder.Services.AddScoped<RequirementService>();
 builder.Services.AddScoped<SearchService>();
 builder.Services.AddScoped<CommonService>();
+builder.Services.AddScoped<ApplicationContextService>();
 
 await builder.Build().RunAsync();

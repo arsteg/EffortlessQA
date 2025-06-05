@@ -15,3 +15,6 @@ body {
 .mud-appbar {
     background-color: var(--mud-palette-primary) !important;
 }
+.mud-popover {
+    z-index: 10000 !important;
+}
