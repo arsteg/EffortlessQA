@@ -1,32 +1,260 @@
 ﻿using System.Net.Http.Json;
+using System.Text.Json;
+using DocumentFormat.OpenXml.Office2010.Excel;
+using EffortlessQA.Client.Components;
+using EffortlessQA.Client.Models;
 using EffortlessQA.Data.Dtos;
+using EffortlessQA.Data.Entities;
 
 namespace EffortlessQA.Client.Services
 {
-    public class TestSuiteService
-    {
-        private readonly HttpClient _httpClient;
+	public class TestSuiteService
+	{
+		private readonly HttpClient _httpClient;
 
-        public TestSuiteService(IHttpClientFactory httpClientFactory)
-        {
-            _httpClient = httpClientFactory.CreateClient("EffortlessQA.Api");
-        }
+		#region Constructor
 
-        public async Task<List<TestSuiteDto>> GetTestSuitesAsync()
-        {
-            return await _httpClient.GetFromJsonAsync<List<TestSuiteDto>>("/test-suites") ?? new();
-        }
+		public TestSuiteService( IHttpClientFactory httpClientFactory )
+		{
+			_httpClient = httpClientFactory.CreateClient("EffortlessQA.Api");
+		}
 
-        public async Task CreateTestSuiteAsync(CreateTestSuiteDto testSuiteDto)
-        {
-            var response = await _httpClient.PostAsJsonAsync("/test-suites", testSuiteDto);
-            response.EnsureSuccessStatusCode();
-        }
+		#endregion
 
-        public async Task DeleteTestSuiteAsync(Guid id)
-        {
-            var response = await _httpClient.DeleteAsync($"/test-suites/{id}");
-            response.EnsureSuccessStatusCode();
-        }
-    }
+		#region CRUD Operations
+
+		public async Task<List<TestSuiteDto>> GetTestSuitesAsync(
+			string searchTerm = null,
+			CancellationToken cancellationToken = default
+		)
+		{
+			var query = new TestSuiteQuery
+			{
+				Page = 1,
+				PageSize = 1000,
+				SearchTerm = searchTerm
+			};
+			var result = await GetPagedTestSuitesAsync(query,cancellationToken);
+			return result.Items ?? new List<TestSuiteDto>();
+		}
+
+		public async Task<PagedResult<TestSuiteDto>> GetPagedTestSuitesAsync(
+			TestSuiteQuery query,
+			CancellationToken cancellationToken = default
+		)
+		{
+			try
+			{
+				if (query == null)
+					throw new ArgumentNullException(nameof(query));
+				var url =
+					$"/api/v1/projects/testsuites?page={query.Page}&size={query.PageSize}&filter={Uri.EscapeDataString(BuildFilter(query) ?? "")}";
+				Console.WriteLine($"Request URL: {url}");
+
+				var response = await _httpClient.GetAsync(url,cancellationToken);
+				var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+				Console.WriteLine($"Response: {response.StatusCode} - {responseContent}");
+
+				if (!response.IsSuccessStatusCode)
+				{
+					throw new HttpRequestException(
+						$"API call failed: {response.StatusCode} - {responseContent}",
+						null,
+						response.StatusCode
+					);
+				}
+
+				var options = new JsonSerializerOptions
+				{
+					PropertyNameCaseInsensitive = true,
+					ReadCommentHandling = JsonCommentHandling.Skip,
+					AllowTrailingCommas = true
+				};
+
+				var apiResponse = await response.Content.ReadFromJsonAsync<
+					ApiResponse<PagedResult<TestSuiteDto>>
+				>(options,cancellationToken);
+				Console.WriteLine($"Data Items: {apiResponse?.Data?.Items?.Count ?? 0}");
+
+				if (apiResponse == null || apiResponse.Error != null)
+				{
+					throw new Exception(
+						$"API returned an error: {apiResponse?.Error?.Code ?? "Unknown"} - {apiResponse?.Error?.Message ?? "No response"}"
+					);
+				}
+
+				return apiResponse.Data ?? new PagedResult<TestSuiteDto>();
+			}
+			catch (HttpRequestException ex)
+				when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+			{
+				Console.WriteLine($"Unauthorized Error: {ex.Message}");
+				throw new Exception(
+					"You do not have permission to access test suites. Contact an administrator.",
+					ex
+				);
+			}
+			catch (JsonException ex)
+			{
+				Console.WriteLine($"JSON Parsing Error: {ex.Message}");
+				throw new Exception($"Failed to parse API response: {ex.Message}",ex);
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"Unexpected Error: {ex.Message}\nStackTrace: {ex.StackTrace}");
+				throw new Exception($"Unexpected error while fetching test suites: {ex.Message}",ex);
+			}
+		}
+
+		public async Task CreateTestSuiteAsync(
+			CreateTestSuiteDto testSuiteDto,
+			CancellationToken cancellationToken = default
+		)
+		{
+			try
+			{
+				if (testSuiteDto == null)
+					throw new ArgumentNullException(nameof(testSuiteDto));
+				if (string.IsNullOrWhiteSpace(testSuiteDto.Name))
+					throw new ArgumentException(
+						"Test suite name is required.",
+						nameof(testSuiteDto.Name)
+					);
+
+				var response = await _httpClient.PostAsJsonAsync(
+					$"/api/v1/projects/{testSuiteDto.ProjectId}/testsuites",
+					testSuiteDto,
+					cancellationToken
+				);
+				var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+				Console.WriteLine(
+					$"CreateTestSuite Response: {response.StatusCode} - {responseContent}"
+				);
+
+				if (!response.IsSuccessStatusCode)
+				{
+					throw new HttpRequestException(
+						$"Failed to create test suite: {response.StatusCode} - {responseContent}",
+						null,
+						response.StatusCode
+					);
+				}
+			}
+			catch (HttpRequestException ex)
+			{
+				Console.WriteLine($"HTTP Error: {ex.Message}, Status: {ex.StatusCode}");
+				throw new Exception(
+					$"Failed to create test suite: {ex.Message}{(ex.StatusCode.HasValue ? $" (Status: {ex.StatusCode})" : "")}",
+					ex
+				);
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"Unexpected Error: {ex.Message}\nStackTrace: {ex.StackTrace}");
+				throw new Exception($"Unexpected error while creating test suite: {ex.Message}",ex);
+			}
+		}
+
+		public async Task UpdateTestSuiteAsync(
+			TestSuiteDto testSuiteDto,
+			CancellationToken cancellationToken = default
+		)
+		{
+			try
+			{
+				if (testSuiteDto == null)
+					throw new ArgumentNullException(nameof(testSuiteDto));
+				if (string.IsNullOrWhiteSpace(testSuiteDto.Name))
+					throw new ArgumentException(
+						"Test suite name is required.",
+						nameof(testSuiteDto.Name)
+					);
+				
+				var response = await _httpClient.PutAsJsonAsync(
+					$"/api/v1/projects/{testSuiteDto.ProjectId}/testsuites/{testSuiteDto.Id}",
+					testSuiteDto,
+					cancellationToken
+				);
+				var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+				Console.WriteLine(
+					$"UpdateTestSuite Response: {response.StatusCode} - {responseContent}"
+				);
+
+				if (!response.IsSuccessStatusCode)
+				{
+					throw new HttpRequestException(
+						$"Failed to update test suite: {response.StatusCode} - {responseContent}",
+						null,
+						response.StatusCode
+					);
+				}
+			}
+			catch (HttpRequestException ex)
+			{
+				Console.WriteLine($"HTTP Error: {ex.Message}, Status: {ex.StatusCode}");
+				throw new Exception(
+					$"Failed to update test suite: {ex.Message}{(ex.StatusCode.HasValue ? $" (Status: {ex.StatusCode})" : "")}",
+					ex
+				);
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"Unexpected Error: {ex.Message}\nStackTrace: {ex.StackTrace}");
+				throw new Exception($"Unexpected error while updating test suite: {ex.Message}",ex);
+			}
+		}
+
+		public async Task DeleteTestSuiteAsync( Guid id, Guid projectId, CancellationToken cancellationToken = default )
+		{
+			try
+			{
+				if (id == Guid.Empty)
+					throw new ArgumentException("Test suite ID cannot be empty.",nameof(id));
+
+				var response = await _httpClient.DeleteAsync($"/api/v1/projects/{projectId}/testsuites/{id}",cancellationToken);
+				var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+				Console.WriteLine(
+					$"DeleteTestSuite Response: {response.StatusCode} - {responseContent}"
+				);
+
+				if (!response.IsSuccessStatusCode)
+				{
+					throw new HttpRequestException(
+						$"Failed to delete test suite: {response.StatusCode} - {responseContent}",
+						null,
+						response.StatusCode
+					);
+				}
+			}
+			catch (HttpRequestException ex)
+			{
+				Console.WriteLine($"HTTP Error: {ex.Message}, Status: {ex.StatusCode}");
+				throw new Exception(
+					$"Failed to delete test suite: {ex.Message}{(ex.StatusCode.HasValue ? $" (Status: {ex.StatusCode})" : "")}",
+					ex
+				);
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"Unexpected Error: {ex.Message}\nStackTrace: {ex.StackTrace}");
+				throw new Exception($"Unexpected error while deleting test suite: {ex.Message}",ex);
+			}
+		}
+
+		#endregion
+
+		#region Helpers
+
+		private string BuildFilter( TestSuiteQuery query )
+		{
+			var filters = new List<string>();
+			if (!string.IsNullOrEmpty(query.SearchTerm))
+				filters.Add($"name:{query.SearchTerm}");
+			if (!string.IsNullOrEmpty(query.SortBy))
+				filters.Add($"sort:{query.SortBy}:{query.SortDirection}");
+			return string.Join(",",filters);
+		}
+
+		#endregion
+	}
 }

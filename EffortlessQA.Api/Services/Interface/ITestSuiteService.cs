@@ -16,7 +16,13 @@ namespace EffortlessQA.Api.Services.Interface
             int limit,
             string? filter
         );
-        Task<TestSuiteDto> GetTestSuiteAsync(Guid testSuiteId, Guid projectId, string tenantId);
+		Task<PagedResult<TestSuiteDto>> GetTestSuitesAsync(
+			string tenantId,
+			int page,
+			int limit,
+			string? filter
+		);
+		Task<TestSuiteDto> GetTestSuiteAsync(Guid testSuiteId, Guid projectId, string tenantId);
         Task<TestSuiteDto> UpdateTestSuiteAsync(
             Guid testSuiteId,
             Guid projectId,

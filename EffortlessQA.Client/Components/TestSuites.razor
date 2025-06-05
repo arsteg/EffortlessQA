@@ -1,90 +1,846 @@
-﻿// EffortlessQA.Client/Pages/TestSuites.razor
-@page "/test-suites"
-
+﻿@page "/test-suites"
+@using ClosedXML.Excel
+@using CsvHelper
+@using EffortlessQA.Client.Components.dialogs
+@using EffortlessQA.Client.Models
 @using EffortlessQA.Client.Services
 @using EffortlessQA.Data.Dtos
 @using MudBlazor
+@using System.Globalization
+@using System.Text.Json
 @inject TestSuiteService TestSuiteService
-@inject NavigationManager Navigation
+@inject CommonService CommonService
+@inject NavigationManager NavigationManager
 @inject ISnackbar Snackbar
+@inject IJSRuntime JSRuntime
+@inject IDialogService DialogService
+@inject ProjectService ProjectService
 
-<MudGrid>
-    <MudItem xs="12">
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@OpenCreateDialog">Create Test Suite</MudButton>
-    </MudItem>
-    <MudItem xs="12">
-        <MudTable Items="@_testSuites" Hover="true" Breakpoint="Breakpoint.Sm">
-            <HeaderContent>
-                <MudTh>Name</MudTh>
-                <MudTh>Description</MudTh>
-                <MudTh>Project</MudTh>
-                <MudTh>Actions</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd>@context.Name</MudTd>
-                <MudTd>@context.Description</MudTd>
-                <MudTd>@context.ProjectId</MudTd>
-                <MudTd>
-                    <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => Navigation.NavigateTo($"/test-cases?suiteId={context.Id}"))">View Test Cases</MudButton>
-                    <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="@(() => DeleteTestSuite(context.Id))">Delete</MudButton>
-                </MudTd>
-            </RowTemplate>
-        </MudTable>
-    </MudItem>
-</MudGrid>
+<MudThemeProvider Theme="_customTheme" />
+<MudContainer MaxWidth="MaxWidth.Large" Class="my-8">
+    <MudGrid Spacing="2">
+        <!-- Header -->
+        <MudItem xs="12">
+            <MudText Typo="Typo.h5" Color="Color.Primary" Class="mb-4">Manage Test Suites</MudText>
+        </MudItem>
 
-<MudDialog @bind-IsVisible="_showCreateDialog">
+        <!-- Toolbar -->
+        <MudItem xs="12">
+            <MudPaper Elevation="2" Class="pa-4" Style="border-radius: 8px;">
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" sm="4" md="3">
+                        <MudTextField T="string"
+                        Label="Search Test Suites"
+                        Placeholder="Enter test suite name..."
+                        Adornment="Adornment.Start"
+                        AdornmentIcon="@Icons.Material.Filled.Search"
+                        @bind-Value="_searchTerm"
+                        DebounceInterval="500"
+                        OnDebounceIntervalElapsed="HandleSearchTestSuites"
+                        Variant="Variant.Outlined"
+                        Clearable="true"
+                        Class="mud-input-rounded" />
+                    </MudItem>
+                    <MudItem xs="12" sm="8" md="9" Class="d-flex align-center justify-end gap-2">
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.Add"
+                            Color="Color.Primary"
+                            Size="Size.Medium"
+                            OnClick="@OpenCreateDialogAsync"
+                            OnMouseOver="@(() => LogHover("Add Test Suite"))"
+                            AriaLabel="Add Test Suite"
+                            Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Add Test Suite</MudText>
+                        </div>
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                            Color="Color.Secondary"
+                            Size="Size.Medium"
+                            OnClick="@RefreshTestSuitesAsync"
+                            OnMouseOver="@(() => LogHover("Refresh test suites"))"
+                            AriaLabel="Refresh test suites"
+                            Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Refresh</MudText>
+                        </div>
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.TextSnippet"
+                            Color="Color.Default"
+                            Size="Size.Medium"
+                            OnClick="@ExportToCsvAsync"
+                            OnMouseOver="@(() => LogHover("Export to CSV"))"
+                            AriaLabel="Export to CSV"
+                            Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Export CSV</MudText>
+                        </div>
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.GridOn"
+                            Color="Color.Default"
+                            Size="Size.Medium"
+                            OnClick="@ExportToExcelAsync"
+                            OnMouseOver="@(() => LogHover("Export to Excel"))"
+                            AriaLabel="Export to Excel"
+                            Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Export Excel</MudText>
+                        </div>
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.PictureAsPdf"
+                            Color="Color.Default"
+                            Size="Size.Medium"
+                            OnClick="@ExportToPdfAsync"
+                            OnMouseOver="@(() => LogHover("Export to PDF"))"
+                            AriaLabel="Export to PDF"
+                            Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Export PDF</MudText>
+                        </div>
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.CloudUpload"
+                            Color="Color.Primary"
+                            Size="Size.Medium"
+                            OnClick="@ImportFromFileAsync"
+                            OnMouseOver="@(() => LogHover("Import Excel/CSV"))"
+                            AriaLabel="Import Excel or CSV"
+                            Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Import Excel/CSV</MudText>
+                        </div>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Table -->
+        <MudItem xs="12">
+            <MudPaper Elevation="2" Class="pa-4" Style="border-radius: 8px;">
+                <MudTable ServerData="@(new Func<TableState, CancellationToken, Task<TableData<TestSuiteDto>>>(LoadTestSuitesAsync))"
+                @ref="_table"
+                Hover="true"
+                Breakpoint="Breakpoint.Sm"
+                Loading="@_isLoading"
+                Dense="true"
+                AllowMultiSelection="true"
+                @bind-SelectedItems="_selectedTestSuites"
+                Class="mud-table-clean"
+                RowsPerPage="@_pageSize">
+                    <ToolBarContent>
+                        <MudText Typo="Typo.subtitle1" Color="Color.Primary">Test Suites</MudText>
+                        <MudSpacer />
+                        @if (_selectedTestSuites.Any())
+                        {
+                            <MudButton Variant="Variant.Text"
+                            Color="Color.Error"
+                            StartIcon="@Icons.Material.Filled.Delete"
+                            OnClick="@BulkDeleteTestSuitesAsync"
+                            Size="Size.Small">Delete (@_selectedTestSuites.Count)</MudButton>
+                        }
+                    </ToolBarContent>
+                    <HeaderContent>
+                        <MudTh>
+                            <MudTableSortLabel SortLabel="name" T="TestSuiteDto" InitialDirection="SortDirection.Ascending">Name</MudTableSortLabel>
+                        </MudTh>
+                        <MudTh>
+                            <MudTableSortLabel SortLabel="description" T="TestSuiteDto">Description</MudTableSortLabel>
+                        </MudTh>
+                        <MudTh>
+                            <MudTableSortLabel SortLabel="projectId" T="TestSuiteDto">Project ID</MudTableSortLabel>
+                        </MudTh>
+                        <MudTh>
+                            <MudTableSortLabel SortLabel="parentSuiteId" T="TestSuiteDto">Parent Suite ID</MudTableSortLabel>
+                        </MudTh>
+                        <MudTh Style="width: 100px; text-align: center;">Actions</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>
+                            @if (context.IsEditing)
+                            {
+                                <MudTextField T="string"
+                                @bind-Value="context.Name"
+                                Required="true"
+                                RequiredError="Name is required"
+                                Variant="Variant.Outlined"
+                                Margin="Margin.Dense"
+                                Class="mud-input-compact" />
+                            }
+                            else
+                            {
+                                @context.Name
+                            }
+                        </MudTd>
+                        <MudTd>
+                            @if (context.IsEditing)
+                            {
+                                <MudTextField T="string"
+                                @bind-Value="context.Description"
+                                Required="true"
+                                RequiredError="Description is required"
+                                Variant="Variant.Outlined"
+                                Margin="Margin.Dense"
+                                Lines="2"
+                                Class="mud-input-compact" />
+                            }
+                            else
+                            {
+                                @context.Description
+                            }
+                        </MudTd>
+                        <MudTd>
+                            @(_projects.FirstOrDefault(p => p.Id == context.ProjectId)?.Name ?? "None")
+                        </MudTd>
+                        <MudTd>
+                            @context.ParentSuiteId
+                            @* @(_projects.FirstOrDefault(p => p.Id == context.ProjectId)?.Name ?? "None") @(_projects.FirstOrDefault(p => p.Id == context.ProjectId)?.Name ?? "None") *@
+                        </MudTd>
+                        <MudTd Style="text-align: center;">
+                            @if (context.IsEditing)
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Save"
+                                Color="Color.Success"
+                                Size="Size.Small"
+                                OnClick="@(() => SaveInlineEditAsync(context))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Cancel"
+                                Color="Color.Secondary"
+                                Size="Size.Medium"
+                                OnClick="@(() => CancelInlineEdit(context))" />
+                            }
+                            else
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                Color="Color.Primary"
+                                Size="Size.Small"
+                                OnClick="@(() => StartInlineEdit(context))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                Color="Color.Error"
+                                Size="Size.Small"
+                                OnClick="@(() => DeleteTestSuiteAsync(context.Id, context.ProjectId))" />
+                            }
+                        </MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <div class="d-flex align-center gap-3">
+                            <MudText Typo="Typo.body2" Class="mr-2">Rows per page:</MudText>
+                            @foreach (var size in new int[] { 10,25,50,100 })
+                            {
+                                <MudButton Variant="@(_pageSize == size ? Variant.Filled : Variant.Outlined)"
+                                Color="Color.Primary"
+                                Size="Size.Small"
+                                OnClick="@(() => OnPageSizeChanged(size))"
+                                Class="mud-button-compact"
+                                AriaLabel="@($"Set rows per page to {size}")">
+                                    @size
+                                </MudButton>
+                            }
+                            <MudTablePager RowsPerPageString="" DisableRowsPerPage="true" />
+                        </div>
+                    </PagerContent>
+                    <LoadingContent>
+                        <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
+                    </LoadingContent>
+                    <NoRecordsContent>
+                        <MudPaper Elevation="0" Class="pa-8 d-flex flex-column align-center justify-center" Style="min-height: 400px; background: transparent;">
+                            <MudIcon Icon="@Icons.Material.Filled.FolderOpen" Size="Size.Large" Color="Color.Primary" Class="mb-4" />
+                            <MudText Typo="Typo.h6" Color="Color.Primary" Align="Align.Center">No Test Suites Found</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center" Class="mb-6 mt-3">
+                                Click "Add Test Suite" above to create your first test suite.
+                            </MudText>
+                        </MudPaper>
+                    </NoRecordsContent>
+                </MudTable>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+<MudDialog @bind-Visible="_showCreateDialog" Options="new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true }">
     <DialogContent>
-        <MudTextField T="string" Label="Name" @bind-Value="_newTestSuite.Name" Required="true" />
-        <MudTextField T="string" Label="Description" @bind-Value="_newTestSuite.Description" Class="mt-4" />
-        <MudTextField T="int" Label="Project ID" @bind-Value="_newTestSuite.ProjectId" Required="true" Class="mt-4" />
+        <MudGrid Class="pa-4">
+            <MudItem xs="12">
+                <MudText Typo="Typo.h6" Color="Color.Primary" Class="mb-4">Create New Test Suite</MudText>
+                <MudForm @ref="_form" @bind-IsValid="_formIsValid" Class="d-flex flex-column gap-4">
+                    <MudTextField T="string"
+                    Label="Test Suite Name"
+                    @bind-Value="_newTestSuite.Name"
+                    Required="true"
+                    RequiredError="Name is required"
+                    Validation="@(new Func<string, string>(ValidateName))"
+                    Variant="Variant.Outlined"
+                    Clearable="true"
+                    HelperText="Enter a unique test suite name (min 3 characters)"
+                    Class="mud-input-rounded" />
+                    <MudTextField T="string"
+                    Label="Description"
+                    @bind-Value="_newTestSuite.Description"
+                    Required="true"
+                    RequiredError="Description is required"
+                    Lines="4"
+                    Variant="Variant.Outlined"
+                    Clearable="true"
+                    HelperText="Describe the test suite briefly"
+                    Class="mud-input-rounded" />
+                    <MudTextField T="Guid?"
+                    Label="Parent Suite ID"
+                    @bind-Value="_newTestSuite.ParentSuiteId"
+                    Variant="Variant.Outlined"
+                    Clearable="true"
+                    HelperText="Optional: Enter the parent suite ID"
+                    Class="mud-input-rounded" />
+                    <MudSelect T="Guid"
+                    Label="ProjectId"
+                    @bind-Value="_newTestSuite.ProjectId"
+                    Required="true"
+                    RequiredError="Project is required"
+                    Variant="Variant.Outlined"
+                    Class="mud-input-rounded"
+                    AnchorOrigin="Origin.BottomCenter"
+                    TransformOrigin="Origin.TopCenter"
+                    ToStringFunc="@(id => _projects?.FirstOrDefault(p => p.Id == id)?.Name ?? "Unknown Project")">
+
+                        @foreach (var project in _projects)
+                        {
+                            <MudSelectItem Value="@project.Id">@(project.Name ?? $"Project ID: {project.Id}")</MudSelectItem>
+                        }
+
+                    </MudSelect>
+                </MudForm>
+            </MudItem>
+        </MudGrid>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="@CancelCreate">Cancel</MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@CreateTestSuite">Save</MudButton>
+        <MudButton OnClick="@CancelCreate" Variant="Variant.Text" Color="Color.Secondary">Cancel</MudButton>
+        <MudButton OnClick="@CreateTestSuiteAsync" Variant="Variant.Filled" Color="Color.Primary" Disabled="!_formIsValid">Create</MudButton>
     </DialogActions>
 </MudDialog>
 
 @code {
-    private List<TestSuiteDto> _testSuites = new();
+    #region Fields
+
     private CreateTestSuiteDto _newTestSuite = new();
+    private List<ProjectDto> _projects = new();
+    private List<TestSuiteDto> _parentTestSuite = new();
+
     private bool _showCreateDialog;
+    private string _searchTerm = string.Empty;
+    private bool _isLoading;
+    private MudTable<TestSuiteDto> _table;
+    private HashSet<TestSuiteDto> _selectedTestSuites = new();
+    private MudForm _form;
+    private bool _formIsValid;
+    private int _pageSize = 10;
+    private Dictionary<Guid,TestSuiteDto> _originalTestSuites = new();
+    private readonly MudTheme _customTheme = new()
+        {
+            PaletteLight = new PaletteLight
+            {
+                Primary = "#1976D2",
+                Secondary = "#FF4081",
+                Background = "#F5F7FA",
+                Surface = "#FFFFFF",
+                TextPrimary = "#212121",
+                TextSecondary = "#757575",
+                AppbarBackground = "#1976D2",
+                ActionDefault = "#212121"
+            },
+            PaletteDark = new PaletteDark
+            {
+                Primary = "#2196F3",
+                Secondary = "#F50057",
+                Background = "#121212",
+                Surface = "#1E1E1E",
+                TextPrimary = "#FFFFFF",
+                TextSecondary = "#B0BEC5",
+                AppbarBackground = "#2196F3",
+                ActionDefault = "#FFFFFF"
+            },
+            LayoutProperties = new LayoutProperties
+            {
+                DefaultBorderRadius = "8px"
+            }
+        };
+
+    #endregion
+
+    #region Lifecycle
 
     protected override async Task OnInitializedAsync()
     {
-        _testSuites = await TestSuiteService.GetTestSuitesAsync();
+        _projects = await ProjectService.GetProjectsAsync();
+        _newTestSuite.ProjectId = _projects.FirstOrDefault()?.Id ?? default(Guid);
+
+        _parentTestSuite = await TestSuiteService.GetTestSuitesAsync();
+        _newTestSuite.ParentSuiteId = _parentTestSuite.FirstOrDefault()?.Id ?? default(Guid);
+
+        await _table?.ReloadServerData();
     }
 
-    private void OpenCreateDialog() => _showCreateDialog = true;
-    private void CancelCreate() => _showCreateDialog = false;
+    #endregion
 
-    private async Task CreateTestSuite()
+    #region Table Operations
+
+    private async Task<TableData<TestSuiteDto>> LoadTestSuitesAsync( TableState state,CancellationToken cancellationToken )
     {
+        _isLoading = true;
+        try
+        {
+            Console.WriteLine($"Loading page {state.Page + 1} with {_pageSize} rows");
+            var query = new TestSuiteQuery
+                {
+                    SearchTerm = _searchTerm,
+                    SortBy = state.SortLabel,
+                    SortDirection = state.SortDirection == SortDirection.Ascending ? "asc" : "desc",
+                    Page = state.Page + 1,
+                    PageSize = _pageSize
+                };
+
+            var result = await TestSuiteService.GetPagedTestSuitesAsync(query);
+            return new TableData<TestSuiteDto> { TotalItems = result.TotalCount,Items = result.Items };
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
+            return new TableData<TestSuiteDto> { TotalItems = 0,Items = new List<TestSuiteDto>() };
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load test suites: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error loading test suites: {ex}");
+            return new TableData<TestSuiteDto> { TotalItems = 0,Items = new List<TestSuiteDto>() };
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task OnPageSizeChanged( int newSize )
+    {
+        _pageSize = newSize;
+        Snackbar.Add($"Page size changed to {_pageSize}",Severity.Info);
+        await _table.ReloadServerData();
+    }
+
+    private async Task HandleSearchTestSuites( string term )
+    {
+        _searchTerm = term;
+        await _table.ReloadServerData();
+    }
+
+    private async Task RefreshTestSuitesAsync()
+    {
+        await _table.ReloadServerData();
+        Snackbar.Add("Test suites refreshed successfully",Severity.Success);
+    }
+
+    private void StartInlineEdit( TestSuiteDto testSuite )
+    {
+        testSuite.IsEditing = true;
+        _originalTestSuites[testSuite.Id] = new TestSuiteDto
+            {
+                Id = testSuite.Id,
+                Name = testSuite.Name,
+                Description = testSuite.Description,
+                ProjectId = testSuite.ProjectId,
+                TenantId = testSuite.TenantId,
+                ParentSuiteId = testSuite.ParentSuiteId
+            };
+    }
+
+    private async Task SaveInlineEditAsync( TestSuiteDto testSuite )
+    {
+        var nameValidationResult = ValidateName(testSuite.Name);
+        if (nameValidationResult != null)
+        {
+            Snackbar.Add(nameValidationResult,Severity.Error);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(testSuite.Description))
+        {
+            Snackbar.Add("Description cannot be empty",Severity.Error);
+            return;
+        }
+
+        try
+        {
+            await TestSuiteService.UpdateTestSuiteAsync(testSuite);
+            testSuite.IsEditing = false;
+            _originalTestSuites.Remove(testSuite.Id);
+            Snackbar.Add("Test suite updated successfully",Severity.Success);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to update test suite: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error updating test suite: {ex}");
+        }
+    }
+
+    private void CancelInlineEdit( TestSuiteDto testSuite )
+    {
+        if (_originalTestSuites.TryGetValue(testSuite.Id,out var original))
+        {
+            testSuite.Name = original.Name;
+            testSuite.Description = original.Description;
+            testSuite.ProjectId = original.ProjectId;
+            testSuite.ParentSuiteId = original.ParentSuiteId;
+            testSuite.IsEditing = false;
+            _originalTestSuites.Remove(testSuite.Id);
+        }
+    }
+
+    private async Task DeleteTestSuiteAsync( Guid id, Guid projectId )
+    {
+        var parameters = new DialogParameters { { "ContentText","Are you sure you want to delete this test suite?" } };
+        var options = new DialogOptions { CloseButton = true,MaxWidth = MaxWidth.Small,FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirm Delete",parameters,options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            try
+            {
+                await TestSuiteService.DeleteTestSuiteAsync(id, projectId);
+                await _table.ReloadServerData();
+                Snackbar.Add("Test suite deleted successfully",Severity.Success);
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+                NavigationManager.NavigateTo("/login");
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to delete test suite: {ex.Message}",Severity.Error);
+                Console.WriteLine($"Error deleting test suite: {ex}");
+            }
+        }
+    }
+
+    private async Task BulkDeleteTestSuitesAsync()
+    {
+        var parameters = new DialogParameters { { "ContentText",$"Are you sure you want to delete {_selectedTestSuites.Count} test suites?" } };
+        var options = new DialogOptions { CloseButton = true,MaxWidth = MaxWidth.Small,FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirm Bulk Delete",parameters,options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            try
+            {
+                foreach (var testSuite in _selectedTestSuites.ToList())
+                {
+                    await TestSuiteService.DeleteTestSuiteAsync(testSuite.Id , testSuite.ProjectId);
+                }
+                await _table.ReloadServerData();
+                _selectedTestSuites.Clear();
+                Snackbar.Add("Selected test suites deleted successfully",Severity.Success);
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+                NavigationManager.NavigateTo("/login");
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to delete test suites: {ex.Message}",Severity.Error);
+                Console.WriteLine($"Error deleting test suites: {ex}");
+            }
+        }
+    }
+
+    #endregion
+
+    #region Dialog Operations
+
+    private async Task OpenCreateDialogAsync()
+    {
+        _newTestSuite = new CreateTestSuiteDto();
+        _projects = await ProjectService.GetProjectsAsync();
+        _newTestSuite.ProjectId = _projects.FirstOrDefault()?.Id ?? default(Guid);
+
+        _showCreateDialog = true;
+        await Task.Run(() => _form?.ResetValidation());
+    }
+
+    private void CancelCreate()
+    {
+        _showCreateDialog = false;
+        _newTestSuite = new CreateTestSuiteDto();
+        _form?.ResetValidation();
+    }
+
+    private async Task CreateTestSuiteAsync()
+    {
+        if (!_formIsValid || string.IsNullOrWhiteSpace(_newTestSuite.Description))
+        {
+            Snackbar.Add("Description cannot be empty",Severity.Error);
+            return;
+        }
+
         try
         {
             await TestSuiteService.CreateTestSuiteAsync(_newTestSuite);
-            _testSuites = await TestSuiteService.GetTestSuitesAsync();
+            await _table.ReloadServerData();
             _showCreateDialog = false;
-            _newTestSuite = new();
-            Snackbar.Add("Test Suite created", Severity.Success);
+            _newTestSuite = new CreateTestSuiteDto();
+            _form?.ResetValidation();
+            Snackbar.Add("Test suite created successfully",Severity.Success);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
         }
         catch (Exception ex)
         {
-            Snackbar.Add("Failed to create test suite", Severity.Error);
+            Snackbar.Add($"Failed to create test suite: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error creating test suite: {ex}");
         }
     }
 
-    private async Task DeleteTestSuite(Guid id)
+    #endregion
+
+    #region Export/Import
+
+    private async Task ExportToCsvAsync()
     {
         try
         {
-            await TestSuiteService.DeleteTestSuiteAsync(id);
-            _testSuites = await TestSuiteService.GetTestSuitesAsync();
-            Snackbar.Add("Test Suite deleted", Severity.Success);
+            var query = new TestSuiteQuery { Page = 1,PageSize = 1000,SearchTerm = _searchTerm };
+            var result = await TestSuiteService.GetPagedTestSuitesAsync(query);
+            var testSuites = result.Items;
+
+            if (testSuites == null || !testSuites.Any())
+            {
+                Snackbar.Add("No test suites found to export.",Severity.Warning);
+                return;
+            }
+
+            using var memoryStream = new MemoryStream();
+            using var writer = new StreamWriter(memoryStream);
+            using var csv = new CsvWriter(writer,CultureInfo.InvariantCulture);
+            csv.WriteRecords(testSuites);
+            await writer.FlushAsync();
+            memoryStream.Position = 0;
+
+            var csvBytes = memoryStream.ToArray();
+            var base64Data = Convert.ToBase64String(csvBytes);
+            await JSRuntime.InvokeVoidAsync("downloadFileFromBase64",
+                "TestSuitesExport.csv",
+                "text/csv",
+                base64Data);
+
+            Snackbar.Add("Test suites exported to CSV successfully",Severity.Success);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
         }
         catch (Exception ex)
         {
-            Snackbar.Add("Failed to delete test suite", Severity.Error);
+            Snackbar.Add($"Failed to export test suites: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error exporting to CSV: {ex}");
         }
     }
+
+    private async Task ExportToExcelAsync()
+    {
+        try
+        {
+            var query = new TestSuiteQuery { Page = 1,PageSize = 1000,SearchTerm = _searchTerm };
+            var result = await TestSuiteService.GetPagedTestSuitesAsync(query);
+            var testSuites = result.Items;
+
+            if (testSuites == null || !testSuites.Any())
+            {
+                Snackbar.Add("No test suites found to export.",Severity.Warning);
+                return;
+            }
+
+            using var workbook = new XLWorkbook();
+            var worksheet = workbook.Worksheets.Add("TestSuites");
+
+            // Add header
+            worksheet.Cell("A1").Value = "ID";
+            worksheet.Cell("B1").Value = "Name";
+            worksheet.Cell("C1").Value = "Description";
+            worksheet.Cell("D1").Value = "Project ID";
+            worksheet.Cell("E1").Value = "Parent Suite ID";
+
+            // Add rows
+            var row = 2;
+            foreach (var ts in testSuites)
+            {
+                worksheet.Cell($"A{row}").Value = ts.Id.ToString();
+                worksheet.Cell($"B{row}").Value = ts.Name;
+                worksheet.Cell($"C{row}").Value = ts.Description;
+                worksheet.Cell($"D{row}").Value = ts.ProjectId.ToString();
+                worksheet.Cell($"E{row}").Value = ts.ParentSuiteId?.ToString() ?? "";
+                row++;
+            }
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            stream.Position = 0;
+
+            var bytes = stream.ToArray();
+            var base64Data = Convert.ToBase64String(bytes);
+            await JSRuntime.InvokeVoidAsync("downloadFileFromBase64",
+                "TestSuitesExport.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                base64Data);
+
+            Snackbar.Add("Test suites exported to Excel successfully",Severity.Success);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to export test suites: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error exporting to Excel: {ex}");
+        }
+    }
+
+    private async Task ExportToPdfAsync()
+    {
+        try
+        {
+            var query = new TestSuiteQuery { Page = 1,PageSize = 1000,SearchTerm = _searchTerm };
+            var result = await TestSuiteService.GetPagedTestSuitesAsync(query);
+            var testSuites = result.Items;
+
+            if (testSuites == null || !testSuites.Any())
+            {
+                Snackbar.Add("No test suites found to export.",Severity.Warning);
+                return;
+            }
+
+            var pdfRequest = new PdfGenerationDto
+                {
+                    Title = "Test Suites Report",
+                    FileName = "TestSuites_Report.pdf",
+                    FontSizeTitle = 16,
+                    FontSizeHeader = 12,
+                    FontSizeBody = 10,
+                    Columns = new List<PdfColumnDto>
+                {
+                    new PdfColumnDto { Field = "id", Header = "ID" },
+                    new PdfColumnDto { Field = "name", Header = "Name" },
+                    new PdfColumnDto { Field = "description", Header = "Description" },
+                    new PdfColumnDto { Field = "projectId", Header = "Project ID" },
+                    new PdfColumnDto { Field = "parentSuiteId", Header = "Parent Suite ID" }
+                },
+                    Data = testSuites.Select(ts => new Dictionary<string,string>
+                {
+                    { "id", ts.Id.ToString() },
+                    { "name", ts.Name ?? "" },
+                    { "description", ts.Description ?? "" },
+                    { "projectId", ts.ProjectId.ToString() },
+                    { "parentSuiteId", ts.ParentSuiteId?.ToString() ?? "" }
+                }).ToList()
+                };
+
+            var pdfBytes = await CommonService.GeneratePdfAsync(pdfRequest);
+            var base64Data = Convert.ToBase64String(pdfBytes);
+            await JSRuntime.InvokeVoidAsync("downloadFileFromBase64",
+                "TestSuites_Report.pdf",
+                "application/pdf",
+                base64Data);
+
+            Snackbar.Add("Test suites exported to PDF successfully",Severity.Success);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to export test suites: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error exporting to PDF: {ex}");
+        }
+    }
+
+    private async Task ImportFromFileAsync()
+    {
+        var parameters = new DialogParameters
+        {
+            { "OnFileUploaded", new EventCallback<string>(this, ImportCsvContentAsync) }
+        };
+
+        var options = new DialogOptions
+            {
+                CloseButton = true,
+                MaxWidth = MaxWidth.Medium,
+                FullWidth = true
+            };
+
+        await DialogService.ShowAsync<FileUploadDialog>("Import Test Suites from CSV",parameters,options);
+    }
+
+    private async Task ImportCsvContentAsync( string csvContent )
+    {
+        try
+        {
+            using var reader = new StringReader(csvContent);
+            using var csv = new CsvReader(reader,CultureInfo.InvariantCulture);
+            var records = csv.GetRecords<TestSuiteCreateDto>().ToList();
+            foreach (var testSuite in records)
+            {
+                if (!string.IsNullOrWhiteSpace(testSuite?.Name) && !string.IsNullOrWhiteSpace(testSuite?.Description))
+                {
+                    await TestSuiteService.CreateTestSuiteAsync(new CreateTestSuiteDto
+                        {
+                            Name = testSuite.Name,
+                            Description = testSuite.Description,
+                            ProjectId = testSuite.ProjectId,
+                            //ParentSuiteId = null // Adjust based on CSV data if needed
+                        });
+                }
+            }
+
+            await _table.ReloadServerData();
+            Snackbar.Add("Test suites imported successfully",Severity.Success);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to import test suites: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error importing CSV: {ex}");
+        }
+    }
+
+    #endregion
+
+    #region Validation
+
+    private string ValidateName( string name )
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return "Name is required";
+        if (name.Length < 3)
+            return "Name must be at least 3 characters long";
+        return null;
+    }
+
+    #endregion
+
+    #region Helpers
+
+    private void LogHover( string action )
+    {
+        Console.WriteLine($"Hovered: {action}");
+        Snackbar.Add($"Hovered: {action}",Severity.Info);
+    }
+
+    #endregion
 }

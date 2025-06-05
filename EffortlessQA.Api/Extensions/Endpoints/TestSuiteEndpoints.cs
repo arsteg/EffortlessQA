@@ -58,8 +58,64 @@ namespace EffortlessQA.Api.Extensions
                 .WithTags(TESTSUITE_TAG)
                 .WithMetadata();
 
-            // GET /api/v1/projects/{projectId}/testsuites
-            app.MapGet(
+			// GET /api/v1/projects/testsuites
+			app.MapGet(
+					"/api/v1/projects/testsuites",
+					async (
+						ITestSuiteService testSuiteService,
+						HttpContext context,
+						[FromQuery] int page = 1,
+						[FromQuery] int limit = 50,
+						[FromQuery] string? filter = null
+					) =>
+					{
+						try
+						{
+							var tenantId = context.User.FindFirst("TenantId")?.Value;
+							if (string.IsNullOrEmpty(tenantId))
+							{
+								return Results.Unauthorized();
+							}
+							var testSuites = await testSuiteService.GetTestSuitesAsync(
+								tenantId,
+								page,
+								limit,
+								filter
+							);
+							return Results.Ok(
+								new ApiResponse<PagedResult<TestSuiteDto>>
+								{
+									Data = testSuites,
+									Meta = new
+									{
+										Page = page,
+										Limit = limit,
+										Total = testSuites.TotalCount
+									}
+								}
+							);
+						}
+						catch (Exception ex)
+						{
+							return Results.BadRequest(
+								new ApiResponse<object>
+								{
+									Error = new ErrorResponse
+									{
+										Code = "BadRequest",
+										Message = ex.Message
+									}
+								}
+							);
+						}
+					}
+				)
+				.WithName("GetAllTestSuites")
+				.WithTags(TESTSUITE_TAG)
+				.WithMetadata();
+
+			// GET /api/v1/projects/{projectId}/testsuites
+			app.MapGet(
                     "/api/v1/projects/{projectId}/testsuites",
                     async (
                         Guid projectId,

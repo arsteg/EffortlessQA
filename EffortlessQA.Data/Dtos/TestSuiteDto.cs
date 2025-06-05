@@ -9,7 +9,8 @@ namespace EffortlessQA.Data.Dtos
         public string? Description { get; set; }
         public Guid ProjectId { get; set; }
         public string TenantId { get; set; }
-        public DateTime CreatedAt { get; set; }
+		public bool IsEditing { get; set; }
+		public DateTime CreatedAt { get; set; }
         public DateTime? ModifiedAt { get; set; }
         public Guid? ParentSuiteId { get; set; }
     }
@@ -19,8 +20,7 @@ namespace EffortlessQA.Data.Dtos
         public string Name { get; set; }
         public string? Description { get; set; }
         public Guid? ParentSuiteId { get; set; }
-
-        public int ProjectId { get; set; }
+        public Guid ProjectId { get; set; }
     }
 
     public class UpdateTestSuiteDto

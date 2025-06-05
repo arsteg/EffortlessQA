@@ -111,7 +111,98 @@ namespace EffortlessQA.Api.Services.Implementation
             };
         }
 
-        public async Task<TestSuiteDto> GetTestSuiteAsync(
+		public async Task<PagedResult<TestSuiteDto>> GetTestSuitesAsync(
+			string tenantId,
+			int page,
+			int limit,
+			string? filter
+		)
+		{
+			var query = _context.TestSuites.Where(ts => ts.TenantId == tenantId && !ts.IsDeleted);
+
+			// Parse the filter parameter
+			string? nameFilter = null;
+			string? sortField = null;
+			bool sortAscending = true;
+
+			if (!string.IsNullOrEmpty(filter))
+			{
+				// Split filter by commas to handle multiple conditions
+				var filterConditions = filter
+					.Split(',',StringSplitOptions.RemoveEmptyEntries)
+					.Select(f => f.Trim())
+					.ToList();
+
+				foreach (var condition in filterConditions)
+				{
+					// Split each condition by colons
+					var filterParts = condition.Split(':');
+					if (filterParts.Length == 3 && filterParts[0].ToLower() == "sort")
+					{
+						sortField = filterParts[1].ToLower();
+						sortAscending = filterParts[2].ToLower() == "asc";
+					}
+					else if (filterParts.Length == 2 && filterParts[0].ToLower() == "name")
+					{
+						nameFilter = filterParts[1];
+					}
+					else
+					{
+						// Fallback: treat the condition as a name search if it doesn't match expected formats
+						nameFilter = condition;
+					}
+				}
+			}
+
+			// Apply name filter if provided
+			if (!string.IsNullOrEmpty(nameFilter))
+			{
+				query = query.Where(ts => ts.Name.ToLower().Contains(nameFilter.ToLower()));
+			}
+
+			// Apply sorting
+			if (sortField == "name")
+			{
+				query = sortAscending
+					? query.OrderBy(ts => ts.Name)
+					: query.OrderByDescending(ts => ts.Name);
+			}
+			else if (sortField == "description")
+			{
+				query = sortAscending
+					? query.OrderBy(ts => ts.Description)
+					: query.OrderByDescending(ts => ts.Description);
+			}
+			else
+			{
+				// Default sorting
+				query = query.OrderBy(ts => ts.Name);
+			}
+
+			var totalCount = await query.CountAsync();
+			var testSuites = await query
+				.Skip((page - 1) * limit)
+				.Take(limit)
+				.Select(ts => new TestSuiteDto
+				{
+					Id = ts.Id,
+					Name = ts.Name,
+					Description = ts.Description,
+					ProjectId = ts.ProjectId,
+					TenantId = ts.TenantId,
+					ParentSuiteId = ts.ParentSuiteId
+				})
+				.ToListAsync();
+
+			return new PagedResult<TestSuiteDto>
+			{
+				Items = testSuites,
+				TotalCount = totalCount,
+				Page = page,
+				Limit = limit
+			};
+		}
+		public async Task<TestSuiteDto> GetTestSuiteAsync(
             Guid testSuiteId,
             Guid projectId,
             string tenantId
