@@ -80,68 +80,253 @@ public class TestCaseService : ITestCaseService
         };
     }
 
-    public async Task<PagedResult<TestCaseDto>> GetTestCasesAsync(
-        Guid testSuiteId,
-        string tenantId,
-        int page,
-        int limit,
-        string? filter,
-        string[]? tags,
-        PriorityLevel[]? priorities
-    )
-    {
-        var query = _context.TestCases.Where(tc =>
-            tc.TestSuiteId == testSuiteId && tc.TenantId == tenantId && !tc.IsDeleted
-        );
+	public async Task<PagedResult<TestCaseDto>> GetTestCasesAsync(
+            string tenantId,
+            int page,
+            int limit,
+            string? filter,
+            string[]? tags,
+            PriorityLevel[]? priorities
+            )
+	            {
+		            // Build query for test cases
+		            var query = _context.TestCases.Where(tc => tc.TenantId == tenantId && !tc.IsDeleted
+		            );
 
-        if (!string.IsNullOrEmpty(filter))
-        {
-            query = query.Where(tc => tc.Title.Contains(filter));
-        }
+		            // Parse filter parameter
+		            string? titleFilter = null;
+		            string? sortField = null;
+		            bool sortAscending = true;
 
-        if (tags != null && tags.Length > 0)
-        {
-            query = query.Where(tc => tc.Tags != null && tc.Tags.Any(t => tags.Contains(t)));
-        }
+		            if (!string.IsNullOrEmpty(filter))
+		            {
+			            var filterConditions = filter
+				            .Split(',',StringSplitOptions.RemoveEmptyEntries)
+				            .Select(f => f.Trim())
+				            .ToList();
 
-        if (priorities != null && priorities.Length > 0)
-        {
-            query = query.Where(tc => priorities.Contains(tc.Priority));
-        }
+			            foreach (var condition in filterConditions)
+			            {
+				            var filterParts = condition.Split(':');
+				            if (filterParts.Length == 3 && filterParts[0].ToLower() == "sort")
+				            {
+					            sortField = filterParts[1].ToLower();
+					            sortAscending = filterParts[2].ToLower() == "asc";
+				            }
+				            else if (filterParts.Length == 2 && filterParts[0].ToLower() == "title")
+				            {
+					            titleFilter = filterParts[1];
+				            }
+				            else
+				            {
+					            titleFilter = condition;
+				            }
+			            }
+		            }
 
-        query = query.OrderBy(tc => tc.Title);
+		            // Apply title filter (case-insensitive)
+		            if (!string.IsNullOrEmpty(titleFilter))
+		            {
+			            query = query.Where(tc => tc.Title.ToLower().Contains(titleFilter.ToLower()));
+		            }
 
-        var totalCount = await query.CountAsync();
-        var testCases = await query
-            .Skip((page - 1) * limit)
-            .Take(limit)
-            .Select(tc => new TestCaseDto
-            {
-                Id = tc.Id,
-                Title = tc.Title,
-                Description = tc.Description,
-                //Steps = tc.Steps?.ToString(),
-                //ExpectedResults = tc.ExpectedResults?.ToString(),
-                Priority = tc.Priority,
-                Tags = tc.Tags,
-                TestSuiteId = tc.TestSuiteId,
-                TenantId = tc.TenantId,
-                //FolderId = tc.FolderId,
-                CreatedAt = tc.CreatedAt,
-                UpdatedAt = tc.ModifiedAt
-            })
-            .ToListAsync();
+		            // Apply tags filter
+		            if (tags != null && tags.Length > 0)
+		            {
+			            query = query.Where(tc => tc.Tags != null && tags.Any(t => tc.Tags.Contains(t)));
+		            }
 
-        return new PagedResult<TestCaseDto>
-        {
-            Items = testCases,
-            TotalCount = totalCount,
-            Page = page,
-            Limit = limit
-        };
-    }
+		            // Apply priorities filter
+		            if (priorities != null && priorities.Length > 0)
+		            {
+			            query = query.Where(tc => priorities.Contains(tc.Priority));
+		            }
 
-    public async Task<TestCaseDto> GetTestCaseAsync(
+		            // Apply sorting
+		            if (sortField == "title")
+		            {
+			            query = sortAscending
+				            ? query.OrderBy(tc => tc.Title)
+				            : query.OrderByDescending(tc => tc.Title);
+		            }
+		            else if (sortField == "description")
+		            {
+			            query = sortAscending
+				            ? query.OrderBy(tc => tc.Description)
+				            : query.OrderByDescending(tc => tc.Description);
+		            }
+		            else if (sortField == "createdat")
+		            {
+			            query = sortAscending
+				            ? query.OrderBy(tc => tc.CreatedAt)
+				            : query.OrderByDescending(tc => tc.CreatedAt);
+		            }
+		            else if (sortField == "updatedat")
+		            {
+			            query = sortAscending
+				            ? query.OrderBy(tc => tc.ModifiedAt)
+				            : query.OrderByDescending(tc => tc.ModifiedAt);
+		            }
+		            else
+		            {
+			            query = query.OrderBy(tc => tc.Title);
+		            }
+
+		            // Get total count
+		            var totalCount = await query.CountAsync();
+
+		            // Fetch test cases with pagination
+		            var testCases = await query
+			            .Skip((page - 1) * limit)
+			            .Take(limit)
+			            .Select(tc => new TestCaseDto
+			            {
+				            Id = tc.Id,
+				            Title = tc.Title,
+				            Description = tc.Description,
+				            Priority = tc.Priority,
+				            Tags = tc.Tags,
+				            TestSuiteId = tc.TestSuiteId,
+				            TenantId = tc.TenantId,
+				            CreatedAt = tc.CreatedAt,
+				            UpdatedAt = tc.ModifiedAt
+			            })
+			            .ToListAsync();
+
+		            return new PagedResult<TestCaseDto>
+		            {
+			            Items = testCases,
+			            TotalCount = totalCount,
+			            Page = page,
+			            Limit = limit
+		            };
+	}
+
+	public async Task<PagedResult<TestCaseDto>> GetTestCasesAsync(
+	Guid testSuiteId,
+	string tenantId,
+	int page,
+	int limit,
+	string? filter,
+	string[]? tags,
+	PriorityLevel[]? priorities
+)
+	{
+		// Build query for test cases
+		var query = _context.TestCases.Where(tc =>
+			tc.TestSuiteId == testSuiteId && tc.TenantId == tenantId && !tc.IsDeleted
+		);
+
+		// Parse filter parameter
+		string? titleFilter = null;
+		string? sortField = null;
+		bool sortAscending = true;
+
+		if (!string.IsNullOrEmpty(filter))
+		{
+			var filterConditions = filter
+				.Split(',',StringSplitOptions.RemoveEmptyEntries)
+				.Select(f => f.Trim())
+				.ToList();
+
+			foreach (var condition in filterConditions)
+			{
+				var filterParts = condition.Split(':');
+				if (filterParts.Length == 3 && filterParts[0].ToLower() == "sort")
+				{
+					sortField = filterParts[1].ToLower();
+					sortAscending = filterParts[2].ToLower() == "asc";
+				}
+				else if (filterParts.Length == 2 && filterParts[0].ToLower() == "title")
+				{
+					titleFilter = filterParts[1];
+				}
+				else
+				{
+					titleFilter = condition;
+				}
+			}
+		}
+
+		// Apply title filter (case-insensitive)
+		if (!string.IsNullOrEmpty(titleFilter))
+		{
+			query = query.Where(tc => tc.Title.ToLower().Contains(titleFilter.ToLower()));
+		}
+
+		// Apply tags filter
+		if (tags != null && tags.Length > 0)
+		{
+			query = query.Where(tc => tc.Tags != null && tags.Any(t => tc.Tags.Contains(t)));
+		}
+
+		// Apply priorities filter
+		if (priorities != null && priorities.Length > 0)
+		{
+			query = query.Where(tc => priorities.Contains(tc.Priority));
+		}
+
+		// Apply sorting
+		if (sortField == "title")
+		{
+			query = sortAscending
+				? query.OrderBy(tc => tc.Title)
+				: query.OrderByDescending(tc => tc.Title);
+		}
+		else if (sortField == "description")
+		{
+			query = sortAscending
+				? query.OrderBy(tc => tc.Description)
+				: query.OrderByDescending(tc => tc.Description);
+		}
+		else if (sortField == "createdat")
+		{
+			query = sortAscending
+				? query.OrderBy(tc => tc.CreatedAt)
+				: query.OrderByDescending(tc => tc.CreatedAt);
+		}
+		else if (sortField == "updatedat")
+		{
+			query = sortAscending
+				? query.OrderBy(tc => tc.ModifiedAt)
+				: query.OrderByDescending(tc => tc.ModifiedAt);
+		}
+		else
+		{
+			query = query.OrderBy(tc => tc.Title);
+		}
+
+		// Get total count
+		var totalCount = await query.CountAsync();
+
+		// Fetch test cases with pagination
+		var testCases = await query
+			.Skip((page - 1) * limit)
+			.Take(limit)
+			.Select(tc => new TestCaseDto
+			{
+				Id = tc.Id,
+				Title = tc.Title,
+				Description = tc.Description,
+				Priority = tc.Priority,
+				Tags = tc.Tags,
+				TestSuiteId = tc.TestSuiteId,
+				TenantId = tc.TenantId,
+				CreatedAt = tc.CreatedAt,
+				UpdatedAt = tc.ModifiedAt
+			})
+			.ToListAsync();
+
+		return new PagedResult<TestCaseDto>
+		{
+			Items = testCases,
+			TotalCount = totalCount,
+			Page = page,
+			Limit = limit
+		};
+	}
+
+	public async Task<TestCaseDto> GetTestCaseAsync(
         Guid testCaseId,
         Guid testSuiteId,
         string tenantId

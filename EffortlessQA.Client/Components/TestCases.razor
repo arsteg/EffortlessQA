@@ -1,133 +1,983 @@
-﻿// EffortlessQA.Client/Pages/TestCases.razor
-@page "/test-cases"
+﻿@page "/test-cases"
+@using ClosedXML.Excel
+@using CsvHelper
+@using EffortlessQA.Client.Components.dialogs
+@using EffortlessQA.Client.Models
 @using EffortlessQA.Client.Services
-@using EffortlessQA.Client.Extensions
 @using EffortlessQA.Data.Dtos
+@using EffortlessQA.Data.Entities
 @using MudBlazor
+@using System.Globalization
+@using System.Text.Json
 @inject TestCaseService TestCaseService
-@inject NavigationManager Navigation
+@inject CommonService CommonService
+@inject NavigationManager NavigationManager
 @inject ISnackbar Snackbar
+@inject IJSRuntime JSRuntime
+@inject IDialogService DialogService
+@inject TestSuiteService TestSuiteService
 
-<MudGrid>
-    <MudItem xs="12">
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@OpenCreateDialog">Create Test Case</MudButton>
-    </MudItem>
-    <MudItem xs="12">
-        <MudTable Items="@_testCases" Hover="true" Breakpoint="Breakpoint.Sm">
-            <HeaderContent>
-                <MudTh>Title</MudTh>
-                <MudTh>Description</MudTh>
-                <MudTh>Test Suite</MudTh>
-                <MudTh>Actions</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd>@context.Title</MudTd>
-                <MudTd>@context.Description</MudTd>
-                <MudTd>@context.TestSuiteId</MudTd>
-                <MudTd>
-                    <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => EditTestCase(context.Id))">Edit</MudButton>
-                    <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="@(() => DeleteTestCase(context.Id))">Delete</MudButton>
-                </MudTd>
-            </RowTemplate>
-        </MudTable>
-    </MudItem>
-</MudGrid>
+<MudThemeProvider Theme="_customTheme" />
+<MudContainer MaxWidth="MaxWidth.Large" Class="my-8">
+    <MudGrid Spacing="2">
+        <!-- Header -->
+        <MudItem xs="12">
+            <MudText Typo="Typo.h5" Color="Color.Primary" Class="mb-4">Manage Test Cases</MudText>
+        </MudItem>
 
-<MudDialog @bind-IsVisible="_showCreateDialog">
+        <!-- Toolbar -->
+        <MudItem xs="12">
+            <MudPaper Elevation="2" Class="pa-4" Style="border-radius: 8px;">
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" sm="4" md="3">
+                        <MudTextField T="string"
+                                      Label="Search"
+                                      Placeholder="Enter test case title..."
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Search"
+                                      @bind-Value="_searchTerm"
+                                      DebounceInterval="500"
+                                      OnDebounceIntervalElapsed="HandleSearchTestCases"
+                                      Variant="Variant.Outlined"
+                                      Clearable="true"
+                                      Class="mud-input-rounded" />
+                    </MudItem>
+                    <MudItem xs="12" sm="8" md="9" Class="d-flex align-center justify-end gap-2">
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                           Color="Color.Primary"
+                                           Size="Size.Medium"
+                                           OnClick="@OpenCreateDialogAsync"
+                                           OnMouseOver="@(() => LogHover("Add Test Case"))"
+                                           AriaLabel="Add Test Case"
+                                           Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Add Test Case</MudText>
+                        </div>
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                                           Color="Color.Secondary"
+                                           Size="Size.Medium"
+                                           OnClick="@RefreshTestCasesAsync"
+                                           OnMouseOver="@(() => LogHover("Refresh test cases"))"
+                                           AriaLabel="Refresh test cases"
+                                           Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Refresh</MudText>
+                        </div>
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.TextSnippet"
+                                           Color="Color.Default"
+                                           Size="Size.Medium"
+                                           OnClick="@ExportToCsvAsync"
+                                           OnMouseOver="@(() => LogHover("Export to CSV"))"
+                                           AriaLabel="Export to CSV"
+                                           Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Export CSV</MudText>
+                        </div>
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.GridOn"
+                                           Color="Color.Default"
+                                           Size="Size.Medium"
+                                           OnClick="@ExportToExcelAsync"
+                                           OnMouseOver="@(() => LogHover("Export to Excel"))"
+                                           AriaLabel="Export to Excel"
+                                           Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Export Excel</MudText>
+                        </div>
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.PictureAsPdf"
+                                           Color="Color.Default"
+                                           Size="Size.Medium"
+                                           OnClick="@ExportToPdfAsync"
+                                           OnMouseOver="@(() => LogHover("Export to PDF"))"
+                                           AriaLabel="Export to PDF"
+                                           Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Export PDF</MudText>
+                        </div>
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.CloudUpload"
+                                           Color="Color.Primary"
+                                           Size="Size.Medium"
+                                           OnClick="@ImportFromFileAsync"
+                                           OnMouseOver="@(() => LogHover("Import Excel/CSV"))"
+                                           AriaLabel="Import Excel or CSV"
+                                           Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Import Excel/CSV</MudText>
+                        </div>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Table -->
+        <MudItem xs="12">
+            <MudPaper Elevation="2" Class="pa-4" Style="border-radius: 8px;">
+                <MudTable ServerData="@(new Func<TableState, CancellationToken, Task<TableData<TestCaseDto>>>(LoadTestCasesAsync))"
+                          @ref="_table"
+                          Hover="true"
+                          Breakpoint="Breakpoint.Sm"
+                          Loading="@_isLoading"
+                          Dense="true"
+                          AllowMultiSelection="true"
+                          @bind-SelectedItems="_selectedTestCases"
+                          Class="mud-table-clean"
+                          RowsPerPage="@_pageSize">
+                    <ToolBarContent>
+                        <MudText Typo="Typo.subtitle1" Color="Color.Primary">Test Cases</MudText>
+                        <MudSpacer />
+                        @if (_selectedTestCases.Any())
+                        {
+                            <MudButton Variant="Variant.Text"
+                                       Color="Color.Error"
+                                       StartIcon="@Icons.Material.Filled.Delete"
+                                       OnClick="@BulkDeleteTestCasesAsync"
+                                       Size="Size.Small">Delete (@_selectedTestCases.Count)</MudButton>
+                        }
+                    </ToolBarContent>
+                    <HeaderContent>
+                        <MudTh>
+                            <MudTableSortLabel SortLabel="title" T="TestCaseDto" InitialDirection="SortDirection.Ascending">Title</MudTableSortLabel>
+                        </MudTh>
+                        <MudTh>
+                            <MudTableSortLabel SortLabel="description" T="TestCaseDto">Description</MudTableSortLabel>
+                        </MudTh>
+                        <MudTh>Steps</MudTh>
+                        <MudTh>Expected Results</MudTh>
+                        <MudTh>Priority</MudTh>
+                        <MudTh>Tags</MudTh>
+                        <MudTh>Test Suite</MudTh>
+                        @* <MudTh>Folder</MudTh> *@
+                        <MudTh Style="width: 120px; text-align: center;">Actions</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>
+                            @if (context.IsEditing)
+                            {
+                                <MudTextField T="string"
+                                              @bind-Value="context.Title"
+                                              Required="true"
+                                              RequiredError="Title is required"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense"
+                                              Class="mud-input-compact" />
+                            }
+                            else
+                            {
+                                @context.Title
+                            }
+                        </MudTd>
+                        <MudTd>
+                            @if (context.IsEditing)
+                            {
+                                <MudTextField T="string"
+                                              @bind-Value="context.Description"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense"
+                                              Lines="2"
+                                              Class="mud-input-compact" />
+                            }
+                            else
+                            {
+                                @context.Description
+                            }
+                        </MudTd>
+                        <MudTd>
+                            @if (context.IsEditing)
+                            {
+                                <MudTextField T="string"
+                                              @bind-Value="_stepsInput"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense"
+                                              Lines="2"
+                                              Class="mud-input-compact" />
+                            }
+                            else
+                            {
+                                @(context.Steps?.ToString() ?? "")
+                            }
+                        </MudTd>
+                        <MudTd>
+                            @if (context.IsEditing)
+                            {
+                                <MudTextField T="string"
+                                              @bind-Value="_expectedResultsInput"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense"
+                                              Lines="2"
+                                              Class="mud-input-compact" />
+                            }
+                            else
+                            {
+                                @(context.ExpectedResults?.ToString() ?? "")
+                            }
+                        </MudTd>
+                        <MudTd>
+                            @if (context.IsEditing)
+                            {
+                                <MudSelect T="PriorityLevel"
+                                           @bind-Value="context.Priority"
+                                           Variant="Variant.Outlined"
+                                           Margin="Margin.Dense"
+                                           Class="mud-input-compact">
+                                    @foreach (PriorityLevel priority in Enum.GetValues(typeof(PriorityLevel)))
+                                    {
+                                        <MudSelectItem Value="@priority">@priority</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            }
+                            else
+                            {
+                                @context.Priority
+                            }
+                        </MudTd>
+                        <MudTd>
+                            @(context.Tags != null ? string.Join(", ",context.Tags) : "")
+                        </MudTd>
+                        <MudTd>
+                            @(_testSuites.FirstOrDefault(ts => ts.Id == context.TestSuiteId)?.Name ?? "None")
+                        </MudTd>
+                        @* <MudTd> *@
+                        @*     @(_folders.FirstOrDefault(f => f.Id == context.FolderId)?.Name ?? "None") *@
+                        @* </MudTd> *@
+                        <MudTd Style="display: flex; justify-content: center; gap: 8px; vertical-align: middle;">
+                            @if (context.IsEditing)
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Save"
+                                               Color="Color.Success"
+                                               Size="Size.Small"
+                                               OnClick="@(() => SaveInlineEditAsync(context))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Cancel"
+                                               Color="Color.Secondary"
+                                               Size="Size.Small"
+                                               OnClick="@(() => CancelInlineEdit(context))" />
+                            }
+                            else
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                               Color="Color.Primary"
+                                               Size="Size.Small"
+                                               OnClick="@(() => StartInlineEdit(context))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                               Color="Color.Error"
+                                               Size="Size.Small"
+                                               OnClick="@(() => DeleteTestCaseAsync(context.Id, context.TestSuiteId))" />
+                            }
+                        </MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <div class="d-flex align-center gap-3">
+                            <MudText Typo="Typo.body2" Class="mr-2">Rows per page:</MudText>
+                            @foreach (var size in new int[] { 10,25,50,100 })
+                            {
+                                <MudButton Variant="@(_pageSize == size ? Variant.Filled : Variant.Outlined)"
+                                           Color="Color.Primary"
+                                           Size="Size.Small"
+                                           OnClick="@(() => OnPageSizeChanged(size))"
+                                           Class="mud-button-compact"
+                                           AriaLabel="@($"Set rows per page to {size}")">
+                                    @size
+                                </MudButton>
+                            }
+                            <MudTablePager RowsPerPageString="" DisableRowsPerPage="true" />
+                        </div>
+                    </PagerContent>
+                    <LoadingContent>
+                        <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
+                    </LoadingContent>
+                    <NoRecordsContent>
+                        <MudPaper Elevation="0" Class="pa-8 d-flex flex-column align-center justify-center" Style="min-height: 400px; background: transparent;">
+                            <MudIcon Icon="@Icons.Material.Filled.FolderOpen" Size="Size.Large" Color="Color.Primary" Class="mb-4" />
+                            <MudText Typo="Typo.h6" Color="Color.Primary" Align="Align.Center">No Test Cases Found</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center" Class="mb-6 mt-3">
+                                Click "Add Test Case" above to create your first test case.
+                            </MudText>
+                        </MudPaper>
+                    </NoRecordsContent>
+                </MudTable>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+<MudDialog @bind-Visible="_showCreateDialog" Options="new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true }">
     <DialogContent>
-        <MudForm @ref="_form" @bind-IsValid="@_formIsValid">
-            <MudTextField T="string" 
-                          Label="Title" 
-                          @bind-Value="_newTestCase.Title" 
-                          Required="true" 
-                          RequiredError="Title is required" 
-                          Validation="@(new Func<string, string>(ValidateTitle))" />
-            <MudTextField T="string" 
-                          Label="Description" 
-                          @bind-Value="_newTestCase.Description" 
-                          Class="mt-4" />
-            <MudTextField T="string" 
-                          Label="Steps" 
-                          @bind-Value="_newTestCase.Steps" 
-                          Class="mt-4" />
-            <MudTextField T="string" 
-                          Label="Expected Result" 
-                          @bind-Value="_newTestCase.ExpectedResult" 
-                          Class="mt-4" />
-            <MudTextField T="int" 
-                          Label="Test Suite ID" 
-                          @bind-Value="_newTestCase.TestSuiteId" 
-                          Required="true" 
-                          RequiredError="Test Suite ID is required" 
-                          Validation="@(new Func<int, string>(ValidateTestSuiteId))" 
-                          Class="mt-4" />
-        </MudForm>
+        <MudGrid Class="pa-4">
+            <MudItem xs="12">
+                <MudText Typo="Typo.h6" Color="Color.Primary" Class="mb-4">Create New Test Case</MudText>
+                <MudForm @ref="_form" @bind-IsValid="_formIsValid" Class="d-flex flex-column gap-4">
+                    <MudTextField T="string"
+                                  Label="Test Case Title"
+                                  @bind-Value="_newTestCase.Title"
+                                  Required="true"
+                                  RequiredError="Title is required"
+                                  Validation="@(new Func<string, string>(ValidateTitle))"
+                                  Variant="Variant.Outlined"
+                                  Clearable="true"
+                                  HelperText="Enter a unique test case title (min 3 characters)"
+                                  Class="mud-input-rounded" />
+                    <MudTextField T="string"
+                                  Label="Description"
+                                  @bind-Value="_newTestCase.Description"
+                                  Lines="4"
+                                  Variant="Variant.Outlined"
+                                  Clearable="true"
+                                  HelperText="Describe the test case briefly"
+                                  Class="mud-input-rounded" />
+                    <MudTextField T="string"
+                                  Label="Steps"
+                                  @bind-Value="_stepsInput"
+                                  Required="true"
+                                  RequiredError="Steps are required"
+                                  Lines="4"
+                                  Variant="Variant.Outlined"
+                                  Clearable="true"
+                                  HelperText="Enter steps in JSON format (e.g., [\'step1\': \'description\'])"
+                                  Class="mud-input-rounded" />
+                    <MudTextField T="string"
+                                  Label="Expected Results"
+                                  @bind-Value="_expectedResultsInput"
+                                  Required="true"
+                                  RequiredError="Expected Results are required"
+                                  Lines="4"
+                                  Variant="Variant.Outlined"
+                                  HelperText="Enter expected results in JSON format (e.g., {\'result1\': \'outcome\'})"
+                                  Clearable="true"
+                                  Class="mud-input-rounded" />
+                    <MudSelect T="PriorityLevel"
+                               Label="Priority"
+                               @bind-Value="_newTestCase.Priority"
+                               Required="true"
+                               RequiredError="Priority is required"
+                               Variant="Variant.Outlined"
+                               Class="mud-input-rounded">
+                        @foreach (PriorityLevel priority in Enum.GetValues(typeof(PriorityLevel)))
+                        {
+                            <MudSelectItem Value="@priority">@priority</MudSelectItem>
+                        }
+                    </MudSelect>
+                    <MudTextField T="string"
+                                  Label="Tags"
+                                  @bind-Value="_tagsInput"
+                                  Placeholder="Comma-separated tags"
+                                  Variant="Variant.Outlined"
+                                  Clearable="true"
+                                  HelperText="Enter tags separated by commas"
+                                  Class="mud-input-rounded" />
+                    @* <MudSelect T="Guid" *@
+                    @*            Label="Test Suite" *@
+                    @*            @bind-Value="_newTestCase.TestSuiteId" *@
+                    @*            Required="true" *@
+                    @*            RequiredError="Test Suite is required" *@
+                    @*            Variant="Variant.Outlined" *@
+                    @*            Class="mud-input-rounded" *@
+                    @*            ToStringFunc="@(id => _testSuites.FirstOrDefault(ts => ts.Id == id)?.Name ?? "Unknown Test Suite")"> *@
+                    @*     @foreach (var testSuite in _testSuites) *@
+                    @*     { *@
+                    @*         <MudSelectItem Value="@testSuite.Id">@(testSuite.Name ?? $"Test Suite ID: {testSuite.Id}")</MudSelectItem> *@
+                    @*     } *@
+                    @* </MudSelect> *@
+                    @* <MudSelect T="Guid?" *@
+                    @*            Label="Folder" *@
+                    @*            @bind-Value="_newTestCase.FolderId" *@
+                    @*            Variant="Variant.Outlined" *@
+                    @*            Class="mud-input-rounded" *@
+                    @*            ToStringFunc="@(id => id.HasValue ? _folders.FirstOrDefault(f => f.Id == id)?.Name ?? "Unknown Folder" : "None")"> *@
+                    @*     <MudSelectItem Value="@((Guid?)null)">None</MudSelectItem> *@
+                    @*     @foreach (var folder in _folders) *@
+                    @*     { *@
+                    @*         <MudSelectItem Value="@folder.Id">@(folder.Name ?? $"Folder ID: {folder.Id}")</MudSelectItem> *@
+                    @*     } *@
+                    @* </MudSelect> *@
+                </MudForm>
+            </MudItem>
+        </MudGrid>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="@CancelCreate">Cancel</MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@CreateTestCase" Disabled="!_formIsValid">Save</MudButton>
+        <MudButton OnClick="@CancelCreate" Variant="Variant.Text" Color="Color.Secondary">Cancel</MudButton>
+        <MudButton OnClick="@CreateTestCaseAsync" Variant="Variant.Filled" Color="Color.Primary" Disabled="!_formIsValid">Create</MudButton>
     </DialogActions>
 </MudDialog>
 
 @code {
+    #region Fields
     private List<TestCaseDto> _testCases = new();
+    private List<TestSuiteDto> _testSuites = new();
+    private List<TestFolderDto> _folders = new();
     private CreateTestCaseDto _newTestCase = new();
+    private string _tagsInput = string.Empty;
+    private string _stepsInput = string.Empty;
+    private string _expectedResultsInput = string.Empty;
     private bool _showCreateDialog;
+    private string _searchTerm = string.Empty;
+    private bool _isLoading;
+    private MudTable<TestCaseDto> _table;
+    private HashSet<TestCaseDto> _selectedTestCases = new();
     private MudForm _form;
     private bool _formIsValid;
+    private int _pageSize = 10;
+    private Dictionary<Guid,TestCaseDto> _originalTestCases = new();
+    private readonly string _tenantId = "default"; // Replace with dynamic tenant ID logic
 
+    private readonly MudTheme _customTheme = new()
+        {
+            PaletteDark = new PaletteDark
+            {
+                Primary = "#2196F3",
+                Secondary = "#F50057",
+                Background = "#121212",
+                Surface = "#1E1E1E",
+                TextPrimary = "#FFFFFF",
+                TextSecondary = "#B0BEC5",
+                AppbarBackground = "#2196F3",
+                ActionDefault = "#FFFFFF"
+            },
+            Typography = new Typography
+            {
+            // Define typography as needed
+            },
+            LayoutProperties = new LayoutProperties
+            {
+                DefaultBorderRadius = "8px"
+            }
+        };
+    #endregion
+
+    #region Lifecycle
     protected override async Task OnInitializedAsync()
     {
-        var suiteId = Navigation.GetQueryParameter<int>("suiteId");
-        _newTestCase.TestSuiteId = suiteId; // Pre-fill TestSuiteId if provided
-        _testCases = await TestCaseService.GetTestCasesAsync(suiteId != 0 ? suiteId : null);
+        _testSuites = await TestSuiteService.GetTestSuitesAsync();
+        // _folders = await TestSuiteService.GetTestFoldersAsync();
+        await _table?.ReloadServerData();
+    }
+    #endregion
+
+    #region Table Operations
+    private async Task<TableData<TestCaseDto>> LoadTestCasesAsync( TableState state,CancellationToken cancellationToken )
+    {
+        _isLoading = true;
+        try
+        {
+            string filter = string.Empty;
+            if (!string.IsNullOrEmpty(_searchTerm))
+                filter += $"title:{_searchTerm}";
+            if (!string.IsNullOrEmpty(state.SortLabel))
+                filter += $"{(string.IsNullOrEmpty(filter) ? "" : ",")}sort:{state.SortLabel}:{(state.SortDirection == SortDirection.Ascending ? "asc" : "desc")}";
+
+            var result = await TestCaseService.GetTestCasesAsync(
+                page: state.Page + 1,
+                pageSize: _pageSize,
+                searchTerm: filter
+            );
+
+            return new TableData<TestCaseDto>
+                {
+                    TotalItems = result.Count,
+                    Items = result.ToArray()
+                };
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
+            return new TableData<TestCaseDto> { TotalItems = 0,Items = new List<TestCaseDto>() };
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load test cases: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error loading test cases: {ex}");
+            return new TableData<TestCaseDto> { TotalItems = 0,Items = new List<TestCaseDto>() };
+        }
+        finally
+        {
+            _isLoading = false;
+        }
     }
 
-    private void OpenCreateDialog() => _showCreateDialog = true;
+    private async Task OnPageSizeChanged( int newSize )
+    {
+        _pageSize = newSize;
+        Snackbar.Add($"Page size changed to {_pageSize}",Severity.Info);
+        await _table.ReloadServerData();
+    }
+
+    private async Task HandleSearchTestCases( string term )
+    {
+        _searchTerm = term;
+        await _table.ReloadServerData();
+    }
+
+    private async Task RefreshTestCasesAsync()
+    {
+        await _table.ReloadServerData();
+        _testSuites = await TestSuiteService.GetTestSuitesAsync();
+        // _folders = await TestSuiteService.GetTestFoldersAsync();
+        Snackbar.Add("Test cases refreshed successfully",Severity.Success);
+    }
+
+    private void StartInlineEdit( TestCaseDto testCase )
+    {
+        testCase.IsEditing = true;
+        _tagsInput = string.Join(",",testCase.Tags ?? new string[0]);
+        _stepsInput = testCase.Steps?.ToString() ?? string.Empty;
+        _expectedResultsInput = testCase.ExpectedResults?.ToString() ?? string.Empty;
+        _originalTestCases[testCase.Id] = new TestCaseDto
+            {
+                Id = testCase.Id,
+                Title = testCase.Title,
+                Description = testCase.Description,
+                Steps = testCase.Steps,
+                ExpectedResults = testCase.ExpectedResults,
+                Priority = testCase.Priority,
+                Tags = testCase.Tags,
+                TestSuiteId = testCase.TestSuiteId,
+                // FolderId = testCase.FolderId,
+                TenantId = testCase.TenantId,
+                CreatedAt = testCase.CreatedAt,
+                UpdatedAt = testCase.UpdatedAt
+            };
+    }
+
+    private async Task SaveInlineEditAsync( TestCaseDto testCase )
+    {
+        var titleValidationResult = ValidateTitle(testCase.Title);
+        if (titleValidationResult != null)
+        {
+            Snackbar.Add(titleValidationResult,Severity.Error);
+            return;
+        }
+
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(_tagsInput))
+            {
+                testCase.Tags = _tagsInput.Split(',',StringSplitOptions.RemoveEmptyEntries)
+                    .Select(t => t.Trim()).ToArray();
+            }
+            testCase.Steps = !string.IsNullOrWhiteSpace(_stepsInput) ? JsonDocument.Parse(_stepsInput) : null;
+            testCase.ExpectedResults = !string.IsNullOrWhiteSpace(_expectedResultsInput) ? JsonDocument.Parse(_expectedResultsInput) : null;
+
+            await TestCaseService.UpdateTestCaseAsync(new UpdateTestCaseDto
+                {
+                    Title = testCase.Title,
+                    Description = testCase.Description,
+                    Steps = _stepsInput,
+                    ExpectedResults = _expectedResultsInput,
+                    Priority = testCase.Priority,
+                    Tags = testCase.Tags,
+                    // FolderId = testCase.FolderId
+                },testCase.Id,testCase.TestSuiteId);
+
+            testCase.IsEditing = false;
+            _originalTestCases.Remove(testCase.Id);
+            _tagsInput = string.Empty;
+            _stepsInput = string.Empty;
+            _expectedResultsInput = string.Empty;
+            Snackbar.Add("Test case updated successfully",Severity.Success);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to update test case: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error updating test case: {ex}");
+        }
+    }
+
+    private void CancelInlineEdit( TestCaseDto testCase )
+    {
+        if (_originalTestCases.TryGetValue(testCase.Id,out var original))
+        {
+            testCase.Title = original.Title;
+            testCase.Description = original.Description;
+            testCase.Steps = original.Steps;
+            testCase.ExpectedResults = original.ExpectedResults;
+            testCase.Priority = original.Priority;
+            testCase.Tags = original.Tags;
+            testCase.TestSuiteId = original.TestSuiteId;
+            // testCase.FolderId = original.FolderId;
+            testCase.TenantId = original.TenantId;
+            testCase.IsEditing = false;
+            _originalTestCases.Remove(testCase.Id);
+            _tagsInput = string.Empty;
+            _stepsInput = string.Empty;
+            _expectedResultsInput = string.Empty;
+        }
+    }
+
+    private async Task DeleteTestCaseAsync( Guid id,Guid testSuiteId )
+    {
+        var parameters = new DialogParameters { { "ContentText","Are you sure you want to delete this test case?" } };
+        var options = new DialogOptions { CloseButton = true,MaxWidth = MaxWidth.Small,FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirm Delete",parameters,options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            try
+            {
+                await TestCaseService.DeleteTestCaseAsync(id,testSuiteId);
+                await _table.ReloadServerData();
+                Snackbar.Add("Test case deleted successfully",Severity.Success);
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+                NavigationManager.NavigateTo("/login");
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to delete test case: {ex.Message}",Severity.Error);
+                Console.WriteLine($"Error deleting test case: {ex}");
+            }
+        }
+    }
+
+    private async Task BulkDeleteTestCasesAsync()
+    {
+        var parameters = new DialogParameters { { "ContentText",$"Are you sure you want to delete {_selectedTestCases.Count} test cases?" } };
+        var options = new DialogOptions { CloseButton = true,MaxWidth = MaxWidth.Small,FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirm Bulk Delete",parameters,options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            try
+            {
+                foreach (var testCase in _selectedTestCases.ToList())
+                {
+                    await TestCaseService.DeleteTestCaseAsync(testCase.Id,testCase.TestSuiteId);
+                }
+                await _table.ReloadServerData();
+                _selectedTestCases.Clear();
+                Snackbar.Add("Selected test cases deleted successfully",Severity.Success);
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+                NavigationManager.NavigateTo("/login");
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to delete test cases: {ex.Message}",Severity.Error);
+                Console.WriteLine($"Error deleting test cases: {ex}");
+            }
+        }
+    }
+    #endregion
+
+    #region Dialog Operations
+    private async Task OpenCreateDialogAsync()
+    {
+        _newTestCase = new CreateTestCaseDto();
+        _tagsInput = string.Empty;
+        _stepsInput = string.Empty;
+        _expectedResultsInput = string.Empty;
+        _testSuites = await TestSuiteService.GetTestSuitesAsync();
+        // _folders = await TestSuiteService.GetTestFoldersAsync();
+        _newTestCase.TenantId = _tenantId;
+        _showCreateDialog = true;
+        await Task.Run(() => _form?.ResetValidation());
+    }
+
     private void CancelCreate()
     {
         _showCreateDialog = false;
-        _newTestCase = new();
+        _newTestCase = new CreateTestCaseDto();
+        _tagsInput = string.Empty;
+        _stepsInput = string.Empty;
+        _expectedResultsInput = string.Empty;
         _form?.ResetValidation();
     }
 
-    private async Task CreateTestCase()
+    private async Task CreateTestCaseAsync()
     {
-        if (!_formIsValid) return;
+        if (!_formIsValid)
+        {
+            Snackbar.Add("Please fill in all required fields",Severity.Error);
+            return;
+        }
 
         try
         {
-            await TestCaseService.CreateTestCaseAsync(_newTestCase);
-            _testCases = await TestCaseService.GetTestCasesAsync(_newTestCase.TestSuiteId);
+            if (!string.IsNullOrWhiteSpace(_tagsInput))
+            {
+                _newTestCase.Tags = _tagsInput.Split(',',StringSplitOptions.RemoveEmptyEntries)
+                    .Select(t => t.Trim()).ToArray();
+            }
+            _newTestCase.Steps = _stepsInput;
+            _newTestCase.ExpectedResults = _expectedResultsInput;
+            _newTestCase.TenantId = _tenantId;
+
+            await TestCaseService.CreateTestCaseAsync(_newTestCase,_newTestCase.TestSuiteId);
+            await _table.ReloadServerData();
             _showCreateDialog = false;
-            _newTestCase = new();
+            _newTestCase = new CreateTestCaseDto();
+            _tagsInput = string.Empty;
+            _stepsInput = string.Empty;
+            _expectedResultsInput = string.Empty;
             _form?.ResetValidation();
-            Snackbar.Add("Test Case created", Severity.Success);
+            Snackbar.Add("Test case created successfully",Severity.Success);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
         }
         catch (Exception ex)
         {
-            Snackbar.Add("Failed to create test case", Severity.Error);
+            Snackbar.Add($"Failed to create test case: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error creating test case: {ex}");
         }
     }
+    #endregion
 
-    private void EditTestCase(Guid id) => Navigation.NavigateTo($"/test-cases/edit/{id}");
-
-    private async Task DeleteTestCase(Guid id)
+    #region Export/Import
+    private async Task ExportToCsvAsync()
     {
         try
         {
-            await TestCaseService.DeleteTestCaseAsync(id);
-            var suiteId = Navigation.GetQueryParameter<int>("suiteId");
-            _testCases = await TestCaseService.GetTestCasesAsync(suiteId != 0 ? suiteId : null);
-            Snackbar.Add("Test Case deleted", Severity.Success);
+            var result = await TestCaseService.GetTestCasesAsync(1,1000,null);
+            var testCases = result.ToList();
+
+            if (!testCases.Any())
+            {
+                Snackbar.Add("No test cases found to export.",Severity.Warning);
+                return;
+            }
+
+            using var memoryStream = new MemoryStream();
+            using var writer = new StreamWriter(memoryStream);
+            using var csv = new CsvWriter(writer,CultureInfo.InvariantCulture);
+            csv.WriteRecords(testCases.Select(tc => new
+            {
+                tc.Id,
+                tc.Title,
+                tc.Description,
+                Steps = tc.Steps?.ToString() ?? "",
+                ExpectedResults = tc.ExpectedResults?.ToString() ?? "",
+                tc.Priority,
+                Tags = string.Join(",",tc.Tags ?? new string[0]),
+                TestSuite = _testSuites.FirstOrDefault(ts => ts.Id == tc.TestSuiteId)?.Name ?? "None",
+                // Folder = _folders.FirstOrDefault(f => f.Id == tc.FolderId)?.Name ?? "None",
+                tc.TenantId,
+                tc.CreatedAt,
+                tc.UpdatedAt
+            }));
+            await writer.FlushAsync();
+            memoryStream.Position = 0;
+
+            var csvBytes = memoryStream.ToArray();
+            var base64Data = Convert.ToBase64String(csvBytes);
+            await JSRuntime.InvokeVoidAsync("downloadFileFromBase64",
+                "TestCasesExport.csv",
+                "text/csv",
+                base64Data);
+
+            Snackbar.Add("Test cases exported to CSV successfully",Severity.Success);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
         }
         catch (Exception ex)
         {
-            Snackbar.Add("Failed to delete test case", Severity.Error);
+            Snackbar.Add($"Failed to export test cases: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error exporting to CSV: {ex}");
         }
     }
 
-    private string ValidateTitle(string title)
+    private async Task ExportToExcelAsync()
+    {
+        try
+        {
+            var result = await TestCaseService.GetTestCasesAsync(1,1000,null);
+            var testCases = result.ToList();
+
+            if (!testCases.Any())
+            {
+                Snackbar.Add("No test cases found to export.",Severity.Warning);
+                return;
+            }
+
+            using var workbook = new XLWorkbook();
+            var worksheet = workbook.Worksheets.Add("TestCases");
+
+            worksheet.Cell("A1").Value = "ID";
+            worksheet.Cell("B1").Value = "Title";
+            worksheet.Cell("C1").Value = "Description";
+            worksheet.Cell("D1").Value = "Steps";
+            worksheet.Cell("E1").Value = "Expected Results";
+            worksheet.Cell("F1").Value = "Priority";
+            worksheet.Cell("G1").Value = "Tags";
+            worksheet.Cell("H1").Value = "Test Suite";
+            // worksheet.Cell("I1").Value = "Folder";
+            worksheet.Cell("J1").Value = "Tenant ID";
+            worksheet.Cell("K1").Value = "Created At";
+            worksheet.Cell("L1").Value = "Updated At";
+
+            var row = 2;
+            foreach (var tc in testCases)
+            {
+                worksheet.Cell($"A{row}").Value = tc.Id.ToString();
+                worksheet.Cell($"B{row}").Value = tc.Title;
+                worksheet.Cell($"C{row}").Value = tc.Description;
+                worksheet.Cell($"D{row}").Value = tc.Steps?.ToString() ?? "";
+                worksheet.Cell($"E{row}").Value = tc.ExpectedResults?.ToString() ?? "";
+                worksheet.Cell($"F{row}").Value = tc.Priority.ToString();
+                worksheet.Cell($"G{row}").Value = string.Join(",",tc.Tags ?? new string[0]);
+                worksheet.Cell($"H{row}").Value = _testSuites.FirstOrDefault(ts => ts.Id == tc.TestSuiteId)?.Name ?? "None";
+                // worksheet.Cell($"I{row}").Value = _folders.FirstOrDefault(f => f.Id == tc.FolderId)?.Name ?? "None";
+                worksheet.Cell($"J{row}").Value = tc.TenantId;
+                worksheet.Cell($"K{row}").Value = tc.CreatedAt.ToString("yyyy-MM-dd");
+                worksheet.Cell($"L{row}").Value = tc.UpdatedAt?.ToString("yyyy-MM-dd");
+                row++;
+            }
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            stream.Position = 0;
+
+            var bytes = stream.ToArray();
+            var base64Data = Convert.ToBase64String(bytes);
+            await JSRuntime.InvokeVoidAsync("downloadFileFromBase64",
+                "TestCasesExport.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                base64Data);
+
+            Snackbar.Add("Test cases exported to Excel successfully",Severity.Success);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to export test cases: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error exporting to Excel: {ex}");
+        }
+    }
+
+    private async Task ExportToPdfAsync()
+    {
+        try
+        {
+            var result = await TestCaseService.GetTestCasesAsync(1,1000,_searchTerm);
+            var testCases = result.ToList();
+
+            if (!testCases.Any())
+            {
+                Snackbar.Add("No test cases found to export.",Severity.Warning);
+                return;
+            }
+
+            var pdfRequest = new PdfGenerationDto
+                {
+                    Title = "Test Cases Report",
+                    FileName = "TestCases_Report.pdf",
+                    FontSizeTitle = 16,
+                    FontSizeHeader = 12,
+                    FontSizeBody = 10,
+                    Columns = new List<PdfColumnDto>
+                {
+                    new PdfColumnDto { Field = "id", Header = "ID" },
+                    new PdfColumnDto { Field = "title", Header = "Title" },
+                    new PdfColumnDto { Field = "description", Header = "Description" },
+                    new PdfColumnDto { Field = "steps", Header = "Steps" },
+                    new PdfColumnDto { Field = "expectedResults", Header = "Expected Results" },
+                    new PdfColumnDto { Field = "priority", Header = "Priority" },
+                    new PdfColumnDto { Field = "tags", Header = "Tags" },
+                    new PdfColumnDto { Field = "testSuite", Header = "Test Suite" },
+                    new PdfColumnDto { Field = "folder", Header = "Folder" },
+                    new PdfColumnDto { Field = "tenantId", Header = "Tenant ID" }
+                },
+                    Data = testCases.Select(tc => new Dictionary<string,string>
+                {
+                    { "id", tc.Id.ToString() },
+                    { "title", tc.Title ?? "" },
+                    { "description", tc.Description ?? "" },
+                    { "steps", tc.Steps?.ToString() ?? "" },
+                    { "expectedResults", tc.ExpectedResults?.ToString() ?? "" },
+                    { "priority", tc.Priority.ToString() },
+                    { "tags", string.Join(",", tc.Tags ?? new string[0]) },
+                    { "testSuite", _testSuites.FirstOrDefault(ts => ts.Id == tc.TestSuiteId)?.Name ?? "None" },
+                    // { "folder", _folders.FirstOrDefault(f => f.Id == tc.FolderId)?.Name ?? "None" },
+                    { "tenantId", tc.TenantId ?? "" }
+                }).ToList()
+                };
+
+            var pdfBytes = await CommonService.GeneratePdfAsync(pdfRequest);
+            var base64Data = Convert.ToBase64String(pdfBytes);
+            await JSRuntime.InvokeVoidAsync("downloadFileFromBase64",
+                "TestCases_Report.pdf",
+                "application/pdf",
+                base64Data);
+
+            Snackbar.Add("Test cases exported to PDF successfully",Severity.Success);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to export test cases: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error exporting to PDF: {ex}");
+        }
+    }
+
+    private async Task ImportFromFileAsync()
+    {
+        var parameters = new DialogParameters
+        {
+            { "OnFileUploaded", new EventCallback<string>(this, ImportCsvContentAsync) }
+        };
+        var options = new DialogOptions
+            {
+                CloseButton = true,
+                MaxWidth = MaxWidth.Medium,
+                FullWidth = true
+            };
+        await DialogService.ShowAsync<FileUploadDialog>("Import Test Cases from CSV",parameters,options);
+    }
+
+    private async Task ImportCsvContentAsync( string csvContent )
+    {
+        try
+        {
+            using var reader = new StringReader(csvContent);
+            using var csv = new CsvReader(reader,CultureInfo.InvariantCulture);
+            var records = csv.GetRecords<CreateTestCaseDto>().ToList();
+            foreach (var testCase in records)
+            {
+                if (!string.IsNullOrWhiteSpace(testCase?.Title))
+                {
+                    testCase.TenantId = _tenantId;
+                    await TestCaseService.CreateTestCaseAsync(testCase,testCase.TestSuiteId);
+                }
+            }
+            await _table.ReloadServerData();
+            Snackbar.Add("Test cases imported successfully",Severity.Success);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to import test cases: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error importing CSV: {ex}");
+        }
+    }
+    #endregion
+
+    #region Validation
+    private string ValidateTitle( string title )
     {
         if (string.IsNullOrWhiteSpace(title))
             return "Title is required";
@@ -135,11 +985,13 @@
             return "Title must be at least 3 characters long";
         return null;
     }
+    #endregion
 
-    private string ValidateTestSuiteId(int suiteId)
+    #region Helpers
+    private void LogHover( string action )
     {
-        if (suiteId <= 0)
-            return "Test Suite ID must be a positive number";
-        return null;
+        Console.WriteLine($"Hovered: {action}");
+        Snackbar.Add($"Hovered: {action}",Severity.Info);
     }
+    #endregion
 }

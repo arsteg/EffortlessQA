@@ -30,76 +30,76 @@
                 <MudGrid Spacing="2">
                     <MudItem xs="12" sm="4" md="3">
                         <MudTextField T="string"
-                        Label="Search Test Suites"
-                        Placeholder="Enter test suite name..."
-                        Adornment="Adornment.Start"
-                        AdornmentIcon="@Icons.Material.Filled.Search"
-                        @bind-Value="_searchTerm"
-                        DebounceInterval="500"
-                        OnDebounceIntervalElapsed="HandleSearchTestSuites"
-                        Variant="Variant.Outlined"
-                        Clearable="true"
-                        Class="mud-input-rounded" />
+                                      Label="Search Test Suites"
+                                      Placeholder="Enter test suite name..."
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Search"
+                                      @bind-Value="_searchTerm"
+                                      DebounceInterval="500"
+                                      OnDebounceIntervalElapsed="HandleSearchTestSuites"
+                                      Variant="Variant.Outlined"
+                                      Clearable="true"
+                                      Class="mud-input-rounded" />
                     </MudItem>
                     <MudItem xs="12" sm="8" md="9" Class="d-flex align-center justify-end gap-2">
                         <div class="hover-container">
                             <MudIconButton Icon="@Icons.Material.Filled.Add"
-                            Color="Color.Primary"
-                            Size="Size.Medium"
-                            OnClick="@OpenCreateDialogAsync"
-                            OnMouseOver="@(() => LogHover("Add Test Suite"))"
-                            AriaLabel="Add Test Suite"
-                            Class="mx-1 expressive-icon" />
+                                           Color="Color.Primary"
+                                           Size="Size.Medium"
+                                           OnClick="@OpenCreateDialogAsync"
+                                           OnMouseOver="@(() => LogHover("Add Test Suite"))"
+                                           AriaLabel="Add Test Suite"
+                                           Class="mx-1 expressive-icon" />
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Add Test Suite</MudText>
                         </div>
                         <div class="hover-container">
                             <MudIconButton Icon="@Icons.Material.Filled.Refresh"
-                            Color="Color.Secondary"
-                            Size="Size.Medium"
-                            OnClick="@RefreshTestSuitesAsync"
-                            OnMouseOver="@(() => LogHover("Refresh test suites"))"
-                            AriaLabel="Refresh test suites"
-                            Class="mx-1 expressive-icon" />
+                                           Color="Color.Secondary"
+                                           Size="Size.Medium"
+                                           OnClick="@RefreshTestSuitesAsync"
+                                           OnMouseOver="@(() => LogHover("Refresh test suites"))"
+                                           AriaLabel="Refresh test suites"
+                                           Class="mx-1 expressive-icon" />
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Refresh</MudText>
                         </div>
                         <div class="hover-container">
                             <MudIconButton Icon="@Icons.Material.Filled.TextSnippet"
-                            Color="Color.Default"
-                            Size="Size.Medium"
-                            OnClick="@ExportToCsvAsync"
-                            OnMouseOver="@(() => LogHover("Export to CSV"))"
-                            AriaLabel="Export to CSV"
-                            Class="mx-1 expressive-icon" />
+                                           Color="Color.Default"
+                                           Size="Size.Medium"
+                                           OnClick="@ExportToCsvAsync"
+                                           OnMouseOver="@(() => LogHover("Export to CSV"))"
+                                           AriaLabel="Export to CSV"
+                                           Class="mx-1 expressive-icon" />
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Export CSV</MudText>
                         </div>
                         <div class="hover-container">
                             <MudIconButton Icon="@Icons.Material.Filled.GridOn"
-                            Color="Color.Default"
-                            Size="Size.Medium"
-                            OnClick="@ExportToExcelAsync"
-                            OnMouseOver="@(() => LogHover("Export to Excel"))"
-                            AriaLabel="Export to Excel"
-                            Class="mx-1 expressive-icon" />
+                                           Color="Color.Default"
+                                           Size="Size.Medium"
+                                           OnClick="@ExportToExcelAsync"
+                                           OnMouseOver="@(() => LogHover("Export to Excel"))"
+                                           AriaLabel="Export to Excel"
+                                           Class="mx-1 expressive-icon" />
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Export Excel</MudText>
                         </div>
                         <div class="hover-container">
                             <MudIconButton Icon="@Icons.Material.Filled.PictureAsPdf"
-                            Color="Color.Default"
-                            Size="Size.Medium"
-                            OnClick="@ExportToPdfAsync"
-                            OnMouseOver="@(() => LogHover("Export to PDF"))"
-                            AriaLabel="Export to PDF"
-                            Class="mx-1 expressive-icon" />
+                                           Color="Color.Default"
+                                           Size="Size.Medium"
+                                           OnClick="@ExportToPdfAsync"
+                                           OnMouseOver="@(() => LogHover("Export to PDF"))"
+                                           AriaLabel="Export to PDF"
+                                           Class="mx-1 expressive-icon" />
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Export PDF</MudText>
                         </div>
                         <div class="hover-container">
                             <MudIconButton Icon="@Icons.Material.Filled.CloudUpload"
-                            Color="Color.Primary"
-                            Size="Size.Medium"
-                            OnClick="@ImportFromFileAsync"
-                            OnMouseOver="@(() => LogHover("Import Excel/CSV"))"
-                            AriaLabel="Import Excel or CSV"
-                            Class="mx-1 expressive-icon" />
+                                           Color="Color.Primary"
+                                           Size="Size.Medium"
+                                           OnClick="@ImportFromFileAsync"
+                                           OnMouseOver="@(() => LogHover("Import Excel/CSV"))"
+                                           AriaLabel="Import Excel or CSV"
+                                           Class="mx-1 expressive-icon" />
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Import Excel/CSV</MudText>
                         </div>
                     </MudItem>
@@ -111,53 +111,60 @@
         <MudItem xs="12">
             <MudPaper Elevation="2" Class="pa-4" Style="border-radius: 8px;">
                 <MudTable ServerData="@(new Func<TableState, CancellationToken, Task<TableData<TestSuiteDto>>>(LoadTestSuitesAsync))"
-                @ref="_table"
-                Hover="true"
-                Breakpoint="Breakpoint.Sm"
-                Loading="@_isLoading"
-                Dense="true"
-                AllowMultiSelection="true"
-                @bind-SelectedItems="_selectedTestSuites"
-                Class="mud-table-clean"
-                RowsPerPage="@_pageSize">
+                          @ref="_table"
+                          Hover="true"
+                          Breakpoint="Breakpoint.Sm"
+                          Loading="@_isLoading"
+                          Dense="true"
+                          AllowMultiSelection="true"
+                          @bind-SelectedItems="_selectedTestSuites"
+                          Class="mud-table-clean"
+                          RowsPerPage="@_pageSize">
                     <ToolBarContent>
                         <MudText Typo="Typo.subtitle1" Color="Color.Primary">Test Suites</MudText>
                         <MudSpacer />
                         @if (_selectedTestSuites.Any())
                         {
                             <MudButton Variant="Variant.Text"
-                            Color="Color.Error"
-                            StartIcon="@Icons.Material.Filled.Delete"
-                            OnClick="@BulkDeleteTestSuitesAsync"
-                            Size="Size.Small">Delete (@_selectedTestSuites.Count)</MudButton>
+                                       Color="Color.Error"
+                                       StartIcon="@Icons.Material.Filled.Delete"
+                                       OnClick="@BulkDeleteTestSuitesAsync"
+                                       Size="Size.Small">Delete (@_selectedTestSuites.Count)</MudButton>
                         }
                     </ToolBarContent>
                     <HeaderContent>
+                        <MudTh Style="width: 40px;"></MudTh> <!-- For expand/collapse -->
                         <MudTh>
                             <MudTableSortLabel SortLabel="name" T="TestSuiteDto" InitialDirection="SortDirection.Ascending">Name</MudTableSortLabel>
                         </MudTh>
                         <MudTh>
                             <MudTableSortLabel SortLabel="description" T="TestSuiteDto">Description</MudTableSortLabel>
                         </MudTh>
-                        <MudTh>
-                            <MudTableSortLabel SortLabel="projectId" T="TestSuiteDto">Project ID</MudTableSortLabel>
-                        </MudTh>
-                        <MudTh>
-                            <MudTableSortLabel SortLabel="parentSuiteId" T="TestSuiteDto">Parent Suite ID</MudTableSortLabel>
-                        </MudTh>
-                        <MudTh Style="width: 100px; text-align: center;">Actions</MudTh>
+                        <MudTh>Project</MudTh>
+                        <MudTh>Parent Suite</MudTh>
+                        <MudTh Style="width: 120px; text-align: center;">Actions</MudTh>
                     </HeaderContent>
                     <RowTemplate>
+                        <MudTd Style="vertical-align: middle;">
+                            @if (context.Children.Any())
+                            {
+                                <div style="display: flex; align-items: center;">
+                                    <MudIconButton Icon="@(_expandedTestSuites.Contains(context.Id) ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                                                   Size="Size.Small"
+                                                   OnClick="@(() => ToggleExpand(context.Id))" />
+                                </div>
+                            }
+                        </MudTd>
                         <MudTd>
                             @if (context.IsEditing)
                             {
                                 <MudTextField T="string"
-                                @bind-Value="context.Name"
-                                Required="true"
-                                RequiredError="Name is required"
-                                Variant="Variant.Outlined"
-                                Margin="Margin.Dense"
-                                Class="mud-input-compact" />
+                                              @bind-Value="context.Name"
+                                              Required="true"
+                                              RequiredError="Name is required"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense"
+                                              Class="mud-input-compact" />
                             }
                             else
                             {
@@ -168,13 +175,13 @@
                             @if (context.IsEditing)
                             {
                                 <MudTextField T="string"
-                                @bind-Value="context.Description"
-                                Required="true"
-                                RequiredError="Description is required"
-                                Variant="Variant.Outlined"
-                                Margin="Margin.Dense"
-                                Lines="2"
-                                Class="mud-input-compact" />
+                                              @bind-Value="context.Description"
+                                              Required="true"
+                                              RequiredError="Description is required"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense"
+                                              Lines="2"
+                                              Class="mud-input-compact" />
                             }
                             else
                             {
@@ -185,45 +192,139 @@
                             @(_projects.FirstOrDefault(p => p.Id == context.ProjectId)?.Name ?? "None")
                         </MudTd>
                         <MudTd>
-                            @context.ParentSuiteId
-                            @* @(_projects.FirstOrDefault(p => p.Id == context.ProjectId)?.Name ?? "None") @(_projects.FirstOrDefault(p => p.Id == context.ProjectId)?.Name ?? "None") *@
+                            @(_parentTestSuites.FirstOrDefault(p => p.Id == context.ParentSuiteId)?.Name ?? "None")
                         </MudTd>
-                        <MudTd Style="text-align: center;">
+                        <MudTd Style="display: flex; justify-content: center; gap: 8px; vertical-align: middle;">
                             @if (context.IsEditing)
                             {
                                 <MudIconButton Icon="@Icons.Material.Filled.Save"
-                                Color="Color.Success"
-                                Size="Size.Small"
-                                OnClick="@(() => SaveInlineEditAsync(context))" />
+                                               Color="Color.Success"
+                                               Size="Size.Small"
+                                               OnClick="@(() => SaveInlineEditAsync(context))" />
                                 <MudIconButton Icon="@Icons.Material.Filled.Cancel"
-                                Color="Color.Secondary"
-                                Size="Size.Medium"
-                                OnClick="@(() => CancelInlineEdit(context))" />
+                                               Color="Color.Secondary"
+                                               Size="Size.Small"
+                                               OnClick="@(() => CancelInlineEdit(context))" />
                             }
                             else
                             {
+                                <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                               Color="Color.Success"
+                                               Size="Size.Small"
+                                               OnClick="@(() => OpenCreateDialogEditAsync(context.Id))" />
                                 <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                Color="Color.Primary"
-                                Size="Size.Small"
-                                OnClick="@(() => StartInlineEdit(context))" />
+                                               Color="Color.Primary"
+                                               Size="Size.Small"
+                                               OnClick="@(() => StartInlineEdit(context))" />
                                 <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                Color="Color.Error"
-                                Size="Size.Small"
-                                OnClick="@(() => DeleteTestSuiteAsync(context.Id, context.ProjectId))" />
+                                               Color="Color.Error"
+                                               Size="Size.Small"
+                                               OnClick="@(() => DeleteTestSuiteAsync(context.Id, context.ProjectId))" />
                             }
                         </MudTd>
                     </RowTemplate>
+                    <ChildRowContent>
+                        @if (_expandedTestSuites.Contains(context.Id))
+                        {
+                            @foreach (var child in context.Children)
+                            {
+                                <tr class="child-row">
+                                    <td style="vertical-align: middle; padding-left: @(20 * GetDepth(child))px;">
+                                        @if (child.Children.Any())
+                                        {
+                                            <div style="display: flex; align-items: center;">
+                                                <MudIconButton Icon="@(_expandedTestSuites.Contains(child.Id) ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                                                               Size="Size.Small"
+                                                               OnClick="@(() => ToggleExpand(child.Id))" />
+                                            </div>
+                                        }
+                                    </td>
+                                    <td style="vertical-align: middle;">
+                                        @if (child.IsEditing)
+                                        {
+                                            <MudTextField T="string"
+                                                          @bind-Value="child.Name"
+                                                          Required="true"
+                                                          RequiredError="Name is required"
+                                                          Variant="Variant.Outlined"
+                                                          Margin="Margin.Dense"
+                                                          Class="mud-input-compact" />
+                                        }
+                                        else
+                                        {
+                                            @child.Name
+                                        }
+                                    </td>
+                                    <td style="vertical-align: middle;">
+                                        @if (child.IsEditing)
+                                        {
+                                            <MudTextField T="string"
+                                                          @bind-Value="child.Description"
+                                                          Required="true"
+                                                          RequiredError="Description is required"
+                                                          Variant="Variant.Outlined"
+                                                          Margin="Margin.Dense"
+                                                          Lines="2"
+                                                          Class="mud-input-compact" />
+                                        }
+                                        else
+                                        {
+                                            @child.Description
+                                        }
+                                    </td>
+                                    <td style="vertical-align: middle;">
+                                        @(_projects.FirstOrDefault(p => p.Id == child.ProjectId)?.Name ?? "None")
+                                    </td>
+                                    <td style="vertical-align: middle;">
+                                        @(_parentTestSuites.FirstOrDefault(p => p.Id == child.ParentSuiteId)?.Name ?? "None")
+                                    </td>
+                                    <td style="display: flex; justify-content: center; gap: 8px; vertical-align: middle;">
+                                        @if (child.IsEditing)
+                                        {
+                                            <MudIconButton Icon="@Icons.Material.Filled.Save"
+                                                           Color="Color.Success"
+                                                           Size="Size.Small"
+                                                           OnClick="@(() => SaveInlineEditAsync(child))" />
+                                            <MudIconButton Icon="@Icons.Material.Filled.Cancel"
+                                                           Color="Color.Secondary"
+                                                           Size="Size.Small"
+                                                           OnClick="@(() => CancelInlineEdit(child))" />
+                                        }
+                                        else
+                                        {
+                                            <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                                           Color="Color.Success"
+                                                           Size="Size.Small"
+                                                           OnClick="@(() => OpenCreateDialogEditAsync(child.Id))" />
+                                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                           Color="Color.Primary"
+                                                           Size="Size.Small"
+                                                           OnClick="@(() => StartInlineEdit(child))" />
+                                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                           Color="Color.Error"
+                                                           Size="Size.Small"
+                                                           OnClick="@(() => DeleteTestSuiteAsync(child.Id, child.ProjectId))" />
+                                        }
+                                    </td>
+                                </tr>
+                                @if (_expandedTestSuites.Contains(child.Id))
+                                {
+                                    @RenderChildRows(child,2)
+                                }
+                            }
+                        }
+                    </ChildRowContent>
                     <PagerContent>
                         <div class="d-flex align-center gap-3">
                             <MudText Typo="Typo.body2" Class="mr-2">Rows per page:</MudText>
                             @foreach (var size in new int[] { 10,25,50,100 })
                             {
                                 <MudButton Variant="@(_pageSize == size ? Variant.Filled : Variant.Outlined)"
-                                Color="Color.Primary"
-                                Size="Size.Small"
-                                OnClick="@(() => OnPageSizeChanged(size))"
-                                Class="mud-button-compact"
-                                AriaLabel="@($"Set rows per page to {size}")">
+                                           Color="Color.Primary"
+                                           Size="Size.Small"
+                                           OnClick="@(() => OnPageSizeChanged(size))"
+                                           Class="mud-button-compact"
+                                           AriaLabel="@($"Set rows per page to {size}")">
                                     @size
                                 </MudButton>
                             }
@@ -255,49 +356,40 @@
                 <MudText Typo="Typo.h6" Color="Color.Primary" Class="mb-4">Create New Test Suite</MudText>
                 <MudForm @ref="_form" @bind-IsValid="_formIsValid" Class="d-flex flex-column gap-4">
                     <MudTextField T="string"
-                    Label="Test Suite Name"
-                    @bind-Value="_newTestSuite.Name"
-                    Required="true"
-                    RequiredError="Name is required"
-                    Validation="@(new Func<string, string>(ValidateName))"
-                    Variant="Variant.Outlined"
-                    Clearable="true"
-                    HelperText="Enter a unique test suite name (min 3 characters)"
-                    Class="mud-input-rounded" />
+                                  Label="Test Suite Name"
+                                  @bind-Value="_newTestSuite.Name"
+                                  Required="true"
+                                  RequiredError="Name is required"
+                                  Validation="@(new Func<string, string>(ValidateName))"
+                                  Variant="Variant.Outlined"
+                                  Clearable="true"
+                                  HelperText="Enter a unique test suite name (min 3 characters)"
+                                  Class="mud-input-rounded" />
                     <MudTextField T="string"
-                    Label="Description"
-                    @bind-Value="_newTestSuite.Description"
-                    Required="true"
-                    RequiredError="Description is required"
-                    Lines="4"
-                    Variant="Variant.Outlined"
-                    Clearable="true"
-                    HelperText="Describe the test suite briefly"
-                    Class="mud-input-rounded" />
-                    <MudTextField T="Guid?"
-                    Label="Parent Suite ID"
-                    @bind-Value="_newTestSuite.ParentSuiteId"
-                    Variant="Variant.Outlined"
-                    Clearable="true"
-                    HelperText="Optional: Enter the parent suite ID"
-                    Class="mud-input-rounded" />
-                    <MudSelect T="Guid"
-                    Label="ProjectId"
-                    @bind-Value="_newTestSuite.ProjectId"
-                    Required="true"
-                    RequiredError="Project is required"
-                    Variant="Variant.Outlined"
-                    Class="mud-input-rounded"
-                    AnchorOrigin="Origin.BottomCenter"
-                    TransformOrigin="Origin.TopCenter"
-                    ToStringFunc="@(id => _projects?.FirstOrDefault(p => p.Id == id)?.Name ?? "Unknown Project")">
-
-                        @foreach (var project in _projects)
-                        {
-                            <MudSelectItem Value="@project.Id">@(project.Name ?? $"Project ID: {project.Id}")</MudSelectItem>
-                        }
-
-                    </MudSelect>
+                                  Label="Description"
+                                  @bind-Value="_newTestSuite.Description"
+                                  Required="true"
+                                  RequiredError="Description is required"
+                                  Lines="4"
+                                  Variant="Variant.Outlined"
+                                  Clearable="true"
+                                  HelperText="Describe the test suite briefly"
+                                  Class="mud-input-rounded" />
+                    @* <MudSelect T="Guid" *@
+                    @*            Label="Project" *@
+                    @*            @bind-Value="_newTestSuite.ProjectId" *@
+                    @*            Required="true" *@
+                    @*            RequiredError="Project is required" *@
+                    @*            Variant="Variant.Outlined" *@
+                    @*            Class="mud-input-rounded" *@
+                    @*            AnchorOrigin="Origin.BottomCenter" *@
+                    @*            TransformOrigin="Origin.TopCenter" *@
+                    @*            ToStringFunc="@(id => _projects?.FirstOrDefault(p => p.Id == id)?.Name ?? "Unknown Project")"> *@
+                    @*     @foreach (var project in _projects) *@
+                    @*     { *@
+                    @*         <MudSelectItem Value="@project.Id">@(project.Name ?? $"Project ID: {project.Id}")</MudSelectItem> *@
+                    @*     } *@
+                    @* </MudSelect> *@
                 </MudForm>
             </MudItem>
         </MudGrid>
@@ -310,11 +402,9 @@
 
 @code {
     #region Fields
-
     private CreateTestSuiteDto _newTestSuite = new();
     private List<ProjectDto> _projects = new();
-    private List<TestSuiteDto> _parentTestSuite = new();
-
+    private List<TestSuiteDto> _parentTestSuites = new();
     private bool _showCreateDialog;
     private string _searchTerm = string.Empty;
     private bool _isLoading;
@@ -324,72 +414,95 @@
     private bool _formIsValid;
     private int _pageSize = 10;
     private Dictionary<Guid,TestSuiteDto> _originalTestSuites = new();
-    private readonly MudTheme _customTheme = new()
-        {
-            PaletteLight = new PaletteLight
-            {
-                Primary = "#1976D2",
-                Secondary = "#FF4081",
-                Background = "#F5F7FA",
-                Surface = "#FFFFFF",
-                TextPrimary = "#212121",
-                TextSecondary = "#757575",
-                AppbarBackground = "#1976D2",
-                ActionDefault = "#212121"
-            },
-            PaletteDark = new PaletteDark
-            {
-                Primary = "#2196F3",
-                Secondary = "#F50057",
-                Background = "#121212",
-                Surface = "#1E1E1E",
-                TextPrimary = "#FFFFFF",
-                TextSecondary = "#B0BEC5",
-                AppbarBackground = "#2196F3",
-                ActionDefault = "#FFFFFF"
-            },
-            LayoutProperties = new LayoutProperties
-            {
-                DefaultBorderRadius = "8px"
-            }
-        };
+    private HashSet<Guid> _expandedTestSuites = new();
+    private readonly string _tenantId = "default"; // Replace with dynamic tenant ID logic
 
+    private readonly MudTheme _customTheme = new()
+            {
+                PaletteLight = new PaletteLight
+                {
+                    Primary = "#1976D2",
+                    Secondary = "#FF4081",
+                    Background = "#F5F7FA",
+                    Surface = "#FFFFFF",
+                    TextPrimary = "#212121",
+                    TextSecondary = "#757575",
+                    AppbarBackground = "#1976D2",
+                    ActionDefault = "#212121"
+                },
+                PaletteDark = new PaletteDark
+                {
+                    Primary = "#2196F3",
+                    Secondary = "#F50057",
+                    Background = "#121212",
+                    Surface = "#1E1E1E",
+                    TextPrimary = "#FFFFFF",
+                    TextSecondary = "#B0BEC5",
+                    AppbarBackground = "#2196F3",
+                    ActionDefault = "#FFFFFF"
+                },
+                Typography = new Typography
+                {
+                //     Default = new Default
+                //     {
+                //         FontFamily = new[] { "Roboto","Helvetica","Arial","sans-serif" },
+                //         FontSize = ".875rem",
+                //         FontWeight = 400,
+                //         LineHeight = 1.43,
+                //         LetterSpacing = ".01071em"
+                //     },
+                //     H6 = new H6
+                //     {
+                //         FontSize = "1.25rem",
+                //         FontWeight = 500,
+                //         LineHeight = 1.6,
+                //         LetterSpacing = ".0075em"
+                //     }
+                },
+                LayoutProperties = new LayoutProperties
+                {
+                    DefaultBorderRadius = "8px"
+                }
+            };
     #endregion
 
     #region Lifecycle
-
     protected override async Task OnInitializedAsync()
     {
         _projects = await ProjectService.GetProjectsAsync();
-        _newTestSuite.ProjectId = _projects.FirstOrDefault()?.Id ?? default(Guid);
-
-        _parentTestSuite = await TestSuiteService.GetTestSuitesAsync();
-        _newTestSuite.ParentSuiteId = _parentTestSuite.FirstOrDefault()?.Id ?? default(Guid);
-
+        var allTestSuites = await TestSuiteService.GetTestSuitesAsync();
+        _parentTestSuites = FlattenTestSuites(allTestSuites).ToList();
         await _table?.ReloadServerData();
     }
-
     #endregion
 
     #region Table Operations
-
     private async Task<TableData<TestSuiteDto>> LoadTestSuitesAsync( TableState state,CancellationToken cancellationToken )
     {
         _isLoading = true;
         try
         {
-            Console.WriteLine($"Loading page {state.Page + 1} with {_pageSize} rows");
+            string filter = string.Empty;
+            if (!string.IsNullOrEmpty(_searchTerm))
+                filter += $"name:{_searchTerm}";
+            if (!string.IsNullOrEmpty(state.SortLabel))
+                filter += $"{(string.IsNullOrEmpty(filter) ? "" : ",")}sort:{state.SortLabel}:{(state.SortDirection == SortDirection.Ascending ? "asc" : "desc")}";
+
             var query = new TestSuiteQuery
-                {
-                    SearchTerm = _searchTerm,
-                    SortBy = state.SortLabel,
-                    SortDirection = state.SortDirection == SortDirection.Ascending ? "asc" : "desc",
-                    Page = state.Page + 1,
-                    PageSize = _pageSize
-                };
+                    {
+                        SearchTerm = _searchTerm,
+                        SortBy = state.SortLabel,
+                        SortDirection = state.SortDirection == SortDirection.Ascending ? "asc" : "desc",
+                        Page = state.Page + 1,
+                        PageSize = _pageSize
+                    };
 
             var result = await TestSuiteService.GetPagedTestSuitesAsync(query);
-            return new TableData<TestSuiteDto> { TotalItems = result.TotalCount,Items = result.Items };
+            return new TableData<TestSuiteDto>
+                    {
+                        TotalItems = result.TotalCount,
+                        Items = result.Items
+                    };
         }
         catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
@@ -425,6 +538,8 @@
     private async Task RefreshTestSuitesAsync()
     {
         await _table.ReloadServerData();
+        var allTestSuites = await TestSuiteService.GetTestSuitesAsync();
+        _parentTestSuites = FlattenTestSuites(allTestSuites).ToList();
         Snackbar.Add("Test suites refreshed successfully",Severity.Success);
     }
 
@@ -432,14 +547,15 @@
     {
         testSuite.IsEditing = true;
         _originalTestSuites[testSuite.Id] = new TestSuiteDto
-            {
-                Id = testSuite.Id,
-                Name = testSuite.Name,
-                Description = testSuite.Description,
-                ProjectId = testSuite.ProjectId,
-                TenantId = testSuite.TenantId,
-                ParentSuiteId = testSuite.ParentSuiteId
-            };
+                {
+                    Id = testSuite.Id,
+                    Name = testSuite.Name,
+                    Description = testSuite.Description,
+                    ProjectId = testSuite.ProjectId,
+                    TenantId = testSuite.TenantId,
+                    ParentSuiteId = testSuite.ParentSuiteId,
+                    Children = testSuite.Children
+                };
     }
 
     private async Task SaveInlineEditAsync( TestSuiteDto testSuite )
@@ -483,15 +599,17 @@
             testSuite.Name = original.Name;
             testSuite.Description = original.Description;
             testSuite.ProjectId = original.ProjectId;
+            testSuite.TenantId = original.TenantId;
             testSuite.ParentSuiteId = original.ParentSuiteId;
+            testSuite.Children = original.Children;
             testSuite.IsEditing = false;
             _originalTestSuites.Remove(testSuite.Id);
         }
     }
 
-    private async Task DeleteTestSuiteAsync( Guid id, Guid projectId )
+    private async Task DeleteTestSuiteAsync( Guid id,Guid projectId )
     {
-        var parameters = new DialogParameters { { "ContentText","Are you sure you want to delete this test suite?" } };
+        var parameters = new DialogParameters { { "ContentText","Are you sure you want to delete this test suite and its children?" } };
         var options = new DialogOptions { CloseButton = true,MaxWidth = MaxWidth.Small,FullWidth = true };
         var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirm Delete",parameters,options);
         var result = await dialog.Result;
@@ -500,7 +618,7 @@
         {
             try
             {
-                await TestSuiteService.DeleteTestSuiteAsync(id, projectId);
+                await TestSuiteService.DeleteTestSuiteAsync(id,projectId);
                 await _table.ReloadServerData();
                 Snackbar.Add("Test suite deleted successfully",Severity.Success);
             }
@@ -519,7 +637,7 @@
 
     private async Task BulkDeleteTestSuitesAsync()
     {
-        var parameters = new DialogParameters { { "ContentText",$"Are you sure you want to delete {_selectedTestSuites.Count} test suites?" } };
+        var parameters = new DialogParameters { { "ContentText",$"Are you sure you want to delete {_selectedTestSuites.Count} test suites and their children?" } };
         var options = new DialogOptions { CloseButton = true,MaxWidth = MaxWidth.Small,FullWidth = true };
         var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirm Bulk Delete",parameters,options);
         var result = await dialog.Result;
@@ -530,7 +648,7 @@
             {
                 foreach (var testSuite in _selectedTestSuites.ToList())
                 {
-                    await TestSuiteService.DeleteTestSuiteAsync(testSuite.Id , testSuite.ProjectId);
+                    await TestSuiteService.DeleteTestSuiteAsync(testSuite.Id,testSuite.ProjectId);
                 }
                 await _table.ReloadServerData();
                 _selectedTestSuites.Clear();
@@ -548,17 +666,26 @@
             }
         }
     }
-
     #endregion
 
     #region Dialog Operations
-
     private async Task OpenCreateDialogAsync()
     {
         _newTestSuite = new CreateTestSuiteDto();
         _projects = await ProjectService.GetProjectsAsync();
-        _newTestSuite.ProjectId = _projects.FirstOrDefault()?.Id ?? default(Guid);
+        _parentTestSuites = FlattenTestSuites(await TestSuiteService.GetTestSuitesAsync()).ToList();
+        _newTestSuite.TenantId = _tenantId;
+        _showCreateDialog = true;
+        await Task.Run(() => _form?.ResetValidation());
+    }
 
+    private async Task OpenCreateDialogEditAsync( Guid parentSuiteId )
+    {
+        _newTestSuite = new CreateTestSuiteDto();
+        _projects = await ProjectService.GetProjectsAsync();
+        _parentTestSuites = FlattenTestSuites(await TestSuiteService.GetTestSuitesAsync()).ToList();
+        _newTestSuite.ParentSuiteId = parentSuiteId;
+        _newTestSuite.TenantId = _tenantId;
         _showCreateDialog = true;
         await Task.Run(() => _form?.ResetValidation());
     }
@@ -572,16 +699,18 @@
 
     private async Task CreateTestSuiteAsync()
     {
-        if (!_formIsValid || string.IsNullOrWhiteSpace(_newTestSuite.Description))
+        if (!_formIsValid)
         {
-            Snackbar.Add("Description cannot be empty",Severity.Error);
+            Snackbar.Add("Please fill in all required fields",Severity.Error);
             return;
         }
 
         try
         {
+            _newTestSuite.TenantId = _tenantId;
             await TestSuiteService.CreateTestSuiteAsync(_newTestSuite);
             await _table.ReloadServerData();
+            _parentTestSuites = FlattenTestSuites(await TestSuiteService.GetTestSuitesAsync()).ToList();
             _showCreateDialog = false;
             _newTestSuite = new CreateTestSuiteDto();
             _form?.ResetValidation();
@@ -598,20 +727,18 @@
             Console.WriteLine($"Error creating test suite: {ex}");
         }
     }
-
     #endregion
 
     #region Export/Import
-
     private async Task ExportToCsvAsync()
     {
         try
         {
             var query = new TestSuiteQuery { Page = 1,PageSize = 1000,SearchTerm = _searchTerm };
             var result = await TestSuiteService.GetPagedTestSuitesAsync(query);
-            var testSuites = result.Items;
+            var testSuites = FlattenTestSuites(result.Items);
 
-            if (testSuites == null || !testSuites.Any())
+            if (!testSuites.Any())
             {
                 Snackbar.Add("No test suites found to export.",Severity.Warning);
                 return;
@@ -620,16 +747,26 @@
             using var memoryStream = new MemoryStream();
             using var writer = new StreamWriter(memoryStream);
             using var csv = new CsvWriter(writer,CultureInfo.InvariantCulture);
-            csv.WriteRecords(testSuites);
+            csv.WriteRecords(testSuites.Select(ts => new
+            {
+                ts.Id,
+                ts.Name,
+                ts.Description,
+                Project = _projects.FirstOrDefault(p => p.Id == ts.ProjectId)?.Name ?? "None",
+                ParentSuite = _parentTestSuites.FirstOrDefault(p => p.Id == ts.ParentSuiteId)?.Name ?? "None",
+                ts.TenantId,
+                ts.CreatedAt,
+                ts.ModifiedAt
+            }));
             await writer.FlushAsync();
             memoryStream.Position = 0;
 
             var csvBytes = memoryStream.ToArray();
             var base64Data = Convert.ToBase64String(csvBytes);
             await JSRuntime.InvokeVoidAsync("downloadFileFromBase64",
-                "TestSuitesExport.csv",
-                "text/csv",
-                base64Data);
+            "TestSuitesExport.csv",
+            "text/csv",
+            base64Data);
 
             Snackbar.Add("Test suites exported to CSV successfully",Severity.Success);
         }
@@ -651,9 +788,9 @@
         {
             var query = new TestSuiteQuery { Page = 1,PageSize = 1000,SearchTerm = _searchTerm };
             var result = await TestSuiteService.GetPagedTestSuitesAsync(query);
-            var testSuites = result.Items;
+            var testSuites = FlattenTestSuites(result.Items);
 
-            if (testSuites == null || !testSuites.Any())
+            if (!testSuites.Any())
             {
                 Snackbar.Add("No test suites found to export.",Severity.Warning);
                 return;
@@ -662,22 +799,26 @@
             using var workbook = new XLWorkbook();
             var worksheet = workbook.Worksheets.Add("TestSuites");
 
-            // Add header
             worksheet.Cell("A1").Value = "ID";
             worksheet.Cell("B1").Value = "Name";
             worksheet.Cell("C1").Value = "Description";
-            worksheet.Cell("D1").Value = "Project ID";
-            worksheet.Cell("E1").Value = "Parent Suite ID";
+            worksheet.Cell("D1").Value = "Project";
+            worksheet.Cell("E1").Value = "Parent Suite";
+            worksheet.Cell("F1").Value = "Tenant ID";
+            worksheet.Cell("G1").Value = "Created At";
+            worksheet.Cell("H1").Value = "Updated At";
 
-            // Add rows
             var row = 2;
             foreach (var ts in testSuites)
             {
                 worksheet.Cell($"A{row}").Value = ts.Id.ToString();
                 worksheet.Cell($"B{row}").Value = ts.Name;
                 worksheet.Cell($"C{row}").Value = ts.Description;
-                worksheet.Cell($"D{row}").Value = ts.ProjectId.ToString();
-                worksheet.Cell($"E{row}").Value = ts.ParentSuiteId?.ToString() ?? "";
+                worksheet.Cell($"D{row}").Value = _projects.FirstOrDefault(p => p.Id == ts.ProjectId)?.Name ?? "None";
+                worksheet.Cell($"E{row}").Value = _parentTestSuites.FirstOrDefault(p => p.Id == ts.ParentSuiteId)?.Name ?? "None";
+                worksheet.Cell($"F{row}").Value = ts.TenantId;
+                worksheet.Cell($"G{row}").Value = ts.CreatedAt.ToString("yyyy-MM-dd");
+                worksheet.Cell($"H{row}").Value = ts.ModifiedAt?.ToString("yyyy-MM-dd");
                 row++;
             }
 
@@ -688,9 +829,9 @@
             var bytes = stream.ToArray();
             var base64Data = Convert.ToBase64String(bytes);
             await JSRuntime.InvokeVoidAsync("downloadFileFromBase64",
-                "TestSuitesExport.xlsx",
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                base64Data);
+            "TestSuitesExport.xlsx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            base64Data);
 
             Snackbar.Add("Test suites exported to Excel successfully",Severity.Success);
         }
@@ -712,45 +853,45 @@
         {
             var query = new TestSuiteQuery { Page = 1,PageSize = 1000,SearchTerm = _searchTerm };
             var result = await TestSuiteService.GetPagedTestSuitesAsync(query);
-            var testSuites = result.Items;
+            var testSuites = FlattenTestSuites(result.Items);
 
-            if (testSuites == null || !testSuites.Any())
+            if (!testSuites.Any())
             {
                 Snackbar.Add("No test suites found to export.",Severity.Warning);
                 return;
             }
 
             var pdfRequest = new PdfGenerationDto
-                {
-                    Title = "Test Suites Report",
-                    FileName = "TestSuites_Report.pdf",
-                    FontSizeTitle = 16,
-                    FontSizeHeader = 12,
-                    FontSizeBody = 10,
-                    Columns = new List<PdfColumnDto>
-                {
+                    {
+                        Title = "Test Suites Report",
+                        FileName = "TestSuites_Report.pdf",
+                        FontSizeTitle = 16,
+                        FontSizeHeader = 12,
+                        FontSizeBody = 10,
+                        Columns = new List<PdfColumnDto>
+                    {
                     new PdfColumnDto { Field = "id", Header = "ID" },
                     new PdfColumnDto { Field = "name", Header = "Name" },
                     new PdfColumnDto { Field = "description", Header = "Description" },
-                    new PdfColumnDto { Field = "projectId", Header = "Project ID" },
-                    new PdfColumnDto { Field = "parentSuiteId", Header = "Parent Suite ID" }
-                },
-                    Data = testSuites.Select(ts => new Dictionary<string,string>
-                {
+                    new PdfColumnDto { Field = "project", Header = "Project" },
+                    new PdfColumnDto { Field = "parentSuite", Header = "Parent Suite" },
+                    },
+                        Data = testSuites.Select(ts => new Dictionary<string,string>
+                    {
                     { "id", ts.Id.ToString() },
                     { "name", ts.Name ?? "" },
                     { "description", ts.Description ?? "" },
-                    { "projectId", ts.ProjectId.ToString() },
-                    { "parentSuiteId", ts.ParentSuiteId?.ToString() ?? "" }
-                }).ToList()
-                };
+                    { "project", _projects.FirstOrDefault(p => p.Id == ts.ProjectId)?.Name ?? "None" },
+                    { "parentSuite", _parentTestSuites.FirstOrDefault(p => p.Id == ts.ParentSuiteId)?.Name ?? "None" },
+                    }).ToList()
+                    };
 
             var pdfBytes = await CommonService.GeneratePdfAsync(pdfRequest);
             var base64Data = Convert.ToBase64String(pdfBytes);
             await JSRuntime.InvokeVoidAsync("downloadFileFromBase64",
-                "TestSuites_Report.pdf",
-                "application/pdf",
-                base64Data);
+            "TestSuites_Report.pdf",
+            "application/pdf",
+            base64Data);
 
             Snackbar.Add("Test suites exported to PDF successfully",Severity.Success);
         }
@@ -769,17 +910,15 @@
     private async Task ImportFromFileAsync()
     {
         var parameters = new DialogParameters
-        {
-            { "OnFileUploaded", new EventCallback<string>(this, ImportCsvContentAsync) }
-        };
-
-        var options = new DialogOptions
             {
-                CloseButton = true,
-                MaxWidth = MaxWidth.Medium,
-                FullWidth = true
+            { "OnFileUploaded", new EventCallback<string>(this, ImportCsvContentAsync) }
             };
-
+        var options = new DialogOptions
+                {
+                    CloseButton = true,
+                    MaxWidth = MaxWidth.Medium,
+                    FullWidth = true
+                };
         await DialogService.ShowAsync<FileUploadDialog>("Import Test Suites from CSV",parameters,options);
     }
 
@@ -789,22 +928,17 @@
         {
             using var reader = new StringReader(csvContent);
             using var csv = new CsvReader(reader,CultureInfo.InvariantCulture);
-            var records = csv.GetRecords<TestSuiteCreateDto>().ToList();
+            var records = csv.GetRecords<CreateTestSuiteDto>().ToList();
             foreach (var testSuite in records)
             {
                 if (!string.IsNullOrWhiteSpace(testSuite?.Name) && !string.IsNullOrWhiteSpace(testSuite?.Description))
                 {
-                    await TestSuiteService.CreateTestSuiteAsync(new CreateTestSuiteDto
-                        {
-                            Name = testSuite.Name,
-                            Description = testSuite.Description,
-                            ProjectId = testSuite.ProjectId,
-                            //ParentSuiteId = null // Adjust based on CSV data if needed
-                        });
+                    testSuite.TenantId = _tenantId;
+                    await TestSuiteService.CreateTestSuiteAsync(testSuite);
                 }
             }
-
             await _table.ReloadServerData();
+            _parentTestSuites = FlattenTestSuites(await TestSuiteService.GetTestSuitesAsync()).ToList();
             Snackbar.Add("Test suites imported successfully",Severity.Success);
         }
         catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
@@ -818,11 +952,137 @@
             Console.WriteLine($"Error importing CSV: {ex}");
         }
     }
+    #endregion
 
+    #region Hierarchy Helpers
+    private void ToggleExpand( Guid testSuiteId )
+    {
+        if (_expandedTestSuites.Contains(testSuiteId))
+            _expandedTestSuites.Remove(testSuiteId);
+        else
+            _expandedTestSuites.Add(testSuiteId);
+        StateHasChanged();
+    }
+
+    private int GetDepth( TestSuiteDto testSuite )
+    {
+        int depth = 1;
+        var current = testSuite;
+        while (current.ParentSuiteId.HasValue)
+        {
+            current = _parentTestSuites.FirstOrDefault(p => p.Id == current.ParentSuiteId.Value);
+            if (current == null) break;
+            depth++;
+        }
+        return depth;
+    }
+
+    private RenderFragment RenderChildRows( TestSuiteDto testSuite,int depth )
+    {
+        return @<text>
+        @foreach (var child in testSuite.Children)
+    {
+        <tr class="child-row" style="padding-left: @(20 * depth)px;">
+            <td style="vertical-align: middle;">
+                @if (child.Children.Any())
+            {
+                <div style="display: flex; align-items: center;">
+                    <MudIconButton Icon="@(_expandedTestSuites.Contains(child.Id) ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                                   Size="Size.Small"
+                                   OnClick="@(() => ToggleExpand(child.Id))" />
+                </div>
+            }
+            </td>
+            <td style="vertical-align: middle;">
+                @if (child.IsEditing)
+            {
+                <MudTextField T="string"
+                              @bind-Value="child.Name"
+                              Required="true"
+                              RequiredError="Name is required"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Class="mud-input-compact" />
+            }
+            else
+            {
+                @child.Name
+            }
+            </td>
+            <td style="vertical-align: middle;">
+                @if (child.IsEditing)
+            {
+                <MudTextField T="string"
+                              @bind-Value="child.Description"
+                              Required="true"
+                              RequiredError="Description is required"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Lines="2"
+                              Class="mud-input-compact" />
+            }
+            else
+            {
+                @child.Description
+            }
+            </td>
+            <td style="vertical-align: middle;">
+                @(_projects.FirstOrDefault(p => p.Id == child.ProjectId)?.Name ?? "None")
+            </td>
+            <td style="vertical-align: middle;">
+                @(_parentTestSuites.FirstOrDefault(p => p.Id == child.ParentSuiteId)?.Name ?? "None")
+            </td>
+            <td style="display: flex; justify-content: center; gap: 8px; vertical-align: middle;">
+                @if (child.IsEditing)
+            {
+                <MudIconButton Icon="@Icons.Material.Filled.Save"
+                               Color="Color.Success"
+                               Size="Size.Small"
+                               OnClick="@(() => SaveInlineEditAsync(child))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Cancel"
+                               Color="Color.Secondary"
+                               Size="Size.Small"
+                               OnClick="@(() => CancelInlineEdit(child))" />
+            }
+            else
+            {
+                <MudIconButton Icon="@Icons.Material.Filled.Add"
+                               Color="Color.Success"
+                               Size="Size.Small"
+                               OnClick="@(() => OpenCreateDialogEditAsync(child.Id))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               OnClick="@(() => StartInlineEdit(child))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                               Color="Color.Error"
+                               Size="Size.Small"
+                               OnClick="@(() => DeleteTestSuiteAsync(child.Id, child.ProjectId))" />
+            }
+            </td>
+        </tr>
+        @if (_expandedTestSuites.Contains(child.Id))
+    {
+        @RenderChildRows(child, depth + 1)
+    }
+    }
+    </text>;
+    }
+
+    private List<TestSuiteDto> FlattenTestSuites( IEnumerable<TestSuiteDto> testSuites )
+    {
+        var result = new List<TestSuiteDto>();
+        foreach (var testSuite in testSuites)
+        {
+            result.Add(testSuite);
+            if (testSuite.Children.Any())
+                result.AddRange(FlattenTestSuites(testSuite.Children));
+        }
+        return result;
+    }
     #endregion
 
     #region Validation
-
     private string ValidateName( string name )
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -831,16 +1091,13 @@
             return "Name must be at least 3 characters long";
         return null;
     }
-
     #endregion
 
     #region Helpers
-
     private void LogHover( string action )
     {
         Console.WriteLine($"Hovered: {action}");
         Snackbar.Add($"Hovered: {action}",Severity.Info);
     }
-
     #endregion
 }

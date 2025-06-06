@@ -19,7 +19,15 @@ namespace EffortlessQA.Api.Services.Interface
             string[]? tags,
             PriorityLevel[]? priorities
         );
-        Task<TestCaseDto> GetTestCaseAsync(Guid testCaseId, Guid testSuiteId, string tenantId);
+		Task<PagedResult<TestCaseDto>> GetTestCasesAsync(
+			string tenantId,
+			int page,
+			int limit,
+			string? filter,
+			string[]? tags,
+			PriorityLevel[]? priorities
+		);
+		Task<TestCaseDto> GetTestCaseAsync(Guid testCaseId, Guid testSuiteId, string tenantId);
         Task<TestCaseDto> UpdateTestCaseAsync(
             Guid testCaseId,
             Guid testSuiteId,

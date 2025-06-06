@@ -59,8 +59,68 @@ namespace EffortlessQA.Api.Extensions
                 .WithTags(TESTCASE_TAG)
                 .WithMetadata();
 
-            // GET /api/v1/testsuites/{testSuiteId}/testcases
-            app.MapGet(
+			// GET /api/v1/testsuites/{testSuiteId}/testcases
+			app.MapGet(
+					"/api/v1/testsuites/testcases",
+					async (
+						ITestCaseService testCaseService,
+						HttpContext context,
+						[FromQuery] int page = 1,
+						[FromQuery] int limit = 50,
+						[FromQuery] string? filter = null,
+						[FromQuery] string[]? tags = null,
+						[FromQuery] PriorityLevel[]? priorities = null
+					) =>
+					{
+						try
+						{
+							var tenantId = context.User.FindFirst("TenantId")?.Value;
+							if (string.IsNullOrEmpty(tenantId))
+							{
+								return Results.Unauthorized();
+							}
+							var testCases = await testCaseService.GetTestCasesAsync(
+								tenantId,
+								page,
+								limit,
+								filter,
+								tags,
+								priorities
+							);
+							return Results.Ok(
+								new ApiResponse<PagedResult<TestCaseDto>>
+								{
+									Data = testCases,
+									Meta = new
+									{
+										Page = page,
+										Limit = limit,
+										Total = testCases.TotalCount
+									}
+								}
+							);
+						}
+						catch (Exception ex)
+						{
+							return Results.BadRequest(
+								new ApiResponse<object>
+								{
+									Error = new ErrorResponse
+									{
+										Code = "BadRequest",
+										Message = ex.Message
+									}
+								}
+							);
+						}
+					}
+				)
+				.WithName("GetAllTestCases")
+				.WithTags(TESTCASE_TAG)
+				.WithMetadata();
+
+			// GET /api/v1/testsuites/{testSuiteId}/testcases
+			app.MapGet(
                     "/api/v1/testsuites/{testSuiteId}/testcases",
                     async (
                         Guid testSuiteId,

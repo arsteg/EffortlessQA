@@ -15,13 +15,15 @@ namespace EffortlessQA.Data.Dtos
         public string TenantId { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
-    }
+		public bool IsEditing { get; set; }
+	}
 
     public class CreateTestCaseDto
     {
         public string Title { get; set; }
         public string? Description { get; set; }
-        public string? Steps { get; set; } // JSON string
+		public string TenantId { get; set; }
+		public string? Steps { get; set; } // JSON string
         public string? ExpectedResults { get; set; } // JSON string
         public PriorityLevel Priority { get; set; }
         public string[]? Tags { get; set; }
@@ -29,8 +31,8 @@ namespace EffortlessQA.Data.Dtos
 
         public string ExpectedResult { get; set; } = string.Empty;
 
-        public int TestSuiteId { get; set; }
-    }
+        public Guid TestSuiteId { get; set; } = Guid.Parse("c1d859b9-6a8e-43bf-bddc-7a847db4849a");
+	}
 
     public class UpdateTestCaseDto
     {

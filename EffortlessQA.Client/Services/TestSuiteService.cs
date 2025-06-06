@@ -24,6 +24,8 @@ namespace EffortlessQA.Client.Services
 		#region CRUD Operations
 
 		public async Task<List<TestSuiteDto>> GetTestSuitesAsync(
+			int page = 1,
+			int pageSize = 1000,
 			string searchTerm = null,
 			CancellationToken cancellationToken = default
 		)
