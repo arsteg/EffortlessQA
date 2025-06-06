@@ -6,24 +6,31 @@
 <Router AppAssembly="@typeof(App).Assembly">
     <Found Context="routeData">
         <RouteView RouteData="@routeData" DefaultLayout="typeof(MainLayout)" />
-        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
     </Found>
     <NotFound>
-        <PageTitle>Not Found</PageTitle>
         <LayoutView Layout="typeof(MainLayout)">
-            <p role="alert">Sorry, there's nothing at this address.</p>
+            <p>Sorry, there's nothing at this address.</p>
         </LayoutView>
     </NotFound>
 </Router>
 
 @code {
-    private MudTheme _customTheme = new MudTheme
+    private readonly MudTheme _customTheme = new()
     {
-            PaletteLight = new PaletteLight
+        PaletteDark = new PaletteDark
         {
-            Primary = "#007bff",
-            AppbarBackground = "#007bff",
-            DrawerBackground = "#ffffff"
+            Primary = "#2196F3",
+            Secondary = "#F50057",
+            Background = "#121212",
+            Surface = "#1E1E1E",
+            TextPrimary = "#FFFFFF",
+            TextSecondary = "#B0BEC5",
+            AppbarBackground = "#2196F3",
+            ActionDefault = "#FFFFFF"
+        },
+        LayoutProperties = new LayoutProperties
+        {
+            DefaultBorderRadius = "8px"
         }
     };
 }
