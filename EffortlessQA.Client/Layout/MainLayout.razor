@@ -15,20 +15,14 @@
 
 <MudLayout>
     <!-- Top Bar -->
-    <MudAppBar Elevation="2" Dense="true"/>
-        <!-- Hamburger Menu for Sidebar -->
-    <MudAppBar Elevation="0" Dense="true">
+    <MudAppBar Elevation="2" Dense="true">
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
-        
         <MudText Typo="Typo.h6" Class="ml-3">EffortlessQA</MudText>
-        
-        <!-- Global Search -->
-        <!-- Project Selector -->
         @if (IsAuthenticated)
         {
             @if (_isLoadingProjects)
             {
-                <MudProgressCircular Color="Color.Primary" Size="Size.Small" Class="ml-3" />
+                <MudProgressCircular Color="Color.Default" Size="Size.Small" Class="ml-3" Style="color: #333333;" />
             }
             else if (_projectsError)
             {
@@ -40,21 +34,22 @@
             }
             else
             {
-               <MudSelect T="Guid?"
-        Label="Select Project"
-        Value="@SelectedProjectId"
-        ValueChanged="@OnProjectChanged"
-        Dense="true"
-        Style="width: 250px;"
-        ToStringFunc="@(id => _projects.FirstOrDefault(p => p.Id == id)?.Name ?? "No Project")">
-    </MudSelect>
-
+                <MudSelect T="Guid?"
+                           Label="Select Project"
+                           Value="@SelectedProjectId"
+                           ValueChanged="@OnProjectChanged"
+                           Dense="true"
+                           Style="width: 250px;"
+                           ToStringFunc="@(id => _projects.FirstOrDefault(p => p.Id == id)?.Name ?? "No Project")">
+                    @foreach (var project in _projects)
+                    {
+                        <MudSelectItem Value="@project.Id">@(project.Name ?? $"Project ID: {project.Id}")</MudSelectItem>
+                    }
+                </MudSelect>
             }
         }
-        
         <MudSpacer />
         <GlobalSearch />
-        
         @if (IsAuthenticated && IsAdmin)
         {
             <MudSelect T="string" Label="Tenant" Value="@SelectedTenant" ValueChanged="@OnTenantChangedAsync" Class="mr-3" Dense="true" Variant="Variant.Outlined">
@@ -64,7 +59,6 @@
                 }
             </MudSelect>
         }
-        
         @if (IsAuthenticated)
         {
             <MudMenu Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit" Direction="Direction.Right" Dense="true">
@@ -75,7 +69,7 @@
     </MudAppBar>
 
     <!-- Sidebar -->
-    <MudDrawer @bind-Open="@_drawerOpen" Elevation="2" ClipMode="DrawerClipMode.Docked" Width="200px" Breakpoint="Breakpoint.Md">
+    <MudDrawer @bind-Open="@_drawerOpen" Elevation="2" ClipMode="DrawerClipMode.Docked" Width="200px" Breakpoint="Breakpoint.Md" Class="@(_drawerOpen ? "mud-drawer-open" : "")">
         <MudNavMenu>
             @if (IsAuthenticated)
             {
@@ -108,11 +102,11 @@
 
     <!-- Main Content -->
     <MudMainContent Class="pt-2">
-        <MudContainer MaxWidth="MaxWidth.Large" Class="mb-2">
+        <MudContainer MaxWidth="MaxWidth.False" Class="mb-2 px-4 px-md-8">
             <Breadcrumb />
         </MudContainer>
-        <MudContainer MaxWidth="MaxWidth.Large" Class="mt-2">
-            <MudPaper Elevation="1" Class="pa-4">
+        <MudContainer MaxWidth="MaxWidth.False" Class="mt-2 px-4 px-md-8">
+            <MudPaper Elevation="1" Class="pa-2 pa-md-4">
                 @Body
             </MudPaper>
         </MudContainer>

@@ -18,8 +18,8 @@
 @inject ProjectService ProjectService
 
 <MudThemeProvider Theme="_customTheme" />
-<MudContainer MaxWidth="MaxWidth.Large" Class="my-8">
-    <MudGrid Spacing="2">
+<MudContainer MaxWidth="MaxWidth.False" Class="py-8 px-4 px-md-8">
+    <MudGrid Spacing="4">
         <!-- Header -->
         <MudItem xs="12">
             <MudText Typo="Typo.h5" Color="Color.Primary" Class="mb-4">Manage Requirements</MudText>
@@ -360,60 +360,66 @@
     </MudGrid>
 </MudContainer>
 
-<MudDialog @bind-Visible="_showCreateDialog" Options="new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true }">
+<MudDialog @bind-Visible="_showCreateDialog" Options="new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true, CloseButton = true }" Style="min-height: 80vh; max-height: 90vh;">
     <DialogContent>
-        <MudGrid Class="pa-4">
+        <MudGrid Class="pa-6">
             <MudItem xs="12">
                 <MudText Typo="Typo.h6" Color="Color.Primary" Class="mb-4">Create New Requirement</MudText>
-                <MudForm @ref="_form" @bind-IsValid="_formIsValid" Class="d-flex flex-column gap-4">
+                <MudForm @ref="_form" @bind-IsValid="_formIsValid" Class="d-flex flex-column gap-6">
                     <MudTextField T="string"
-                    Label="Requirement Title"
-                    @bind-Value="_newRequirement.Title"
+                                  Label="Requirement Title"
+                                  @bind-Value="_newRequirement.Title"
+                                  Required="true"
+                                  RequiredError="Title is required"
+                                  Validation="@(new Func<string, string>(ValidateTitle))"
+                                  Variant="Variant.Outlined"
+                                  Clearable="true"
+                                  AutoFocus="true"
+                                  Margin="Margin.Normal"
+                                  HelperText="Enter a unique requirement title (min 3 characters)"
+                                  Class="mud-input-rounded" />
+                    <MudTextField T="string"
+                                  Label="Description"
+                                  @bind-Value="_newRequirement.Description"
+                                  Lines="10"
+                                  Variant="Variant.Outlined"
+                                  Clearable="true"
+                                  Margin="Margin.Normal"
+                                  HelperText="Describe the requirement in detail"
+                                  Class="mud-input-rounded" />
+                    <MudTextField T="string"
+                                  Label="Tags"
+                                  @bind-Value="_tagsInput"
+                                  Placeholder="Comma-separated tags"
+                                  Variant="Variant.Outlined"
+                                  Clearable="true"
+                                  Margin="Margin.Normal"
+                                  HelperText="Enter tags separated by commas"
+                                  Class="mud-input-rounded" />
+                    @* Uncomment and adjust Project selection if needed *@
+                    @* <MudSelect T="Guid"
+                    Label="Project"
+                    @bind-Value="_newRequirement.ProjectId"
                     Required="true"
-                    RequiredError="Title is required"
-                    Validation="@(new Func<string, string>(ValidateTitle))"
+                    RequiredError="Project is required"
                     Variant="Variant.Outlined"
-                    Clearable="true"
-                    HelperText="Enter a unique requirement title (min 3 characters)"
-                    Class="mud-input-rounded" />
-                    <MudTextField T="string"
-                    Label="Description"
-                    @bind-Value="_newRequirement.Description"
-                    Lines="4"
-                    Variant="Variant.Outlined"
-                    Clearable="true"
-                    HelperText="Describe the requirement briefly"
-                    Class="mud-input-rounded" />
-                    <MudTextField T="string"
-                    Label="Tags"
-                    @bind-Value="_tagsInput"
-                    Placeholder="Comma-separated tags"
-                    Variant="Variant.Outlined"
-                    Clearable="true"
-                    HelperText="Enter tags separated by commas"
-                    Class="mud-input-rounded" />
-                    @* <MudSelect T="Guid" *@
-                    @*            Label="Project" *@
-                    @*            @bind-Value="_newRequirement.ProjectId" *@
-                    @*            Required="true" *@
-                    @*            RequiredError="Project is required" *@
-                    @*            Variant="Variant.Outlined" *@
-                    @*            Class="mud-input-rounded" *@
-                    @*            AnchorOrigin="Origin.BottomCenter" *@
-                    @*            TransformOrigin="Origin.TopCenter" *@
-                    @*            ToStringFunc="@(id => _projects?.FirstOrDefault(p => p.Id == id)?.Name ?? "Unknown Project")"> *@
-                    @*     @foreach (var project in _projects) *@
-                    @*     { *@
-                    @*         <MudSelectItem Value="@project.Id">@(project.Name ?? $"Project ID: {project.Id}")</MudSelectItem> *@
-                    @*     } *@
-                    @* </MudSelect> *@
+                    Margin="Margin.Normal"
+                    Class="mud-input-rounded"
+                    AnchorOrigin="Origin.BottomCenter"
+                    TransformOrigin="Origin.TopCenter"
+                    ToStringFunc="@(id => _projects?.FirstOrDefault(p => p.Id == id)?.Name ?? "Unknown Project")">
+                    @foreach (var project in _projects)
+                    {
+                    <MudSelectItem Value="@project.Id">@(project.Name ?? $"Project ID: {project.Id}")</MudSelectItem>
+                    }
+                    </MudSelect> *@
                 </MudForm>
             </MudItem>
         </MudGrid>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="@CancelCreate" Variant="Variant.Text" Color="Color.Secondary">Cancel</MudButton>
-        <MudButton OnClick="@CreateRequirementAsync" Variant="Variant.Filled" Color="Color.Primary" Disabled="!_formIsValid">Create</MudButton>
+        <MudButton OnClick="@CancelCreate" Variant="Variant.Text" Color="Color.Secondary" Size="Size.Medium">Cancel</MudButton>
+        <MudButton OnClick="@CreateRequirementAsync" Variant="Variant.Filled" Color="Color.Primary" Disabled="!_formIsValid" Size="Size.Medium">Create</MudButton>
     </DialogActions>
 </MudDialog>
 

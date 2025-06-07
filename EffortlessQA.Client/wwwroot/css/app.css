@@ -1,20 +1,30 @@
-:root {
-    --mud-palette-primary: #007bff;
-    --mud-palette-primary-text: #ffffff;
-}
-
-body {
+body, html, #app {
     margin: 0;
-    font-family: 'Roboto', sans-serif;
+    width: 100%;
+    max-width: none;
 }
 
-.mud-container {
-    padding: 16px;
+.mud-main-content {
+    padding: 16px 8px;
+    transition: margin-left 0.3s ease-in-out;
 }
 
-.mud-appbar {
-    background-color: var(--mud-palette-primary) !important;
+.mud-drawer-open .mud-main-content {
+    margin-left: 200px;
 }
-.mud-popover {
-    z-index: 10000 !important;
+
+@media (max-width: 959.99px) {
+    .mud-main-content {
+        margin-left: 0 !important;
+    }
+}
+
+.mud-table-clean .mud-table-cell {
+    padding: 12px 16px;
+    font-size: 1rem;
+}
+
+.expressive-icon:hover {
+    transform: scale(1.1);
+    transition: transform 0.2s ease-in-out;
 }
