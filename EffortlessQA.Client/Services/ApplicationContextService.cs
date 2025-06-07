@@ -1,4 +1,8 @@
-﻿using EffortlessQA.Data.Dtos;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using EffortlessQA.Data.Dtos;
 using Microsoft.JSInterop;
 
 namespace EffortlessQA.Client.Services
@@ -10,9 +14,6 @@ namespace EffortlessQA.Client.Services
         private Guid? _selectedProjectId;
         private List<ProjectDto> _projects = new();
         private const string StorageKey = "selectedProjectId";
-
-        public ProjectDto SelectedProject { get; set; }
-        public event Func<Task>? OnProjectChanged;
 
         public ApplicationContextService(ProjectService projectService, IJSRuntime jsRuntime)
         {
@@ -26,10 +27,15 @@ namespace EffortlessQA.Client.Services
             set
             {
                 _selectedProjectId = value;
-                PersistSelectedProjectAsync().GetAwaiter().GetResult();
-                NotifyProjectChangedAsync().GetAwaiter().GetResult();
+                SelectedProject = _projects.FirstOrDefault(p => p.Id == value) ?? null;
+                _ = PersistSelectedProjectAsync(); // Fire and forget
+                _ = NotifyProjectChangedAsync(); // Fire and forget
             }
         }
+
+        public ProjectDto SelectedProject { get; set; }
+
+        public event Func<Task>? OnProjectChanged;
 
         public async Task InitializeAsync()
         {
@@ -47,15 +53,18 @@ namespace EffortlessQA.Client.Services
             )
             {
                 _selectedProjectId = projectId;
+                SelectedProject = _projects.First(p => p.Id == projectId);
             }
             else if (_projects.Any())
             {
                 _selectedProjectId = _projects.First().Id;
+                SelectedProject = _projects.First();
                 await PersistSelectedProjectAsync();
             }
             else
             {
                 _selectedProjectId = null;
+                SelectedProject = null;
             }
 
             await NotifyProjectChangedAsync();
@@ -70,7 +79,7 @@ namespace EffortlessQA.Client.Services
             return _projects;
         }
 
-        private async Task PersistSelectedProjectAsync()
+        public async Task PersistSelectedProjectAsync()
         {
             if (_selectedProjectId.HasValue)
             {
