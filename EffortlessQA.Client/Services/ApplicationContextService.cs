@@ -11,6 +11,7 @@ namespace EffortlessQA.Client.Services
         private List<ProjectDto> _projects = new();
         private const string StorageKey = "selectedProjectId";
 
+        public ProjectDto SelectedProject { get; set; }
         public event Func<Task>? OnProjectChanged;
 
         public ApplicationContextService(ProjectService projectService, IJSRuntime jsRuntime)
@@ -85,7 +86,7 @@ namespace EffortlessQA.Client.Services
             }
         }
 
-        private async Task NotifyProjectChangedAsync()
+        public async Task NotifyProjectChangedAsync()
         {
             if (OnProjectChanged != null)
             {

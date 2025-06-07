@@ -14,6 +14,7 @@
 
 <MudLayout>
     <!-- Top Bar -->
+    <!-- Top Bar -->
     <MudAppBar Elevation="2" Dense="true">
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
         <MudText Typo="Typo.h6" Class="ml-3">EffortlessQA</MudText>
@@ -41,18 +42,19 @@
                            Style="width: 250px;"
                            Variant="Variant.Outlined"
                            Class="ml-3"
+                           Color="Color.Inherit"
                            ToStringFunc="@(id => id.HasValue ? _projects.FirstOrDefault(p => p.Id == id.Value)?.Name ?? "No Project" : "No Project")">
                     <MudSelectItem Value="@((Guid?)null)">No Project</MudSelectItem>
                     @foreach (var project in _projects)
                     {
-                        <MudSelectItem Value="@project.Id">@(project.Name ?? $"Project ID: {project.Id}")</MudSelectItem>
+                        <MudSelectItem Value="@project.Id">@project.Name</MudSelectItem>
                     }
                 </MudSelect>
             }
         }
         <MudSpacer />
         <GlobalSearch />
-        @if (IsAuthenticated && IsAdmin)
+        @if (IsAuthenticated)
         {
             <MudText Typo="Typo.body2" Color="Color.Inherit" Class="mr-3">Tenant: @SelectedTenant</MudText>
         }
@@ -123,7 +125,7 @@
     private bool IsAdmin => AuthService.IsAdmin;
     private string SelectedTenant { get; set; } = "";
     private List<string> Tenants { get; set; } = new() { "Default Tenant", "Org A", "Org B" };
-    private List<ProjectDto> _projects = new();
+    private List<ProjectDto> _projects { get; set; } = new List<ProjectDto>();
     private bool _isLoadingProjects = true;
     private bool _projectsError;
     private bool _isDarkMode = false;
@@ -189,28 +191,45 @@
         {
             _isLoadingProjects = true;
             await ApplicationContextService.InitializeAsync();
-            _projects = await ApplicationContextService.GetProjectsAsync();
-            Console.WriteLine($"Loaded {_projects.Count} projects: {System.Text.Json.JsonSerializer.Serialize(_projects)}");
-            
-             // Fetch tenant name if authenticated
-            //if (IsAuthenticated)
-            {
-                SelectedTenant = await AuthService.GetCurrentTenantAsync(); // Assume this method exists
-                Console.WriteLine($"Loaded tenant: {SelectedTenant}");
-            }
 
+           
+            
+                // Fetch tenant name
+                SelectedTenant = await AuthService.GetCurrentTenantAsync();
+               
+                Console.WriteLine($"Loaded tenant: {SelectedTenant}");
+
+                // Fetch projects
+                _projects = await ApplicationContextService.GetProjectsAsync();
+                Console.WriteLine($"Loaded {_projects.Count} projects: {System.Text.Json.JsonSerializer.Serialize(_projects)}");
+
+                // Pre-select the first project if available
+                if (_projects.Any() && !SelectedProjectId.HasValue)
+                {
+                    SelectedProjectId = _projects.First().Id;
+                    await OnProjectChanged(SelectedProjectId);
+                }
+            
+
+            // Subscribe to project changes
             ApplicationContextService.OnProjectChanged += async () =>
             {
                 _projects = await ApplicationContextService.GetProjectsAsync();
                 Console.WriteLine($"Projects updated: {_projects.Count}");
+                // Ensure selected project is still valid
+                if (SelectedProjectId.HasValue && !_projects.Any(p => p.Id == SelectedProjectId))
+                {
+                    SelectedProjectId = _projects.Any() ? _projects.First().Id : null;
+                    await OnProjectChanged(SelectedProjectId);
+                }
                 await InvokeAsync(StateHasChanged);
             };
         }
         catch (Exception ex)
         {
             _projectsError = true;
-            Snackbar.Add($"Failed to load projects: {ex.Message}", Severity.Error);
-            Console.WriteLine($"Error loading projects: {ex}");
+            Snackbar.Add($"Failed to load projects or tenant: {ex.Message}", Severity.Error);
+            Console.WriteLine($"Error loading data: {ex}");
         }
         finally
         {
@@ -218,6 +237,7 @@
             await InvokeAsync(StateHasChanged);
         }
     }
+
 
     private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
 
@@ -237,11 +257,12 @@
     private async Task OnProjectChanged(Guid? newProjectId)
     {
         SelectedProjectId = newProjectId;
-        ApplicationContextService.SelectedProjectId = newProjectId;
+        ApplicationContextService.SelectedProject = _projects.FirstOrDefault(p => p.Id == newProjectId) ?? null;
         var projectName = newProjectId.HasValue
             ? _projects.FirstOrDefault(p => p.Id == newProjectId.Value)?.Name ?? "No Project"
             : "No Project";
         Snackbar.Add($"Switched to project: {projectName}", Severity.Info);
+        await ApplicationContextService.NotifyProjectChangedAsync();
         await InvokeAsync(StateHasChanged);
     }
 }
