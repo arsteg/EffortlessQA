@@ -16,6 +16,7 @@
 @inject IJSRuntime JSRuntime
 @inject IDialogService DialogService
 @inject ProjectService ProjectService
+@inject ApplicationContextService ApplicationContextService
 
 <MudThemeProvider Theme="_customTheme" />
 <MudContainer MaxWidth="MaxWidth.False" Class="py-8 px-4 px-md-8">
@@ -444,6 +445,7 @@
     private HashSet<Guid> _expandedRequirements = new();
     private readonly string _tenantId = "default"; // Replace with dynamic tenant ID logic
 
+
     private readonly MudTheme _customTheme = new()
             {
         // Palette = new Palette
@@ -759,7 +761,7 @@
                 .ToList();
             }
             _newRequirement.TenantId = _tenantId;
-            await RequirementService.CreateRequirementAsync(_newRequirement, _newRequirement.ProjectId);
+            await RequirementService.CreateRequirementAsync(_newRequirement, ApplicationContextService.SelectedProjectId??Guid.Empty);
             await _table.ReloadServerData();
             _showCreateDialog = false;
             _newRequirement = new CreateRequirementDto();
