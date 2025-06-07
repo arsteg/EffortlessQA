@@ -34,22 +34,20 @@
             }
             else
             {
-                <MudSelect T="Guid?"
-                           Label="Select Project"
-                           Value="@SelectedProjectId"
-                           ValueChanged="@OnProjectChanged"
-                           Dense="true"
-                           Style="width: 250px;"
-                           Variant="Variant.Outlined"
-                           Class="ml-3"
-                           Color="Color.Inherit"
-                           ToStringFunc="@(id => id.HasValue ? _projects.FirstOrDefault(p => p.Id == id.Value)?.Name ?? "No Project" : "No Project")">
-                    <MudSelectItem Value="@((Guid?)null)">No Project</MudSelectItem>
+                <MudText Typo="Typo.body2" Color="Color.Inherit" Class="mr-3 ml-3">Current Project:</MudText>
+
+                <MudMenu Label="@(SelectedProjectId.HasValue ? _projects.FirstOrDefault(p => p.Id == SelectedProjectId.Value)?.Name ?? "No Project" : "No Project")"
+                         Color="Color.Inherit"
+                         Dense="true"
+                         Variant="Variant.Outlined"
+                         Class="ml-3"
+                         Style="width: 250px;">
+                    <MudMenuItem OnClick="@(() => OnProjectChanged(null))">No Project</MudMenuItem>
                     @foreach (var project in _projects)
                     {
-                        <MudSelectItem Value="@project.Id">@project.Name</MudSelectItem>
+                        <MudMenuItem OnClick="@(() => OnProjectChanged(project.Id))">@(project.Name ?? $"Project ID: {project.Id}")</MudMenuItem>
                     }
-                </MudSelect>
+                </MudMenu>
             }
         }
         <MudSpacer />
