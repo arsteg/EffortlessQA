@@ -9,7 +9,6 @@
 @inject IJSRuntime JSRuntime
 
 <MudThemeProvider Theme="@_theme" IsDarkMode="@_isDarkMode" />
-
 <MudPopoverProvider />
 <MudSnackbarProvider />
 
@@ -40,7 +39,10 @@
                            ValueChanged="@OnProjectChanged"
                            Dense="true"
                            Style="width: 250px;"
-                           ToStringFunc="@(id => _projects.FirstOrDefault(p => p.Id == id)?.Name ?? "No Project")">
+                           Variant="Variant.Outlined"
+                           Class="ml-3"
+                           ToStringFunc="@(id => id.HasValue ? _projects.FirstOrDefault(p => p.Id == id.Value)?.Name ?? "No Project" : "No Project")">
+                    <MudSelectItem Value="@((Guid?)null)">No Project</MudSelectItem>
                     @foreach (var project in _projects)
                     {
                         <MudSelectItem Value="@project.Id">@(project.Name ?? $"Project ID: {project.Id}")</MudSelectItem>
@@ -52,12 +54,7 @@
         <GlobalSearch />
         @if (IsAuthenticated && IsAdmin)
         {
-            <MudSelect T="string" Label="Tenant" Value="@SelectedTenant" ValueChanged="@OnTenantChangedAsync" Class="mr-3" Dense="true" Variant="Variant.Outlined">
-                @foreach (var tenant in Tenants)
-                {
-                    <MudSelectItem Value="@tenant">@tenant</MudSelectItem>
-                }
-            </MudSelect>
+            <MudText Typo="Typo.body2" Color="Color.Inherit" Class="mr-3">Tenant: @SelectedTenant</MudText>
         }
         @if (IsAuthenticated)
         {
@@ -124,7 +121,7 @@
     private bool _drawerOpen = true;
     private bool IsAuthenticated => AuthService.IsAuthenticated;
     private bool IsAdmin => AuthService.IsAdmin;
-    private string SelectedTenant { get; set; } = "Default Tenant";
+    private string SelectedTenant { get; set; } = "";
     private List<string> Tenants { get; set; } = new() { "Default Tenant", "Org A", "Org B" };
     private List<ProjectDto> _projects = new();
     private bool _isLoadingProjects = true;
@@ -156,7 +153,7 @@
         },
         Typography = new Typography
         {
-                Default = new DefaultTypography()
+            Default = new DefaultTypography()
             {
                 FontFamily = new[] { "Roboto", "Helvetica", "Arial", "sans-serif" },
                 FontSize = ".875rem",
@@ -164,7 +161,7 @@
                 LineHeight = "1.43",
                 LetterSpacing = ".01071em"
             },
-                H6 = new DefaultTypography()
+            H6 = new DefaultTypography()
             {
                 FontSize = "1.25rem",
                 FontWeight = "500",
@@ -172,12 +169,12 @@
                 LetterSpacing = ".0075em"
             }
         },
-    
-    LayoutProperties = new LayoutProperties
+        LayoutProperties = new LayoutProperties
         {
             DefaultBorderRadius = "4px"
         }
     };
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -185,6 +182,7 @@
             await JSRuntime.InvokeVoidAsync("console.log", "MudBlazor initialized");
         }
     }
+
     protected override async Task OnInitializedAsync()
     {
         try
@@ -193,6 +191,14 @@
             await ApplicationContextService.InitializeAsync();
             _projects = await ApplicationContextService.GetProjectsAsync();
             Console.WriteLine($"Loaded {_projects.Count} projects: {System.Text.Json.JsonSerializer.Serialize(_projects)}");
+            
+             // Fetch tenant name if authenticated
+            //if (IsAuthenticated)
+            {
+                SelectedTenant = await AuthService.GetCurrentTenantAsync(); // Assume this method exists
+                Console.WriteLine($"Loaded tenant: {SelectedTenant}");
+            }
+
             ApplicationContextService.OnProjectChanged += async () =>
             {
                 _projects = await ApplicationContextService.GetProjectsAsync();
@@ -226,26 +232,15 @@
         NavigationManager.NavigateTo("/profile");
     }
 
-    private async Task OnTenantChangedAsync(string tenant)
-    {
-        SelectedTenant = tenant;
-        await Task.CompletedTask;
-    }
     private Guid? SelectedProjectId { get; set; }
 
     private async Task OnProjectChanged(Guid? newProjectId)
     {
         SelectedProjectId = newProjectId;
         ApplicationContextService.SelectedProjectId = newProjectId;
-        var projectName = newProjectId.HasValue ?
-            _projects.FirstOrDefault(p => p.Id == newProjectId.Value)?.Name ?? "No Project" : "No Project";
-        Snackbar.Add($"Switched to project: {projectName}", Severity.Info);
-        await InvokeAsync(StateHasChanged);
-    }
-    private async Task OnProjectChangedAsync(Guid? projectId)
-    {
-        ApplicationContextService.SelectedProjectId = projectId;
-        var projectName = projectId.HasValue ? _projects.FirstOrDefault(p => p.Id == projectId.Value)?.Name ?? "No Project" : "No Project";
+        var projectName = newProjectId.HasValue
+            ? _projects.FirstOrDefault(p => p.Id == newProjectId.Value)?.Name ?? "No Project"
+            : "No Project";
         Snackbar.Add($"Switched to project: {projectName}", Severity.Info);
         await InvokeAsync(StateHasChanged);
     }

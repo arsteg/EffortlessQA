@@ -72,6 +72,23 @@ namespace EffortlessQA.Client.Services
             _isAdmin = false;
         }
 
+        public async Task<string> GetCurrentTenantAsync()
+        {
+            try
+            {
+                // Example: Fetch tenant info from an API endpoint
+                var response = await _httpClient.GetAsync("Auth/tenantCurrent");
+                response.EnsureSuccessStatusCode();
+                var tenant = await response.Content.ReadFromJsonAsync<ApiResponse<TenantDto>>();
+                return tenant?.Data?.Name ?? "Unknown Tenant";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching tenant: {ex.Message}");
+                return "Unknown Tenant";
+            }
+        }
+
         public async Task<string> GetTokenAsync()
         {
             // Retrieve the token from local storage

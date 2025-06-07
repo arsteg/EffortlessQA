@@ -346,6 +346,38 @@ namespace EffortlessQA.Api.Services.Implementation
             //    throw new Exception(string.Join(", ", result.Errors.Select(e => e.Description)));
         }
 
+        public async Task<TenantDto> GetCurrentTenantAsync()
+        {
+            try
+            {
+                // Retrieve tenantId from JWT claims
+                var tenantId = _httpContextAccessor.HttpContext?.User.FindFirst("tenantId")?.Value;
+
+                if (string.IsNullOrEmpty(tenantId))
+                {
+                    throw new Exception("TenantId not found in user claims.");
+                }
+
+                // Query the Tenants table to get the tenant details
+                var tenant = await _context
+                    .Tenants.Where(t => t.Id == tenantId && !t.IsDeleted)
+                    .Select(t => new TenantDto { Id = t.Id, Name = t.Name })
+                    .FirstOrDefaultAsync();
+
+                if (tenant == null)
+                {
+                    throw new Exception("Tenant not found.");
+                }
+
+                return tenant;
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Error fetching tenant: {Message}", ex.Message);
+                return new TenantDto { Name = "Unknown Tenant" }; // Fallback
+            }
+        }
+
         public async Task<UserDto> InviteUserAsync(
             InviteUserDto dto,
             string tenantId,

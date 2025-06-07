@@ -43,6 +43,41 @@ namespace EffortlessQA.Api.Extensions
                 .WithTags(AUTH_TAG)
                 .WithMetadata();
 
+            // POST /api/v1/auth/tenant/current
+            app.MapGet(
+                    "api/v1/Auth/tenantCurrent",
+                    async (IAuthService authService) =>
+                    {
+                        try
+                        {
+                            var result = await authService.GetCurrentTenantAsync();
+                            return Results.Ok(
+                                new ApiResponse<TenantDto>
+                                {
+                                    Data = result,
+                                    Meta = new { Message = "User registered successfully" }
+                                }
+                            );
+                        }
+                        catch (Exception ex)
+                        {
+                            return Results.BadRequest(
+                                new ApiResponse<object>
+                                {
+                                    Error = new ErrorResponse
+                                    {
+                                        Code = "BadRequest",
+                                        Message = ex.Message
+                                    }
+                                }
+                            );
+                        }
+                    }
+                )
+                .WithName("tenantCurrent")
+                .WithTags(AUTH_TAG)
+                .WithMetadata();
+
             // POST /api/v1/auth/login
             app.MapPost(
                     "/api/v1/auth/login",

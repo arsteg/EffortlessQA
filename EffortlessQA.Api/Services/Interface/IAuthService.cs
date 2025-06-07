@@ -24,5 +24,6 @@ namespace EffortlessQA.Api.Services.Interface
             string? filter
         );
         Task DeleteUserAsync(Guid userId, string tenantId);
+        Task<TenantDto> GetCurrentTenantAsync();
     }
 }
