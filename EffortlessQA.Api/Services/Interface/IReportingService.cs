@@ -4,7 +4,7 @@ namespace EffortlessQA.Api.Services.Interface
 {
     public interface IReportingService
     {
-        Task<DashboardDto> GetDashboardDataAsync(Guid projectId, string tenantId);
+        Task<DashboardDataDto> GetDashboardDataAsync(Guid projectId, string tenantId);
         Task<TestRunReportDto> GetTestRunReportAsync(
             Guid projectId,
             string tenantId,

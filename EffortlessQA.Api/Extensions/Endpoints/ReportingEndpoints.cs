@@ -29,7 +29,7 @@ namespace EffortlessQA.Api.Extensions
                                 tenantId
                             );
                             return Results.Ok(
-                                new ApiResponse<DashboardDto>
+                                new ApiResponse<DashboardDataDto>
                                 {
                                     Data = dashboardData,
                                     Meta = new { Message = "Dashboard data retrieved successfully" }

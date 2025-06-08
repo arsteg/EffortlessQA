@@ -7,13 +7,16 @@ using EffortlessQA.Data.Entities;
 
 namespace EffortlessQA.Data.Dtos
 {
-    public class DashboardDto
+    public class DashboardDataDto
     {
-        public int ActiveTestRuns { get; set; }
-        public double PassRate { get; set; }
-        public double FailRate { get; set; }
-        public DefectCountsDto DefectCounts { get; set; }
-        public double TestCoverage { get; set; }
+        public int PassedTests { get; set; }
+        public int FailedTests { get; set; }
+        public int PendingTests { get; set; }
+        public int HighPriorityDefects { get; set; }
+        public int MediumPriorityDefects { get; set; }
+        public int LowPriorityDefects { get; set; }
+        public double TestCoverage { get; set; } // Percentage (0-100)
+        public List<TestRunDto> RecentTestRuns { get; set; } = new();
     }
 
     public class DefectCountsDto
@@ -60,15 +63,5 @@ namespace EffortlessQA.Data.Dtos
         public string RequirementTitle { get; set; }
         public int TestCaseCount { get; set; }
         public bool IsCovered { get; set; }
-    }
-
-    public class DashboardDataDto
-    {
-        public int PassedTests { get; set; }
-        public int FailedTests { get; set; }
-        public int PendingTests { get; set; }
-        public int HighPriorityDefects { get; set; }
-        public int MediumPriorityDefects { get; set; }
-        public int LowPriorityDefects { get; set; }
     }
 }

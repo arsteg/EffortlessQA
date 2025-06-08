@@ -18,7 +18,7 @@ namespace EffortlessQA.Api.Services.Implementation
             _configuration = configuration;
         }
 
-        public async Task<DashboardDto> GetDashboardDataAsync(Guid projectId, string tenantId)
+        public async Task<DashboardDataDto> GetDashboardDataAsync(Guid projectId, string tenantId)
         {
             var project = await _context.Projects.FirstOrDefaultAsync(p =>
                 p.Id == projectId && p.TenantId == tenantId && !p.IsDeleted
@@ -87,17 +87,17 @@ namespace EffortlessQA.Api.Services.Implementation
             var coveragePercentage =
                 totalRequirements > 0 ? (coveredRequirements * 100.0 / totalRequirements) : 0;
 
-            return new DashboardDto
+            return new DashboardDataDto
             {
-                ActiveTestRuns = activeTestRunsCount,
-                PassRate = passRate,
-                FailRate = failRate,
-                DefectCounts = new DefectCountsDto
-                {
-                    High = highDefects,
-                    Medium = mediumDefects,
-                    Low = lowDefects
-                },
+                //ActiveTestRuns = activeTestRunsCount,
+                //PassRate = passRate,
+                //FailRate = failRate,
+                //DefectCounts = new DefectCountsDto
+                //{
+                //    High = highDefects,
+                //    Medium = mediumDefects,
+                //    Low = lowDefects
+                //},
                 TestCoverage = coveragePercentage
             };
         }
