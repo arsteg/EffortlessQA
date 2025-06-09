@@ -200,7 +200,7 @@
                             @(_parentRequirements.FirstOrDefault(r => r.Id == context.ParentRequirementId)?.Title ?? "None")
                         </MudTd>
                         <MudTd>
-                                @(context.TestCaseIds != null ? string.Join(", ",context.TestCaseIds.Select(id => _availableTestCases.FirstOrDefault(tc => tc.Id == id)?.Title ?? id.ToString())) : "")
+                            @(context.TestCaseIds != null ? string.Join(", ",context.TestCaseIds.Select(id => _availableTestCases.FirstOrDefault(tc => tc.Id == id)?.Title ?? id.ToString())) : "")
                         </MudTd>
                         <MudTd Style="display: flex; justify-content: center; gap: 8px; vertical-align: middle;">
                             @if (context.IsEditing)
@@ -224,6 +224,10 @@
                                                Color="Color.Primary"
                                                Size="Size.Small"
                                                OnClick="@(() => StartInlineEdit(context))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.NoteAlt"
+                                               Color="Color.Info"
+                                               Size="Size.Small"
+                                               OnClick="@(() => OpenEditDialogAsync(context))" />
                                 <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                                Color="Color.Error"
                                                Size="Size.Small"
@@ -288,7 +292,7 @@
                                         @(_parentRequirements.FirstOrDefault(r => r.Id == child.ParentRequirementId)?.Title ?? "None")
                                     </td>
                                     <td style="vertical-align: middle;">
-                                            @(child.TestCaseIds != null ? string.Join(", ",child.TestCaseIds.Select(id => _availableTestCases.FirstOrDefault(tc => tc.Id == id)?.Title ?? id.ToString())) : "")
+                                        @(child.TestCaseIds != null ? string.Join(", ",child.TestCaseIds.Select(id => _availableTestCases.FirstOrDefault(tc => tc.Id == id)?.Title ?? id.ToString())) : "")
                                     </td>
                                     <td style="display: flex; justify-content: center; gap: 8px; vertical-align: middle;">
                                         @if (child.IsEditing)
@@ -312,6 +316,10 @@
                                                            Color="Color.Primary"
                                                            Size="Size.Small"
                                                            OnClick="@(() => StartInlineEdit(child))" />
+                                            <MudIconButton Icon="@Icons.Material.Filled.NoteAlt"
+                                                           Color="Color.Info"
+                                                           Size="Size.Small"
+                                                           OnClick="@(() => OpenEditDialogAsync(child))" />
                                             <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                                            Color="Color.Error"
                                                            Size="Size.Small"
@@ -361,6 +369,7 @@
     </MudGrid>
 </MudContainer>
 
+<!-- Create New Requirement Dialog -->
 <MudDialog @bind-Visible="_showCreateDialog" Options="new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true, CloseButton = true }" Style="min-height: 80vh; max-height: 90vh;">
     <DialogContent>
         <MudGrid Class="pa-6">
@@ -382,7 +391,7 @@
                     <MudTextField T="string"
                                   Label="Description"
                                   @bind-Value="_newRequirement.Description"
-                                  Lines="10"
+                                  Lines="15"
                                   Variant="Variant.Outlined"
                                   Clearable="true"
                                   Margin="Margin.Normal"
@@ -424,6 +433,53 @@
     </DialogActions>
 </MudDialog>
 
+<!-- Edit Requirement Dialog -->
+<MudDialog @bind-Visible="_showEditDialog" Options="new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true, CloseButton = true }" Style="min-height: 80vh; max-height: 90vh;">
+    <DialogContent>
+        <MudGrid Class="pa-6">
+            <MudItem xs="12">
+                <MudText Typo="Typo.h6" Color="Color.Primary" Class="mb-4">Edit Requirement</MudText>
+                <MudForm @ref="_editForm" @bind-IsValid="_editFormIsValid" Class="d-flex flex-column gap-6">
+                    <MudTextField T="string"
+                                  Label="Requirement Title"
+                                  @bind-Value="_editRequirement.Title"
+                                  Required="true"
+                                  RequiredError="Title is required"
+                                  Validation="@(new Func<string, string>(ValidateTitle))"
+                                  Variant="Variant.Outlined"
+                                  Clearable="true"
+                                  AutoFocus="true"
+                                  Margin="Margin.Normal"
+                                  HelperText="Enter a unique requirement title (min 3 characters)"
+                                  Class="mud-input-rounded" />
+                    <MudTextField T="string"
+                                  Label="Description"
+                                  @bind-Value="_editRequirement.Description"
+                                  Lines="15"
+                                  Variant="Variant.Outlined"
+                                  Clearable="true"
+                                  Margin="Margin.Normal"
+                                  HelperText="Describe the requirement in detail"
+                                  Class="mud-input-rounded" />
+                    @*<MudTextField T="string"
+                                  Label="Tags"
+                                  @bind-Value="_editTagsInput"
+                                  Placeholder="Comma-separated tags"
+                                  Variant="Variant.Outlined"
+                                  Clearable="true"
+                                  Margin="Margin.Normal"
+                                  HelperText="Enter tags separated by commas"
+                                  Class="mud-input-rounded" />*@
+                </MudForm>
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@CancelEdit" Variant="Variant.Text" Color="Color.Secondary" Size="Size.Medium">Cancel</MudButton>
+        <MudButton OnClick="@SaveEditAsync" Variant="Variant.Filled" Color="Color.Primary" Disabled="!_editFormIsValid" Size="Size.Medium">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
 @code {
     #region Fields
     private List<RequirementDto> _requirements = new();
@@ -431,20 +487,24 @@
     private List<TestCaseDto> _availableTestCases = new();
     private string _testCasesInput = string.Empty;
     private CreateRequirementDto _newRequirement = new();
+    private RequirementDto _editRequirement = new();
     private string _tagsInput = string.Empty;
+    private string _editTagsInput = string.Empty;
     private bool _showCreateDialog;
+    private bool _showEditDialog;
     private string _searchTerm = string.Empty;
     private bool _isLoading;
     private MudTable<RequirementDto> _table;
     private HashSet<RequirementDto> _selectedRequirements = new();
     private MudForm _form;
+    private MudForm _editForm;
     private bool _formIsValid;
+    private bool _editFormIsValid;
     private int _pageSize = 10;
     private Dictionary<Guid, RequirementDto> _originalRequirements = new();
     private List<ProjectDto> _projects = new();
     private HashSet<Guid> _expandedRequirements = new();
     private readonly string _tenantId = "default"; // Replace with dynamic tenant ID logic
-
 
     private readonly MudTheme _customTheme = new()
             {
@@ -523,7 +583,7 @@
             page: state.Page + 1,100,""
 
 
-            );
+        );
 
             return new TableData<RequirementDto>
                     {
@@ -730,6 +790,27 @@
         await Task.Run(() => _form?.ResetValidation());
     }
 
+    private async Task OpenEditDialogAsync( RequirementDto requirement )
+    {
+        _editRequirement = new RequirementDto
+                {
+                    Id = requirement.Id,
+                    Title = requirement.Title,
+                    Description = requirement.Description,
+                    Tags = requirement.Tags,
+                    ProjectId = requirement.ProjectId,
+                    TenantId = requirement.TenantId,
+                    ParentRequirementId = requirement.ParentRequirementId,
+                    TestCaseIds = requirement.TestCaseIds,
+                    Children = requirement.Children
+                };
+        _editTagsInput = string.Join(",",requirement.Tags ?? new string[0]);
+        _testCasesInput = string.Join(",",requirement.TestCaseIds?.Select(id => id.ToString()) ?? new List<string>());
+        _projects = await ProjectService.GetProjectsAsync();
+        _showEditDialog = true;
+        await Task.Run(() => _editForm?.ResetValidation());
+    }
+
     private void CancelCreate()
     {
         _showCreateDialog = false;
@@ -737,6 +818,15 @@
         _tagsInput = string.Empty;
         _testCasesInput = string.Empty;
         _form?.ResetValidation();
+    }
+
+    private void CancelEdit()
+    {
+        _showEditDialog = false;
+        _editRequirement = new RequirementDto();
+        _editTagsInput = string.Empty;
+        _testCasesInput = string.Empty;
+        _editForm?.ResetValidation();
     }
 
     private async Task CreateRequirementAsync()
@@ -779,6 +869,48 @@
         {
             Snackbar.Add($"Failed to create requirement: {ex.Message}", Severity.Error);
             Console.WriteLine($"Error creating requirement: {ex}");
+        }
+    }
+
+    private async Task SaveEditAsync()
+    {
+        if (!_editFormIsValid)
+        {
+            Snackbar.Add("Please fill in all required fields",Severity.Error);
+            return;
+        }
+
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(_editTagsInput))
+            {
+                _editRequirement.Tags = _editTagsInput.Split(',',StringSplitOptions.RemoveEmptyEntries)
+                .Select(t => t.Trim()).ToArray();
+            }
+            if (!string.IsNullOrWhiteSpace(_testCasesInput))
+            {
+                _editRequirement.TestCaseIds = _testCasesInput.Split(',',StringSplitOptions.RemoveEmptyEntries)
+                .Select(id => Guid.Parse(id.Trim())).ToList();
+            }
+
+            await RequirementService.UpdateRequirementAsync(_editRequirement);
+            await _table.ReloadServerData();
+            _showEditDialog = false;
+            _editRequirement = new RequirementDto();
+            _editTagsInput = string.Empty;
+            _testCasesInput = string.Empty;
+            _editForm?.ResetValidation();
+            Snackbar.Add("Requirement updated successfully",Severity.Success);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to update requirement: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error updating requirement: {ex}");
         }
     }
     #endregion
@@ -826,16 +958,16 @@
             "text/csv",
             base64Data);
 
-            Snackbar.Add("Requirements exported to CSV successfully", Severity.Success);
+            Snackbar.Add("Requirements exported to CSV successfully",Severity.Success);
         }
         catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
-            Snackbar.Add("Unauthorized: Please check your permissions or login again.", Severity.Error);
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
             NavigationManager.NavigateTo("/login");
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to export requirements: {ex.Message}", Severity.Error);
+            Snackbar.Add($"Failed to export requirements: {ex.Message}",Severity.Error);
             Console.WriteLine($"Error exporting to CSV: {ex}");
         }
     }
@@ -844,15 +976,12 @@
     {
         try
         {
-            var result = await RequirementService.GetRequirementsAsync(
-         0,
-         100,
-         null);
+            var result = await RequirementService.GetRequirementsAsync(0,100,null);
             var requirements = FlattenRequirements(result.ToArray());
 
             if (!requirements.Any())
             {
-                Snackbar.Add("No requirements found to export.", Severity.Warning);
+                Snackbar.Add("No requirements found to export.",Severity.Warning);
                 return;
             }
 
@@ -876,13 +1005,13 @@
                 worksheet.Cell($"A{row}").Value = r.Id.ToString();
                 worksheet.Cell($"B{row}").Value = r.Title;
                 worksheet.Cell($"C{row}").Value = r.Description;
-                worksheet.Cell($"D{row}").Value = string.Join(",", r.Tags ?? new string[0]);
+                worksheet.Cell($"D{row}").Value = string.Join(",",r.Tags ?? new string[0]);
                 worksheet.Cell($"E{row}").Value = _projects.FirstOrDefault(p => p.Id == r.ProjectId)?.Name ?? "None";
                 worksheet.Cell($"F{row}").Value = _parentRequirements.FirstOrDefault(pr => pr.Id == r.ParentRequirementId)?.Title ?? "None";
                 worksheet.Cell($"G{row}").Value = r.TenantId;
                 worksheet.Cell($"H{row}").Value = r.CreatedAt.ToString("yyyy-MM-dd");
                 worksheet.Cell($"I{row}").Value = r.UpdatedAt?.ToString("yyyy-MM-dd");
-                worksheet.Cell($"J{row}").Value = string.Join(",", r.TestCaseIds ?? new List<Guid>());
+                worksheet.Cell($"J{row}").Value = string.Join(",",r.TestCaseIds ?? new List<Guid>());
                 row++;
             }
 
@@ -897,16 +1026,16 @@
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             base64Data);
 
-            Snackbar.Add("Requirements exported to Excel successfully", Severity.Success);
+            Snackbar.Add("Requirements exported to Excel successfully",Severity.Success);
         }
         catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
-            Snackbar.Add("Unauthorized: Please check your permissions or login again.", Severity.Error);
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
             NavigationManager.NavigateTo("/login");
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to export requirements: {ex.Message}", Severity.Error);
+            Snackbar.Add($"Failed to export requirements: {ex.Message}",Severity.Error);
             Console.WriteLine($"Error exporting to Excel: {ex}");
         }
     }
@@ -915,17 +1044,12 @@
     {
         try
         {
-            var result = await RequirementService.GetRequirementsAsync(
-     
-             1,
-         1000,
-        searchTerm: _searchTerm
-           );
+            var result = await RequirementService.GetRequirementsAsync(1,1000,searchTerm: _searchTerm);
             var requirements = FlattenRequirements(result.ToArray());
 
             if (!requirements.Any())
             {
-                Snackbar.Add("No requirements found to export.", Severity.Warning);
+                Snackbar.Add("No requirements found to export.",Severity.Warning);
                 return;
             }
 
@@ -947,7 +1071,7 @@
                     new PdfColumnDto { Field = "tenantId", Header = "Tenant ID" },
                     new PdfColumnDto { Field = "testCaseIds", Header = "Test Case IDs" }
                     },
-                        Data = requirements.Select(r => new Dictionary<string, string>
+                        Data = requirements.Select(r => new Dictionary<string,string>
                     {
                     { "id", r.Id.ToString() },
                     { "title", r.Title ?? "" },
@@ -967,16 +1091,16 @@
             "application/pdf",
             base64Data);
 
-            Snackbar.Add("Requirements exported to PDF successfully", Severity.Success);
+            Snackbar.Add("Requirements exported to PDF successfully",Severity.Success);
         }
         catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
-            Snackbar.Add("Unauthorized: Please check your permissions or login again.", Severity.Error);
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
             NavigationManager.NavigateTo("/login");
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to export requirements: {ex.Message}", Severity.Error);
+            Snackbar.Add($"Failed to export requirements: {ex.Message}",Severity.Error);
             Console.WriteLine($"Error exporting to PDF: {ex}");
         }
     }
@@ -993,42 +1117,42 @@
                     MaxWidth = MaxWidth.Medium,
                     FullWidth = true
                 };
-        await DialogService.ShowAsync<FileUploadDialog>("Import Requirements from CSV", parameters, options);
+        await DialogService.ShowAsync<FileUploadDialog>("Import Requirements from CSV",parameters,options);
     }
 
-    private async Task ImportCsvContentAsync(string csvContent)
+    private async Task ImportCsvContentAsync( string csvContent )
     {
         try
         {
             using var reader = new StringReader(csvContent);
-            using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+            using var csv = new CsvReader(reader,CultureInfo.InvariantCulture);
             var records = csv.GetRecords<CreateRequirementDto>().ToList();
             foreach (var requirement in records)
             {
                 if (!string.IsNullOrWhiteSpace(requirement?.Title))
                 {
                     requirement.TenantId = _tenantId;
-                    await RequirementService.CreateRequirementAsync(requirement, requirement.ProjectId);
+                    await RequirementService.CreateRequirementAsync(requirement,requirement.ProjectId);
                 }
             }
             await _table.ReloadServerData();
-            Snackbar.Add("Requirements imported successfully", Severity.Success);
+            Snackbar.Add("Requirements imported successfully",Severity.Success);
         }
         catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
-            Snackbar.Add("Unauthorized: Please check your permissions or login again.", Severity.Error);
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
             NavigationManager.NavigateTo("/login");
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to import requirements: {ex.Message}", Severity.Error);
+            Snackbar.Add($"Failed to import requirements: {ex.Message}",Severity.Error);
             Console.WriteLine($"Error importing CSV: {ex}");
         }
     }
     #endregion
 
     #region Hierarchy Helpers
-    private void ToggleExpand(Guid requirementId)
+    private void ToggleExpand( Guid requirementId )
     {
         if (_expandedRequirements.Contains(requirementId))
             _expandedRequirements.Remove(requirementId);
@@ -1037,7 +1161,7 @@
         StateHasChanged();
     }
 
-    private int GetDepth(RequirementDto requirement)
+    private int GetDepth( RequirementDto requirement )
     {
         int depth = 1;
         var current = requirement;
@@ -1050,7 +1174,7 @@
         return depth;
     }
 
-    private RenderFragment RenderChildRows(RequirementDto requirement, int depth)
+    private RenderFragment RenderChildRows( RequirementDto requirement,int depth )
     {
         return @<text>
         @foreach (var child in requirement.Children)
@@ -1106,7 +1230,6 @@
             </td>
             <td>
                 @(child.TestCaseIds != null ? string.Join(", ", child.TestCaseIds.Select(id => _availableTestCases.FirstOrDefault(tc => tc.Id == id)?.Title ?? id.ToString())) : "")
-            
             </td>
             <td style="text-align: center;">
                 @if (child.IsEditing)
@@ -1130,6 +1253,10 @@
                                Color="Color.Primary"
                                Size="Size.Small"
                                OnClick="@(() => StartInlineEdit(child))" />
+                <MudIconButton Icon="@Icons.Material.Filled.NoteAlt"
+                               Color="Color.Info"
+                               Size="Size.Small"
+                               OnClick="@(() => OpenEditDialogAsync(child))" />
                 <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                Color="Color.Error"
                                Size="Size.Small"
@@ -1145,7 +1272,7 @@
     </text>;
     }
 
-    private List<RequirementDto> FlattenRequirements(IEnumerable<RequirementDto> requirements)
+    private List<RequirementDto> FlattenRequirements( IEnumerable<RequirementDto> requirements )
     {
         var result = new List<RequirementDto>();
         foreach (var requirement in requirements)
@@ -1159,7 +1286,7 @@
     #endregion
 
     #region Validation
-    private string ValidateTitle(string title)
+    private string ValidateTitle( string title )
     {
         if (string.IsNullOrWhiteSpace(title))
             return "Title is required";
@@ -1170,10 +1297,10 @@
     #endregion
 
     #region Helpers
-    private void LogHover(string action)
+    private void LogHover( string action )
     {
         Console.WriteLine($"Hovered: {action}");
-        Snackbar.Add($"Hovered: {action}", Severity.Info);
+        Snackbar.Add($"Hovered: {action}",Severity.Info);
     }
     #endregion
 }

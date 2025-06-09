@@ -22,7 +22,7 @@ namespace EffortlessQA.Data.Dtos
         public string? Description { get; set; }
 		public string TenantId { get; set; }
 		public Guid? ParentSuiteId { get; set; }
-        public Guid ProjectId { get; set; } = Guid.Parse("114d1646-8a22-495b-9734-2cdc6dae1361");
+        public Guid ProjectId { get; set; }
 	}
 
     public class UpdateTestSuiteDto

@@ -145,7 +145,7 @@ namespace EffortlessQA.Client.Services
 		}
 
 		public async Task UpdateTestCaseAsync(
-			UpdateTestCaseDto testCaseDto,
+			TestCaseDto testCaseDto,
 			Guid testCaseId,
 			Guid testSuiteId,
 			CancellationToken cancellationToken = default

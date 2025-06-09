@@ -15,10 +15,11 @@
 @inject IJSRuntime JSRuntime
 @inject IDialogService DialogService
 @inject ProjectService ProjectService
+@inject ApplicationContextService ApplicationContextService
 
 <MudThemeProvider Theme="_customTheme" />
 <MudContainer MaxWidth="MaxWidth.False" Class="py-8 px-4 px-md-8">
-    <MudGrid Spacing="2">
+    <MudGrid Spacing="4">
         <!-- Header -->
         <MudItem xs="12">
             <MudText Typo="Typo.h5" Color="Color.Primary" Class="mb-4">Manage Test Suites</MudText>
@@ -216,6 +217,10 @@
                                                Color="Color.Primary"
                                                Size="Size.Small"
                                                OnClick="@(() => StartInlineEdit(context))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.NoteAlt"
+                                               Color="Color.Info"
+                                               Size="Size.Small"
+                                               OnClick="@(() => OpenEditDialogAsync(context))" />
                                 <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                                Color="Color.Error"
                                                Size="Size.Small"
@@ -300,6 +305,10 @@
                                                            Color="Color.Primary"
                                                            Size="Size.Small"
                                                            OnClick="@(() => StartInlineEdit(child))" />
+                                            <MudIconButton Icon="@Icons.Material.Filled.NoteAlt"
+                                                           Color="Color.Info"
+                                                           Size="Size.Small"
+                                                           OnClick="@(() => OpenEditDialogAsync(child))" />
                                             <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                                            Color="Color.Error"
                                                            Size="Size.Small"
@@ -349,12 +358,13 @@
     </MudGrid>
 </MudContainer>
 
-<MudDialog @bind-Visible="_showCreateDialog" Options="new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true }">
+<!-- Create New Test Suite Dialog -->
+<MudDialog @bind-Visible="_showCreateDialog" Options="new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true, CloseButton = true }" Style="min-height: 80vh; max-height: 90vh;">
     <DialogContent>
-        <MudGrid Class="pa-4">
+        <MudGrid Class="pa-6">
             <MudItem xs="12">
                 <MudText Typo="Typo.h6" Color="Color.Primary" Class="mb-4">Create New Test Suite</MudText>
-                <MudForm @ref="_form" @bind-IsValid="_formIsValid" Class="d-flex flex-column gap-4">
+                <MudForm @ref="_form" @bind-IsValid="_formIsValid" Class="d-flex flex-column gap-6">
                     <MudTextField T="string"
                                   Label="Test Suite Name"
                                   @bind-Value="_newTestSuite.Name"
@@ -363,6 +373,8 @@
                                   Validation="@(new Func<string, string>(ValidateName))"
                                   Variant="Variant.Outlined"
                                   Clearable="true"
+                                  AutoFocus="true"
+                                  Margin="Margin.Normal"
                                   HelperText="Enter a unique test suite name (min 3 characters)"
                                   Class="mud-input-rounded" />
                     <MudTextField T="string"
@@ -370,48 +382,94 @@
                                   @bind-Value="_newTestSuite.Description"
                                   Required="true"
                                   RequiredError="Description is required"
-                                  Lines="4"
+                                  Lines="15"
                                   Variant="Variant.Outlined"
                                   Clearable="true"
-                                  HelperText="Describe the test suite briefly"
+                                  Margin="Margin.Normal"
+                                  HelperText="Describe the test suite in detail"
                                   Class="mud-input-rounded" />
-                    @* <MudSelect T="Guid" *@
-                    @*            Label="Project" *@
-                    @*            @bind-Value="_newTestSuite.ProjectId" *@
-                    @*            Required="true" *@
-                    @*            RequiredError="Project is required" *@
-                    @*            Variant="Variant.Outlined" *@
-                    @*            Class="mud-input-rounded" *@
-                    @*            AnchorOrigin="Origin.BottomCenter" *@
-                    @*            TransformOrigin="Origin.TopCenter" *@
-                    @*            ToStringFunc="@(id => _projects?.FirstOrDefault(p => p.Id == id)?.Name ?? "Unknown Project")"> *@
-                    @*     @foreach (var project in _projects) *@
-                    @*     { *@
-                    @*         <MudSelectItem Value="@project.Id">@(project.Name ?? $"Project ID: {project.Id}")</MudSelectItem> *@
-                    @*     } *@
-                    @* </MudSelect> *@
+                    @* Uncomment and adjust Project selection if needed *@
+                    @*<MudSelect T="Guid"
+                               Label="Project"
+                               @bind-Value="_newTestSuite.ProjectId"
+                               Required="true"
+                               RequiredError="Project is required"
+                               Variant="Variant.Outlined"
+                               Class="mud-input-rounded"
+                               AnchorOrigin="Origin.BottomCenter"
+                               TransformOrigin="Origin.TopCenter"
+                               ToStringFunc="@(id => _projects?.FirstOrDefault(p => p.Id == id)?.Name ?? "Unknown Project")">
+                        @foreach (var project in _projects)
+                        {
+                            <MudSelectItem Value="@project.Id">@(project.Name ?? $"Project ID: {project.Id}")</MudSelectItem>
+                        }
+                    </MudSelect>*@
                 </MudForm>
             </MudItem>
         </MudGrid>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="@CancelCreate" Variant="Variant.Text" Color="Color.Secondary">Cancel</MudButton>
-        <MudButton OnClick="@CreateTestSuiteAsync" Variant="Variant.Filled" Color="Color.Primary" Disabled="!_formIsValid">Create</MudButton>
+        <MudButton OnClick="@CancelCreate" Variant="Variant.Text" Color="Color.Secondary" Size="Size.Medium">Cancel</MudButton>
+        <MudButton OnClick="@CreateTestSuiteAsync" Variant="Variant.Filled" Color="Color.Primary" Disabled="!_formIsValid" Size="Size.Medium">Create</MudButton>
+    </DialogActions>
+</MudDialog>
+
+<!-- Edit Test Suite Dialog -->
+<MudDialog @bind-Visible="_showEditDialog" Options="new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true, CloseButton = true }" Style="min-height: 80vh; max-height: 90vh;">
+    <DialogContent>
+        <MudGrid Class="pa-6">
+            <MudItem xs="12">
+                <MudText Typo="Typo.h6" Color="Color.Primary" Class="mb-4">Edit Test Suite</MudText>
+                <MudForm @ref="_editForm" @bind-IsValid="_editFormIsValid" Class="d-flex flex-column gap-6">
+                    <MudTextField T="string"
+                                  Label="Test Suite Name"
+                                  @bind-Value="_editTestSuite.Name"
+                                  Required="true"
+                                  RequiredError="Name is required"
+                                  Validation="@(new Func<string, string>(ValidateName))"
+                                  Variant="Variant.Outlined"
+                                  Clearable="true"
+                                  AutoFocus="true"
+                                  Margin="Margin.Normal"
+                                  HelperText="Enter a unique test suite name (min 3 characters)"
+                                  Class="mud-input-rounded" />
+                    <MudTextField T="string"
+                                  Label="Description"
+                                  @bind-Value="_editTestSuite.Description"
+                                  Required="true"
+                                  RequiredError="Description is required"
+                                  Lines="15"
+                                  Variant="Variant.Outlined"
+                                  Clearable="true"
+                                  Margin="Margin.Normal"
+                                  HelperText="Describe the test suite in detail"
+                                  Class="mud-input-rounded" />
+                </MudForm>
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@CancelEdit" Variant="Variant.Text" Color="Color.Secondary" Size="Size.Medium">Cancel</MudButton>
+        <MudButton OnClick="@SaveEditAsync" Variant="Variant.Filled" Color="Color.Primary" Disabled="!_editFormIsValid" Size="Size.Medium">Save</MudButton>
     </DialogActions>
 </MudDialog>
 
 @code {
     #region Fields
     private CreateTestSuiteDto _newTestSuite = new();
+    private TestSuiteDto _editTestSuite = new();
     private List<ProjectDto> _projects = new();
     private List<TestSuiteDto> _parentTestSuites = new();
     private bool _showCreateDialog;
+    private bool _showEditDialog;
     private string _searchTerm = string.Empty;
     private bool _isLoading;
     private MudTable<TestSuiteDto> _table;
     private HashSet<TestSuiteDto> _selectedTestSuites = new();
     private MudForm _form;
+    private MudForm _editForm;
     private bool _formIsValid;
+    private bool _editFormIsValid;
     private int _pageSize = 10;
     private Dictionary<Guid,TestSuiteDto> _originalTestSuites = new();
     private HashSet<Guid> _expandedTestSuites = new();
@@ -662,7 +720,6 @@
             catch (Exception ex)
             {
                 Snackbar.Add($"Failed to delete test suites: {ex.Message}",Severity.Error);
-                Console.WriteLine($"Error deleting test suites: {ex}");
             }
         }
     }
@@ -690,11 +747,36 @@
         await Task.Run(() => _form?.ResetValidation());
     }
 
+    private async Task OpenEditDialogAsync( TestSuiteDto testSuite )
+    {
+        _editTestSuite = new TestSuiteDto
+                {
+                    Id = testSuite.Id,
+                    Name = testSuite.Name,
+                    Description = testSuite.Description,
+                    ProjectId = testSuite.ProjectId,
+                    TenantId = testSuite.TenantId,
+                    ParentSuiteId = testSuite.ParentSuiteId,
+                    Children = testSuite.Children
+                };
+        _projects = await ProjectService.GetProjectsAsync();
+        _parentTestSuites = FlattenTestSuites(await TestSuiteService.GetTestSuitesAsync()).ToList();
+        _showEditDialog = true;
+        await Task.Run(() => _editForm?.ResetValidation());
+    }
+
     private void CancelCreate()
     {
         _showCreateDialog = false;
         _newTestSuite = new CreateTestSuiteDto();
         _form?.ResetValidation();
+    }
+
+    private void CancelEdit()
+    {
+        _showEditDialog = false;
+        _editTestSuite = new TestSuiteDto();
+        _editForm?.ResetValidation();
     }
 
     private async Task CreateTestSuiteAsync()
@@ -708,6 +790,7 @@
         try
         {
             _newTestSuite.TenantId = _tenantId;
+            _newTestSuite.ProjectId = ApplicationContextService.SelectedProjectId ?? Guid.Empty;
             await TestSuiteService.CreateTestSuiteAsync(_newTestSuite);
             await _table.ReloadServerData();
             _parentTestSuites = FlattenTestSuites(await TestSuiteService.GetTestSuitesAsync()).ToList();
@@ -725,6 +808,36 @@
         {
             Snackbar.Add($"Failed to create test suite: {ex.Message}",Severity.Error);
             Console.WriteLine($"Error creating test suite: {ex}");
+        }
+    }
+
+    private async Task SaveEditAsync()
+    {
+        if (!_editFormIsValid)
+        {
+            Snackbar.Add("Please fill in all required fields",Severity.Error);
+            return;
+        }
+
+        try
+        {
+            await TestSuiteService.UpdateTestSuiteAsync(_editTestSuite);
+            await _table.ReloadServerData();
+            _parentTestSuites = FlattenTestSuites(await TestSuiteService.GetTestSuitesAsync()).ToList();
+            _showEditDialog = false;
+            _editTestSuite = new TestSuiteDto();
+            _editForm?.ResetValidation();
+            Snackbar.Add("Test suite updated successfully",Severity.Success);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to update test suite: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error updating test suite: {ex}");
         }
     }
     #endregion
@@ -1054,6 +1167,10 @@
                                Color="Color.Primary"
                                Size="Size.Small"
                                OnClick="@(() => StartInlineEdit(child))" />
+                <MudIconButton Icon="@Icons.Material.Filled.NoteAlt"
+                               Color="Color.Info"
+                               Size="Size.Small"
+                               OnClick="@(() => OpenEditDialogAsync(child))" />
                 <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                Color="Color.Error"
                                Size="Size.Small"

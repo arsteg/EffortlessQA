@@ -19,8 +19,20 @@ namespace EffortlessQA.Data.Entities
         public JsonDocument? Steps { get; set; } // JSONB for AI-ready metadata
 
         public JsonDocument? ExpectedResults { get; set; }
+		
+		public string? ActualResult { get; set; }
 
-        [Required, MaxLength(20)]
+		public string? Comments { get; set; }
+
+		public string? TestData { get; set; }
+		
+        public string? Precondition { get; set; }
+		
+        public TestExecutionStatus? Status { get; set; }
+		
+        public string? Screenshot { get; set; }
+
+		[Required, MaxLength(20)]
         [RegularExpression("High|Medium|Low")]
         // [Index]
         public PriorityLevel Priority { get; set; }
