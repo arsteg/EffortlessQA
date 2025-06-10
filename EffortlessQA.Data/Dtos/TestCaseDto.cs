@@ -34,7 +34,6 @@ namespace EffortlessQA.Data.Dtos
         public PriorityLevel Priority { get; set; }
         public string[]? Tags { get; set; }
         public Guid? FolderId { get; set; }
-        public string ExpectedResult { get; set; } = string.Empty;
 		public string? ActualResult { get; set; }
 		public string? Comments { get; set; }
 		public string? TestData { get; set; }
@@ -56,9 +55,13 @@ namespace EffortlessQA.Data.Dtos
         public Guid? FolderId { get; set; }
 		public string? Comments { get; set; }
 		public TestExecutionStatus? Status { get; set; }
+		public string? ActualResult { get; set; }
+		public string? TestData { get; set; }
+		public string? Screenshot { get; set; }
+		public string? Precondition { get; set; }
 	}
 
-    public class CopyTestCaseDto
+	public class CopyTestCaseDto
     {
         public Guid TargetTestSuiteId { get; set; }
         public Guid? TargetFolderId { get; set; }

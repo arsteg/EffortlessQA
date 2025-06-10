@@ -191,17 +191,158 @@
                                 @context.Description
                             }
                         </MudTd>
-                        <MudTd>@context.Priority</MudTd>
-                        <MudTd>@(context.Tags != null ? string.Join(", ",context.Tags) : "")</MudTd>
-                        <MudTd>@(_testSuites.FirstOrDefault(ts => ts.Id == context.TestSuiteId)?.Name ?? "None")</MudTd>
-                        <MudTd>@context.Steps</MudTd>
-                        <MudTd>@context.ExpectedResults</MudTd>
-                        @* <MudTd>@(_folders.FirstOrDefault(f => f.Id == context.FolderId)?.Name ?? "None")</MudTd> *@
-                        <MudTd>@context.Status</MudTd>
-                        <MudTd>@context.Precondition</MudTd>
-                        <MudTd>@context.ActualResult</MudTd>
-                        <MudTd>@context.Comments</MudTd>
-                        <MudTd>@context.TestData</MudTd>
+                        <MudTd>
+                            @if (context.IsEditing)
+                            {
+                                <MudSelect T="PriorityLevel"
+                                           Label="Priority"
+                                           @bind-Value="context.Priority"
+                                           Required="true"
+                                           RequiredError="Priority is required"
+                                           Variant="Variant.Outlined"
+                                           Margin="Margin.Normal"
+                                           Class="mud-input-rounded">
+                                    @foreach (var priority in Enum.GetValues(typeof(PriorityLevel)).Cast<PriorityLevel>())
+                                    {
+                                        <MudSelectItem Value="@priority">@priority</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            }
+                            else
+                            {
+                                @context.Priority
+                            }
+                        </MudTd>
+                        <MudTd>
+                            @if (context.IsEditing)
+                            {
+                                <MudTextField T="string[]"
+                                              @bind-Value="@context.Tags"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense"
+                                              Placeholder="Comma-separated tags"
+                                              Class="mud-input-compact" />
+                            }
+                            else
+                            {
+                                @(context.Tags != null ? string.Join(", ",context.Tags) : "")
+                            }
+                        </MudTd>
+                        <MudTd>
+                                @(_testSuites.FirstOrDefault(ts => ts.Id == context.TestSuiteId)?.Name ?? "None")
+                            
+                        </MudTd>
+                        <MudTd>
+                            @if (context.IsEditing)
+                            {
+                                <MudTextField T="string"
+                                              @bind-Value="context.Steps"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense"
+                                              Lines="2"
+                                              Class="mud-input-compact" />
+                            }
+                            else
+                            {
+                                @context.Steps
+                            }
+                        </MudTd>
+                        <MudTd>
+                            @if (context.IsEditing)
+                            {
+                                <MudTextField T="string"
+                                              @bind-Value="context.ExpectedResults"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense"
+                                              Lines="2"
+                                              Class="mud-input-compact" />
+                            }
+                            else
+                            {
+                                @context.ExpectedResults
+                            }
+                        </MudTd>
+                        <MudTd>
+                            @if (context.IsEditing)
+                            {
+                                <MudSelect T="TestExecutionStatus?"
+                                           Label="Status"
+                                           @bind-Value="context.Status"
+                                           Variant="Variant.Outlined"
+                                           Margin="Margin.Normal"
+                                           Class="mud-input-rounded">
+                                    <MudSelectItem Value="@((TestExecutionStatus?)null)">None</MudSelectItem>
+                                    @foreach (var status in Enum.GetValues(typeof(TestExecutionStatus)).Cast<TestExecutionStatus>())
+                                    {
+                                        <MudSelectItem Value="@((TestExecutionStatus?)status)">@status</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            }
+                            else
+                            {
+                                @context.Status
+                            }
+                        </MudTd>
+                        <MudTd>
+                            @if (context.IsEditing)
+                            {
+                                <MudTextField T="string"
+                                              @bind-Value="context.Precondition"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense"
+                                              Lines="2"
+                                              Class="mud-input-compact" />
+                            }
+                            else
+                            {
+                                @context.Precondition
+                            }
+                        </MudTd>
+                        <MudTd>
+                            @if (context.IsEditing)
+                            {
+                                <MudTextField T="string"
+                                              @bind-Value="context.ActualResult"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense"
+                                              Lines="2"
+                                              Class="mud-input-compact" />
+                            }
+                            else
+                            {
+                                @context.ActualResult
+                            }
+                        </MudTd>
+                        <MudTd>
+                            @if (context.IsEditing)
+                            {
+                                <MudTextField T="string"
+                                              @bind-Value="context.Comments"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense"
+                                              Lines="2"
+                                              Class="mud-input-compact" />
+                            }
+                            else
+                            {
+                                @context.Comments
+                            }
+                        </MudTd>
+                        <MudTd>
+                            @if (context.IsEditing)
+                            {
+                                <MudTextField T="string"
+                                              @bind-Value="context.TestData"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense"
+                                              Lines="2"
+                                              Class="mud-input-compact" />
+                            }
+                            else
+                            {
+                                @context.TestData
+                            }
+                        </MudTd>
                         <MudTd>@context.Screenshot</MudTd>
                         <MudTd Style="display: flex; justify-content: center; gap: 8px; vertical-align: middle;">
                             @if (context.IsEditing)
@@ -302,7 +443,7 @@
                                   Variant="Variant.Outlined"
                                   Clearable="true"
                                   Margin="Margin.Normal"
-                                  HelperText="Enter test steps in JSON format (e.g., ['step1': 'description']"
+                                  HelperText='Enter test steps in JSON format (e.g., ["step1", "step2"])'
                                   Class="mud-input-rounded" />
                     <MudTextField T="string"
                                   Label="Expected Results"
@@ -311,7 +452,7 @@
                                   Variant="Variant.Outlined"
                                   Clearable="true"
                                   Margin="Margin.Normal"
-                                  HelperText="Enter expected results in JSON format (e.g., {'result1': 'outcome'}"
+                                  HelperText='Enter expected results in JSON format (e.g., {"step1": "description"})'
                                   Class="mud-input-rounded" />
                     <MudTextField T="string"
                                   Label="Actual Result"
@@ -358,7 +499,7 @@
                         <MudSelectItem Value="@((TestExecutionStatus?)null)">None</MudSelectItem>
                         @foreach (var status in Enum.GetValues(typeof(TestExecutionStatus)).Cast<TestExecutionStatus>())
                         {
-                            <MudSelectItem Value="@status">@status</MudSelectItem>
+                            <MudSelectItem Value="@((TestExecutionStatus?)status)">@status</MudSelectItem>
                         }
                     </MudSelect>
                     <MudTextField T="string"
@@ -467,7 +608,7 @@
                                   Variant="Variant.Outlined"
                                   Clearable="true"
                                   Margin="Margin.Normal"
-                                  HelperText="Enter test steps as JSON"
+                                  HelperText='Enter test steps in JSON format (e.g., ["step1", "step2"])'
                                   Class="mud-input-rounded" />
                     <MudTextField T="string"
                                   Label="Expected Results"
@@ -476,7 +617,7 @@
                                   Variant="Variant.Outlined"
                                   Clearable="true"
                                   Margin="Margin.Normal"
-                                  HelperText="Enter expected results as JSON"
+                                  HelperText='Enter expected results in JSON format (e.g., {"step1": "description"})'
                                   Class="mud-input-rounded" />
                     <MudTextField T="string"
                                   Label="Actual Result"
@@ -523,7 +664,7 @@
                         <MudSelectItem Value="@((TestExecutionStatus?)null)">None</MudSelectItem>
                         @foreach (var status in Enum.GetValues(typeof(TestExecutionStatus)).Cast<TestExecutionStatus>())
                         {
-                            <MudSelectItem Value="@status">@status</MudSelectItem>
+                            <MudSelectItem Value="@((TestExecutionStatus?)status)">@status</MudSelectItem>
                         }
                     </MudSelect>
                     <MudTextField T="string"
@@ -556,37 +697,6 @@
                                   Margin="Margin.Normal"
                                   HelperText="Enter tags separated by commas"
                                   Class="mud-input-rounded" />
-                    <MudSelect T="Guid"
-                               Label="Test Suite"
-                               @bind-Value="_editTestCase.TestSuiteId"
-                               Required="true"
-                               RequiredError="Test Suite is required"
-                               Variant="Variant.Outlined"
-                               Margin="Margin.Normal"
-                               Class="mud-input-rounded"
-                               AnchorOrigin="Origin.BottomCenter"
-                               TransformOrigin="Origin.TopCenter"
-                               ToStringFunc="@(id => _testSuites?.FirstOrDefault(ts => ts.Id == id)?.Name ?? "Unknown Test Suite")">
-                        @foreach (var testSuite in _testSuites)
-                        {
-                            <MudSelectItem Value="@testSuite.Id">@(testSuite.Name ?? $"Test Suite ID: {testSuite.Id}")</MudSelectItem>
-                        }
-                    </MudSelect>
-                    @*<MudSelect T="Guid?"
-                               Label="Folder"
-                               @bind-Value="_editTestCase.FolderId"
-                               Variant="Variant.Outlined"
-                               Margin="Margin.Normal"
-                               Class="mud-input-rounded"
-                               AnchorOrigin="Origin.BottomCenter"
-                               TransformOrigin="Origin.TopCenter"
-                               ToStringFunc="@(id => id.HasValue ? (_folders?.FirstOrDefault(f => f.Id == id)?.Name ?? "Unknown Folder") : "None")">
-                        <MudSelectItem Value="@((Guid?)null)">None</MudSelectItem>
-                        @foreach (var folder in _folders)
-                        {
-                            <MudSelectItem Value="@folder.Id">@(folder.Name ?? $"Folder ID: {folder.Id}")</MudSelectItem>
-                        }
-                    </MudSelect>*@
                 </MudForm>
             </MudItem>
         </MudGrid>
@@ -665,16 +775,19 @@
             if (!string.IsNullOrEmpty(state.SortLabel))
                 filter += $"{(string.IsNullOrEmpty(filter) ? "" : ",")}sort:{state.SortLabel}:{(state.SortDirection == SortDirection.Ascending ? "asc" : "desc")}";
 
-            var result = await TestCaseService.GetTestCasesAsync(
-                page: state.Page + 1,
-                pageSize: _pageSize,
-                searchTerm: _searchTerm
-            );
-
+            var query = new TestCaseQuery
+                {
+                    SearchTerm = _searchTerm,
+                    SortBy = state.SortLabel,
+                    SortDirection = state.SortDirection == SortDirection.Ascending ? "asc" : "desc",
+                    Page = state.Page + 1,
+                    PageSize = _pageSize
+                };
+            var result = await TestCaseService.GetPagedTestCasesAsync(query);
             return new TableData<TestCaseDto>
                 {
-                    TotalItems = result.Count,
-                    Items = result.ToArray()
+                    TotalItems = result.TotalCount,
+                    Items = result.Items
                 };
         }
         catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
