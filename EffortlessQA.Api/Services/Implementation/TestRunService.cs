@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using EffortlessQA.Api.Services.Interface;
 using EffortlessQA.Data;
 using EffortlessQA.Data.Dtos;
@@ -122,7 +123,107 @@ namespace EffortlessQA.Api.Services.Implementation
             };
         }
 
-        public async Task<TestRunDto> GetTestRunAsync(
+		public async Task<PagedResult<TestRunDto>> GetAllTestRunsAsync(
+	            string tenantId,
+	            int page,
+	            int limit,
+	            string? filter,
+	            string[]? statuses
+            )
+		{
+			var query = _context.TestRuns.Where(tr => tr.TenantId == tenantId && !tr.IsDeleted);
+
+			string? nameFilter = null;
+			string? sortField = null;
+			bool sortAscending = true;
+
+			if (!string.IsNullOrEmpty(filter))
+			{
+				var filterConditions = filter
+					.Split(',',StringSplitOptions.RemoveEmptyEntries)
+					.Select(f => f.Trim())
+					.ToList();
+
+				foreach (var condition in filterConditions)
+				{
+					var filterParts = condition.Split(':');
+					if (filterParts.Length == 3 && filterParts[0].ToLower() == "sort")
+					{
+						sortField = filterParts[1].ToLower();
+						sortAscending = filterParts[2].ToLower() == "asc";
+					}
+					else if (filterParts.Length == 2 && filterParts[0].ToLower() == "name")
+					{
+						nameFilter = filterParts[1];
+					}
+					else
+					{
+						nameFilter = condition;
+					}
+				}
+			}
+
+			if (!string.IsNullOrEmpty(nameFilter))
+			{
+				query = query.Where(tr => tr.Name.ToLower().Contains(nameFilter.ToLower()));
+			}
+
+			if (sortField == "name")
+			{
+				query = sortAscending
+					? query.OrderBy(tr => tr.Name)
+					: query.OrderByDescending(tr => tr.Name);
+			}
+			else if (sortField == "description")
+			{
+				query = sortAscending
+					? query.OrderBy(tr => tr.Description)
+					: query.OrderByDescending(tr => tr.Description);
+			}
+			else if (sortField == "createdat")
+			{
+				query = sortAscending
+					? query.OrderBy(tr => tr.CreatedAt)
+					: query.OrderByDescending(tr => tr.CreatedAt);
+			}
+			else if (sortField == "updatedat")
+			{
+				query = sortAscending
+					? query.OrderBy(tr => tr.ModifiedAt)
+					: query.OrderByDescending(tr => tr.ModifiedAt);
+			}
+			else
+			{
+				query = query.OrderBy(tr => tr.Name);
+			}
+
+			var totalCount = await query.CountAsync();
+			var testRuns = await query
+				.Skip((page - 1) * limit)
+				.Take(limit)
+				.Select(tr => new TestRunDto
+				{
+					Id = tr.Id,
+					Name = tr.Name,
+					Description = tr.Description,
+					AssignedTesterId = tr.AssignedTesterId,
+					ProjectId = tr.ProjectId,
+					TenantId = tr.TenantId,
+					CreatedAt = tr.CreatedAt,
+					UpdatedAt = tr.ModifiedAt
+				})
+				.ToListAsync();
+
+			return new PagedResult<TestRunDto>
+			{
+				Items = testRuns,
+				TotalCount = totalCount,
+				Page = page,
+				Limit = limit
+			};
+		}
+
+		public async Task<TestRunDto> GetTestRunAsync(
             Guid testRunId,
             Guid projectId,
             string tenantId

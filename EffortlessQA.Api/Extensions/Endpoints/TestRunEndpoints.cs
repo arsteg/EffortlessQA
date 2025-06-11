@@ -59,8 +59,66 @@ namespace EffortlessQA.Api.Extensions
                 .WithTags(TESTRUN_TAG)
                 .WithMetadata();
 
-            // GET /api/v1/projects/{projectId}/testruns
-            app.MapGet(
+			// GET /api/v1/projects/testruns
+			app.MapGet(
+					"/api/v1/projects/testruns",
+					async (
+						ITestRunService testRunService,
+						HttpContext context,
+						[FromQuery] int page = 1,
+						[FromQuery] int limit = 50,
+						[FromQuery] string? filter = null,
+						[FromQuery] string[]? statuses = null
+					) =>
+					{
+						try
+						{
+							var tenantId = context.User.FindFirst("TenantId")?.Value;
+							if (string.IsNullOrEmpty(tenantId))
+							{
+								return Results.Unauthorized();
+							}
+							var testRuns = await testRunService.GetAllTestRunsAsync(
+								tenantId,
+								page,
+								limit,
+								filter,
+								statuses
+							);
+							return Results.Ok(
+								new ApiResponse<PagedResult<TestRunDto>>
+								{
+									Data = testRuns,
+									Meta = new
+									{
+										Page = page,
+										Limit = limit,
+										Total = testRuns.TotalCount
+									}
+								}
+							);
+						}
+						catch (Exception ex)
+						{
+							return Results.BadRequest(
+								new ApiResponse<object>
+								{
+									Error = new ErrorResponse
+									{
+										Code = "BadRequest",
+										Message = ex.Message
+									}
+								}
+							);
+						}
+					}
+				)
+				.WithName("GetAllTestRuns")
+				.WithTags(TESTRUN_TAG)
+				.WithMetadata();
+
+			// GET /api/v1/projects/{projectId}/testruns
+			app.MapGet(
                     "/api/v1/projects/{projectId}/testruns",
                     async (
                         Guid projectId,

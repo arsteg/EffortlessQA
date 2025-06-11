@@ -12,8 +12,17 @@ namespace EffortlessQA.Api.Services.Interface
             int limit,
             string? filter,
             string[]? statuses
-        );
-        Task<TestRunDto> GetTestRunAsync(Guid testRunId, Guid projectId, string tenantId);
+        ); 
+        
+        Task<PagedResult<TestRunDto>> GetAllTestRunsAsync(
+			string tenantId,
+			int page,
+			int limit,
+			string? filter,
+			string[]? statuses
+		);
+
+		Task<TestRunDto> GetTestRunAsync(Guid testRunId, Guid projectId, string tenantId);
         Task<TestRunDto> UpdateTestRunAsync(
             Guid testRunId,
             Guid projectId,

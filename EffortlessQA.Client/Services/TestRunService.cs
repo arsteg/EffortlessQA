@@ -43,7 +43,7 @@ namespace EffortlessQA.Client.Services
 			{
 				if (query == null)
 					throw new ArgumentNullException(nameof(query));
-				var url = $"/api/v1/projects/test-runs?page={query.Page}&size={query.PageSize}&filter={Uri.EscapeDataString(BuildFilter(query) ?? "")}";
+				var url = $"/api/v1/projects/testruns?page={query.Page}&size={query.PageSize}&filter={Uri.EscapeDataString(BuildFilter(query) ?? "")}";
 				Console.WriteLine($"Request URL: {url}");
 
 				var response = await _httpClient.GetAsync(url,cancellationToken);
@@ -121,7 +121,7 @@ namespace EffortlessQA.Client.Services
 					);
 
 				var response = await _httpClient.PostAsJsonAsync(
-					$"/api/v1/projects/{projectId}/test-runs",
+					$"/api/v1/projects/{projectId}/testruns",
 					testRunDto,
 					cancellationToken
 				);
@@ -173,7 +173,7 @@ namespace EffortlessQA.Client.Services
 					);
 
 				var response = await _httpClient.PutAsJsonAsync(
-					$"/api/v1/projects/{testRunDto.ProjectId}/test-runs/{testRunDto.Id}",
+					$"/api/v1/projects/{testRunDto.ProjectId}/testruns/{testRunDto.Id}",
 					testRunDto,
 					cancellationToken
 				);
@@ -221,7 +221,7 @@ namespace EffortlessQA.Client.Services
 					throw new ArgumentException("Test run ID cannot be empty.",nameof(id));
 
 				var response = await _httpClient.DeleteAsync(
-					$"/api/v1/projects/{projectId}/test-runs/{id}",
+					$"/api/v1/projects/{projectId}/testruns/{id}",
 					cancellationToken
 				);
 				var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -256,7 +256,7 @@ namespace EffortlessQA.Client.Services
 			}
 		}
 
-		public async Task<List<User>> GetUsersAsync( CancellationToken cancellationToken = default )
+		public async Task<List<UserDto>> GetUsersAsync( CancellationToken cancellationToken = default )
 		{
 			try
 			{
@@ -280,8 +280,8 @@ namespace EffortlessQA.Client.Services
 					AllowTrailingCommas = true
 				};
 
-				var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse<List<User>>>(options,cancellationToken);
-				return apiResponse?.Data ?? new List<User>();
+				var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse<List<UserDto>>>(options,cancellationToken);
+				return apiResponse?.Data ?? new List<UserDto>();
 			}
 			catch (Exception ex)
 			{

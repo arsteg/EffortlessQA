@@ -274,7 +274,6 @@
                                   Clearable="true"
                                   Margin="Margin.Normal"
                                   HelperText="Describe the test run in detail"
-                                  potencia"
                                   Class="mud-input-rounded" />
                     <MudSelect T="Guid?"
                                Label="Assigned Tester"
@@ -374,7 +373,7 @@
     #region Fields
     private List<TestRunDto> _testRuns = new();
     private List<ProjectDto> _projects = new();
-    private List<User> _users = new();
+    private List<UserDto> _users = new();
     private CreateTestRunDto _newTestRun = new();
     private TestRunDto _editTestRun = new();
     private bool _showCreateDialog;
@@ -614,8 +613,9 @@
     private async Task OpenCreateDialogAsync()
     {
         _newTestRun = new CreateTestRunDto();
-        _projects = await ProjectService.GetProjectsAsync();
+        // _projects = await ProjectService.GetProjectsAsync();
         _users = await TestRunService.GetUsersAsync();
+        _newTestRun.AssignedTesterId = _users?.FirstOrDefault()?.Id;
         _newTestRun.TenantId = _tenantId;
         _showCreateDialog = true;
         await Task.Run(() => _form?.ResetValidation());
@@ -634,8 +634,8 @@
                 CreatedAt = testRun.CreatedAt,
                 UpdatedAt = testRun.UpdatedAt
             };
-        _projects = await ProjectService.GetProjectsAsync();
-        _users = await TestRunService.GetUsersAsync();
+        // _projects = await ProjectService.GetProjectsAsync();
+        // _users = await TestRunService.GetUsersAsync();
         _showEditDialog = true;
         await Task.Run(() => _editForm?.ResetValidation());
     }
