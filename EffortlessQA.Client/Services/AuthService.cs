@@ -94,5 +94,15 @@ namespace EffortlessQA.Client.Services
             // Retrieve the token from local storage
             return await _localStorage.GetItemAsync<string>("authToken");
         }
+
+        public async Task InviteUserAsync(InviteUserDto inviteUserDto)
+        {
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync("users/invite", inviteUserDto);
+                response.EnsureSuccessStatusCode();
+            }
+            catch (Exception ex) { }
+        }
     }
 }

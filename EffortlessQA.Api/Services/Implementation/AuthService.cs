@@ -384,7 +384,8 @@ namespace EffortlessQA.Api.Services.Implementation
             IEmailService emailService
         )
         {
-            var existingUser = await _context.Users.FindAsync(dto.Email);
+            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+
             var user = existingUser;
             var isNewUser = user == null;
 
@@ -398,7 +399,8 @@ namespace EffortlessQA.Api.Services.Implementation
                 };
                 var tempPassword = GenerateTempPassword();
                 var result = await _context.Users.AddAsync(user);
-                //if (!result.Succeeded)
+
+                //if (result==null)
                 //    throw new Exception(
                 //        string.Join(", ", result.Errors.Select(e => e.Description))
                 //    );
