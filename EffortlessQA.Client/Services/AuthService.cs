@@ -1,5 +1,6 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Json;
+using System.Security.Claims;
 using Blazored.LocalStorage;
 using EffortlessQA.Data.Dtos;
 
@@ -103,6 +104,73 @@ namespace EffortlessQA.Client.Services
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex) { }
+        }
+
+        public async Task ChangePasswordAsync(
+            Guid userId,
+            string currentPassword,
+            string newPassword
+        )
+        {
+            try
+            {
+                var token = await _localStorage.GetItemAsync<string>("authToken");
+                Console.WriteLine($"Token: {token}");
+
+                var changePasswordDto = new ChangePasswordDto
+                {
+                    UserId = userId,
+                    CurrentPassword = currentPassword,
+                    NewPassword = newPassword
+                };
+
+                var response = await _httpClient.PostAsJsonAsync(
+                    "auth/change-password",
+                    changePasswordDto
+                );
+                response.EnsureSuccessStatusCode();
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new Exception(
+                    "Failed to change password. Please check your current password and try again.",
+                    ex
+                );
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error changing password: {ex.Message}", ex);
+            }
+        }
+
+        // Add method to get user ID from JWT
+        public async Task<Guid> GetUserIdAsync()
+        {
+            var token = await _localStorage.GetItemAsync<string>("authToken");
+            if (string.IsNullOrEmpty(token))
+                throw new Exception("No authentication token found.");
+
+            try
+            {
+                var handler = new JwtSecurityTokenHandler();
+                var jwtToken = handler.ReadJwtToken(token);
+                var userIdClaim = jwtToken.Claims.FirstOrDefault(c =>
+                    c.Type == JwtRegisteredClaimNames.Sub
+                    || c.Type == ClaimTypes.NameIdentifier
+                    || c.Type == "name"
+                );
+                if (userIdClaim == null || string.IsNullOrEmpty(userIdClaim.Value))
+                    throw new Exception("User ID not found in token.");
+
+                if (!Guid.TryParse(userIdClaim.Value, out var userId))
+                    throw new Exception("Invalid user ID format in token.");
+
+                return userId;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error reading user ID from token: {ex.Message}", ex);
+            }
         }
     }
 }

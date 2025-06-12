@@ -60,6 +60,7 @@
         {
             <MudMenu Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit" Direction="Direction.Right" Dense="true">
                 <MudMenuItem OnClick="@ViewProfile">Profile</MudMenuItem>
+                <MudMenuItem OnClick="@ChangePassword">Change Password</MudMenuItem> <!-- Add this line -->
                 <MudMenuItem OnClick="@LogoutAsync">Logout</MudMenuItem>
             </MudMenu>
         }
@@ -263,5 +264,10 @@
         Snackbar.Add($"Switched to project: {projectName}", Severity.Info);
         await ApplicationContextService.NotifyProjectChangedAsync();
         await InvokeAsync(StateHasChanged);
+    }
+
+    private void ChangePassword()
+    {
+        NavigationManager.NavigateTo("/change-password");
     }
 }

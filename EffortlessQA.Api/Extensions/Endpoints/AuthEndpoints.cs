@@ -495,6 +495,56 @@ namespace EffortlessQA.Api.Extensions
                 .RequireAuthorization("AdminOnly")
                 .WithTags(AUTH_TAG)
                 .WithMetadata();
+
+            // POST /api/v1/auth/change-password
+            app.MapPost(
+                    "/api/v1/auth/change-password",
+                    async (
+                        [FromBody] ChangePasswordDto dto,
+                        HttpContext context,
+                        IAuthService authService
+                    ) =>
+                    {
+                        try
+                        {
+                            var userId = dto.UserId;
+                            var auuthenticated = (
+                                (System.Security.Claims.ClaimsIdentity)context.User.Identity
+                            ).IsAuthenticated;
+
+                            if (auuthenticated == false || userId == Guid.Empty)
+                            {
+                                return Results.Unauthorized();
+                            }
+
+                            await authService.ChangePasswordAsync(userId, dto);
+                            return Results.Ok(
+                                new ApiResponse<object>
+                                {
+                                    Data = null,
+                                    Meta = new { Message = "Password changed successfully" }
+                                }
+                            );
+                        }
+                        catch (Exception ex)
+                        {
+                            return Results.BadRequest(
+                                new ApiResponse<object>
+                                {
+                                    Error = new ErrorResponse
+                                    {
+                                        Code = "BadRequest",
+                                        Message = ex.Message
+                                    }
+                                }
+                            );
+                        }
+                    }
+                )
+                .WithName("ChangePassword")
+                .RequireAuthorization() // Restrict to authenticated users
+                .WithTags(AUTH_TAG)
+                .WithMetadata();
         }
     }
 }

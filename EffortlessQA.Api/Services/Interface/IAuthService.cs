@@ -25,5 +25,6 @@ namespace EffortlessQA.Api.Services.Interface
         );
         Task DeleteUserAsync(Guid userId, string tenantId);
         Task<TenantDto> GetCurrentTenantAsync();
+        Task ChangePasswordAsync(Guid userId, ChangePasswordDto dto);
     }
 }

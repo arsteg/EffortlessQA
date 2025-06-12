@@ -561,6 +561,62 @@ namespace EffortlessQA.Api.Services.Implementation
             await _context.SaveChangesAsync();
         }
 
+        public async Task ChangePasswordAsync(Guid userId, ChangePasswordDto dto)
+        {
+            if (dto == null)
+                throw new ArgumentNullException(nameof(dto));
+            if (string.IsNullOrWhiteSpace(dto.CurrentPassword))
+                throw new ArgumentException(
+                    "Current password is required.",
+                    nameof(dto.CurrentPassword)
+                );
+            if (string.IsNullOrWhiteSpace(dto.NewPassword))
+                throw new ArgumentException("New password is required.", nameof(dto.NewPassword));
+
+            // Find the user
+            var user = await _context.Users.FirstOrDefaultAsync(u =>
+                u.Id == userId && !u.IsDeleted
+            );
+            if (user == null)
+                throw new Exception("User not found.");
+
+            // Verify current password
+            if (!BCrypt.Net.BCrypt.Verify(dto.CurrentPassword, user.PasswordHash))
+                throw new Exception("Current password is incorrect.");
+
+            // Optional: Enforce password complexity
+            if (dto.NewPassword.Length < 8)
+                throw new Exception("New password must be at least 8 characters long.");
+            if (!dto.NewPassword.Any(char.IsUpper))
+                throw new Exception("New password must contain at least one uppercase letter.");
+            if (!dto.NewPassword.Any(char.IsDigit))
+                throw new Exception("New password must contain at least one number.");
+
+            // Update password
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+            user.ModifiedAt = DateTime.UtcNow;
+            user.ModifiedBy = userId;
+
+            // Log audit entry
+            var auditLog = new AuditLog
+            {
+                Id = Guid.NewGuid(),
+                Action = "PasswordChanged",
+                EntityType = "User",
+                EntityId = userId,
+                UserId = userId,
+                TenantId = user.TenantId,
+                Details = JsonDocument.Parse(
+                    JsonSerializer.Serialize(new { Message = "User changed their password" })
+                ),
+                CreatedAt = DateTime.UtcNow
+            };
+            await _context.AuditLogs.AddAsync(auditLog);
+
+            // Save changes
+            await _context.SaveChangesAsync();
+        }
+
         private async Task<(string Email, string Name, string OAuthId)> ValidateOAuthTokenAsync(
             string token,
             string provider
