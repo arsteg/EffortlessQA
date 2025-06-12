@@ -28,12 +28,21 @@
                     </MudItem>
                     <MudItem xs="12" sm="6">
                         <MudTextField T="string"
-                                      Label="Name"
-                                      @bind-Value="_inviteModel.Name"
+                                      Label="First Name"
+                                      @bind-Value="_inviteModel.FirstName"
                                       Required="true"
                                       RequiredError="Name is required"
                                       HelperText="Enter the user's full name" />
                     </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField T="string"
+                                      Label="Last Name"
+                                      @bind-Value="_inviteModel.LastName"
+                                      Required="true"
+                                      RequiredError="Name is required"
+                                      HelperText="Enter the user's full name" />
+                    </MudItem>
+
                     <MudItem xs="12" sm="6">
                         <MudSelect T="Data.Entities.RoleType"
                                    Label="Role"
@@ -129,7 +138,8 @@
             var inviteDto = new InviteUserDto
                 {
                     Email = _inviteModel.Email,
-                    Name = _inviteModel.Name,
+                    FirstName = _inviteModel.FirstName,
+                    LastName = _inviteModel.LastName,
                     RoleType = _inviteModel.RoleType,
                     ProjectId = _inviteModel.ProjectId
                 };

@@ -384,59 +384,118 @@ namespace EffortlessQA.Api.Services.Implementation
             IEmailService emailService
         )
         {
-            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+            // Validate inputs
+            if (dto == null)
+                throw new ArgumentNullException(nameof(dto));
+            if (string.IsNullOrWhiteSpace(dto.Email))
+                throw new ArgumentException("Email is required.", nameof(dto.Email));
+            if (string.IsNullOrWhiteSpace(dto.FirstName))
+                throw new ArgumentException("Name is required.", nameof(dto.FirstName));
+            if (string.IsNullOrWhiteSpace(tenantId))
+                throw new ArgumentException("Tenant ID is required.", nameof(tenantId));
+            if (emailService == null)
+                throw new ArgumentNullException(nameof(emailService));
 
-            var user = existingUser;
-            var isNewUser = user == null;
-
-            if (isNewUser)
+            // Start a database transaction
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            var tempPassword = string.Empty;
+            try
             {
-                user = new User
+                // Check for existing user
+                var existingUser = await _context.Users.FirstOrDefaultAsync(u =>
+                    u.Email == dto.Email && u.TenantId == tenantId
+                );
+
+                User user;
+                bool isNewUser = existingUser == null;
+
+                if (isNewUser)
                 {
-                    Email = dto.Email,
-                    FirstName = dto.Name,
+                    // Create new user
+                    tempPassword = GenerateTempPassword();
+                    user = new User
+                    {
+                        Id = Guid.NewGuid(),
+                        Email = dto.Email,
+                        FirstName = dto.FirstName,
+                        LastName = dto.LastName,
+                        TenantId = tenantId,
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword(tempPassword),
+                    };
+
+                    await _context.Users.AddAsync(user);
+                }
+                else
+                {
+                    user = existingUser;
+                }
+
+                // Validate project
+                var project = await _context.Projects.FirstOrDefaultAsync(p =>
+                    p.Id == dto.ProjectId && p.TenantId == tenantId && !p.IsDeleted
+                );
+                if (project == null)
+                    throw new InvalidOperationException("Project not found or is deleted.");
+
+                // Check if user already has a role in this project
+                var existingRole = await _context.Roles.FirstOrDefaultAsync(r =>
+                    r.UserId == user.Id && r.TenantId == tenantId
+                );
+                if (existingRole != null)
+                    throw new InvalidOperationException(
+                        $"User {dto.Email} already has a role in project {project.Name}."
+                    );
+
+                // Assign role
+                var role = new Role
+                {
+                    UserId = user.Id,
+                    RoleType = dto.RoleType,
                     TenantId = tenantId
                 };
-                var tempPassword = GenerateTempPassword();
-                var result = await _context.Users.AddAsync(user);
+                await _context.Roles.AddAsync(role);
 
-                //if (result==null)
-                //    throw new Exception(
-                //        string.Join(", ", result.Errors.Select(e => e.Description))
-                //    );
+                // Save changes to database
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateException ex)
+                {
+                    throw new InvalidOperationException(
+                        $"Failed to save user or role: {ex.InnerException?.Message ?? ex.Message}"
+                    );
+                }
 
-                await emailService.SendEmailAsync(
-                    dto.Email,
-                    "EffortlessQA Invitation",
-                    $"You have been invited to join EffortlessQA. Your temporary password is: {tempPassword}"
-                );
+                // Send email for new users
+                if (isNewUser)
+                {
+                    await emailService.SendEmailAsync(
+                        dto.Email,
+                        "EffortlessQA Invitation",
+                        $"You have been invited to join EffortlessQA. Your temporary password is: {tempPassword}"
+                    );
+                }
+
+                // Commit transaction
+                await transaction.CommitAsync();
+
+                // Return UserDto
+                return new UserDto
+                {
+                    Id = user.Id,
+                    Email = user.Email,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    TenantId = user.TenantId,
+                };
             }
-
-            // Assign role in project
-            var project = await _context.Projects.FirstOrDefaultAsync(p =>
-                p.Id == dto.ProjectId && p.TenantId == tenantId && !p.IsDeleted
-            );
-            if (project == null)
-                throw new Exception("Project not found.");
-
-            var role = new Role
+            catch (Exception)
             {
-                UserId = user.Id,
-
-                RoleType = dto.RoleType,
-                TenantId = tenantId
-            };
-            await _context.Roles.AddAsync(role);
-            await _context.SaveChangesAsync();
-
-            return new UserDto
-            {
-                Id = user.Id,
-                Email = user.Email,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                TenantId = user.TenantId
-            };
+                // Roll back transaction on error
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task<PagedResult<UserDto>> GetUsersAsync(
