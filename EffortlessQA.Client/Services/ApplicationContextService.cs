@@ -102,5 +102,17 @@ namespace EffortlessQA.Client.Services
                 await OnProjectChanged.Invoke();
             }
         }
-    }
+		public async Task SetProjectIdAsync( Guid? projectId )
+		{
+			if (_projects.Any(p => p.Id == projectId))
+			{
+				SelectedProjectId = projectId;
+				Console.WriteLine($"Manually set project ID to: {projectId}");
+			}
+			else
+			{
+				Console.WriteLine($"Project ID {projectId} not found in projects");
+			}
+		}
+	}
 }

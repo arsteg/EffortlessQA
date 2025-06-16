@@ -37,11 +37,11 @@
                 <MudText Typo="Typo.body2" Color="Color.Inherit" Class="mr-3 ml-3">Current Project:</MudText>
 
                 <MudMenu Label="@(SelectedProjectId.HasValue ? _projects.FirstOrDefault(p => p.Id == SelectedProjectId.Value)?.Name ?? "No Project" : "No Project")"
-                         Color="Color.Inherit"
-                         Dense="true"
-                         Variant="Variant.Outlined"
-                         Class="ml-3"
-                         Style="width: 250px;">
+                Color="Color.Inherit"
+                Dense="true"
+                Variant="Variant.Outlined"
+                Class="ml-3"
+                Style="width: 250px;">
                     <MudMenuItem OnClick="@(() => OnProjectChanged(null))">No Project</MudMenuItem>
                     @foreach (var project in _projects)
                     {
@@ -192,24 +192,24 @@
             _isLoadingProjects = true;
             await ApplicationContextService.InitializeAsync();
 
-           
-            
-                // Fetch tenant name
-                SelectedTenant = await AuthService.GetCurrentTenantAsync();
-               
-                Console.WriteLine($"Loaded tenant: {SelectedTenant}");
 
-                // Fetch projects
-                _projects = await ApplicationContextService.GetProjectsAsync();
-                Console.WriteLine($"Loaded {_projects.Count} projects: {System.Text.Json.JsonSerializer.Serialize(_projects)}");
 
-                // Pre-select the first project if available
-                if (_projects.Any() && !SelectedProjectId.HasValue)
-                {
-                    SelectedProjectId = _projects.First().Id;
-                    await OnProjectChanged(SelectedProjectId);
-                }
-            
+            // Fetch tenant name
+            SelectedTenant = await AuthService.GetCurrentTenantAsync();
+
+            Console.WriteLine($"Loaded tenant: {SelectedTenant}");
+
+            // Fetch projects
+            _projects = await ApplicationContextService.GetProjectsAsync();
+            Console.WriteLine($"Loaded {_projects.Count} projects: {System.Text.Json.JsonSerializer.Serialize(_projects)}");
+
+            // Pre-select the first project if available
+            if (_projects.Any() && !SelectedProjectId.HasValue)
+            {
+                SelectedProjectId = _projects.First().Id;
+                await OnProjectChanged(SelectedProjectId);
+            }
+
 
             // Subscribe to project changes
             ApplicationContextService.OnProjectChanged += async () =>
@@ -263,6 +263,7 @@
             : "No Project";
         Snackbar.Add($"Switched to project: {projectName}", Severity.Info);
         await ApplicationContextService.NotifyProjectChangedAsync();
+        await ApplicationContextService.SetProjectIdAsync(newProjectId);
         await InvokeAsync(StateHasChanged);
     }
 

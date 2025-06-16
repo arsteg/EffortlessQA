@@ -157,6 +157,72 @@ namespace EffortlessQA.Client.Services
 			}
 		}
 
+		public async Task<Guid> CreateTestSuiteWithIdAsync(
+			CreateTestSuiteDto testSuiteDto,
+			CancellationToken cancellationToken = default
+)
+		{
+			try
+			{
+				if (testSuiteDto == null)
+					throw new ArgumentNullException(nameof(testSuiteDto));
+				if (string.IsNullOrWhiteSpace(testSuiteDto.Name))
+					throw new ArgumentException(
+						"Test suite name is required.",
+						nameof(testSuiteDto.Name)
+					);
+
+				var response = await _httpClient.PostAsJsonAsync(
+					$"/api/v1/projects/{testSuiteDto.ProjectId}/testsuites",
+					testSuiteDto,
+					cancellationToken
+				);
+				var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+				Console.WriteLine(
+					$"CreateTestSuite Response: {response.StatusCode} - {responseContent}"
+				);
+
+				if (!response.IsSuccessStatusCode)
+				{
+					throw new HttpRequestException(
+						$"Failed to create test suite: {response.StatusCode} - {responseContent}",
+						null,
+						response.StatusCode
+					);
+				}
+
+				var options = new JsonSerializerOptions
+				{
+					PropertyNameCaseInsensitive = true,
+					ReadCommentHandling = JsonCommentHandling.Skip,
+					AllowTrailingCommas = true
+				};
+
+				var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse<TestSuiteDto>>(options,cancellationToken);
+				if (apiResponse == null || apiResponse.Error != null)
+				{
+					throw new Exception(
+						$"API returned an error: {apiResponse?.Error?.Code ?? "Unknown"} - {apiResponse?.Error?.Message ?? "No response"}"
+					);
+				}
+
+				return apiResponse.Data?.Id ?? throw new Exception("Created test suite ID not found in response.");
+			}
+			catch (HttpRequestException ex)
+			{
+				Console.WriteLine($"HTTP Error: {ex.Message}, Status: {ex.StatusCode}");
+				throw new Exception(
+					$"Failed to create test suite: {ex.Message}{(ex.StatusCode.HasValue ? $" (Status: {ex.StatusCode})" : "")}",
+					ex
+				);
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"Unexpected Error: {ex.Message}\nStackTrace: {ex.StackTrace}");
+				throw new Exception($"Unexpected error while creating test suite: {ex.Message}",ex);
+			}
+		}
+
 		public async Task UpdateTestSuiteAsync(
 			TestSuiteDto testSuiteDto,
 			CancellationToken cancellationToken = default
@@ -240,6 +306,103 @@ namespace EffortlessQA.Client.Services
 			{
 				Console.WriteLine($"Unexpected Error: {ex.Message}\nStackTrace: {ex.StackTrace}");
 				throw new Exception($"Unexpected error while deleting test suite: {ex.Message}",ex);
+			}
+		}
+
+		#endregion
+
+		#region Requirement Linking Operations
+
+		public async Task LinkTestSuiteToRequirementAsync(
+			Guid projectId,
+			Guid requirementId,
+			LinkTestSuiteDto linkTestSuiteDto,
+			CancellationToken cancellationToken = default
+		)
+		{
+			try
+			{
+				if (linkTestSuiteDto == null)
+					throw new ArgumentNullException(nameof(linkTestSuiteDto));
+				if (linkTestSuiteDto.TestSuiteId == Guid.Empty)
+					throw new ArgumentException("Test suite ID cannot be empty.",nameof(linkTestSuiteDto.TestSuiteId));
+
+				var response = await _httpClient.PostAsJsonAsync(
+					$"/api/v1/projects/{projectId}/requirements/{requirementId}/testsuites",
+					linkTestSuiteDto,
+					cancellationToken
+				);
+				var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+				Console.WriteLine(
+					$"LinkTestSuiteToRequirement Response: {response.StatusCode} - {responseContent}"
+				);
+
+				if (!response.IsSuccessStatusCode)
+				{
+					throw new HttpRequestException(
+						$"Failed to link test suite to requirement: {response.StatusCode} - {responseContent}",
+						null,
+						response.StatusCode
+					);
+				}
+			}
+			catch (HttpRequestException ex)
+			{
+				Console.WriteLine($"HTTP Error: {ex.Message}, Status: {ex.StatusCode}");
+				throw new Exception(
+					$"Failed to link test suite to requirement: {ex.Message}{(ex.StatusCode.HasValue ? $" (Status: {ex.StatusCode})" : "")}",
+					ex
+				);
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"Unexpected Error: {ex.Message}\nStackTrace: {ex.StackTrace}");
+				throw new Exception($"Unexpected error while linking test suite to requirement: {ex.Message}",ex);
+			}
+		}
+
+		public async Task UnlinkTestSuiteFromRequirementAsync(
+			Guid projectId,
+			Guid requirementId,
+			Guid testSuiteId,
+			CancellationToken cancellationToken = default
+		)
+		{
+			try
+			{
+				if (testSuiteId == Guid.Empty)
+					throw new ArgumentException("Test suite ID cannot be empty.",nameof(testSuiteId));
+
+				var response = await _httpClient.DeleteAsync(
+					$"/api/v1/projects/{projectId}/requirements/{requirementId}/testsuites/{testSuiteId}",
+					cancellationToken
+				);
+				var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+				Console.WriteLine(
+					$"UnlinkTestSuiteFromRequirement Response: {response.StatusCode} - {responseContent}"
+				);
+
+				if (!response.IsSuccessStatusCode)
+				{
+					throw new HttpRequestException(
+						$"Failed to unlink test suite from requirement: {response.StatusCode} - {responseContent}",
+						null,
+						response.StatusCode
+					);
+				}
+			}
+			catch (HttpRequestException ex)
+			{
+				Console.WriteLine($"HTTP Error: {ex.Message}, Status: {ex.StatusCode}");
+				throw new Exception(
+					$"Failed to unlink test suite from requirement: {ex.Message}{(ex.StatusCode.HasValue ? $" (Status: {ex.StatusCode})" : "")}",
+					ex
+				);
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"Unexpected Error: {ex.Message}\nStackTrace: {ex.StackTrace}");
+				throw new Exception($"Unexpected error while unlinking test suite from requirement: {ex.Message}",ex);
 			}
 		}
 

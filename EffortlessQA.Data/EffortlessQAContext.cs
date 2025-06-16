@@ -47,7 +47,8 @@ namespace EffortlessQA.Data
         public DbSet<Project> Projects { get; set; }
         public DbSet<Requirement> Requirements { get; set; }
         public DbSet<RequirementTestCase> RequirementTestCases { get; set; }
-        public DbSet<TestSuite> TestSuites { get; set; }
+		public DbSet<RequirementTestSuite> RequirementTestSuites { get; set; }
+		public DbSet<TestSuite> TestSuites { get; set; }
         public DbSet<TestCase> TestCases { get; set; }
         public DbSet<TestRun> TestRuns { get; set; }
         public DbSet<TestRunResult> TestRunResults { get; set; }

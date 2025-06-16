@@ -322,6 +322,79 @@ namespace EffortlessQA.Api.Services.Implementation
 			await _context.SaveChangesAsync();
 		}
 
+		public async Task LinkTestSuiteToRequirementAsync(
+			Guid requirementId,
+			Guid projectId,
+			string tenantId,
+			Guid testSuiteId
+		)
+		{
+			var requirement = await _context.Requirements.FirstOrDefaultAsync(r =>
+				r.Id == requirementId
+				&& r.TenantId == tenantId
+				&& !r.IsDeleted
+			);
+
+			if (requirement == null)
+				throw new Exception("Requirement not found.");
+
+			var testSuite = await _context.TestSuites.FirstOrDefaultAsync(ts =>
+				ts.Id == testSuiteId
+				&& ts.TenantId == tenantId
+				&& !ts.IsDeleted
+			);
+
+			if (testSuite == null)
+				throw new Exception("Test suite not found.");
+
+			var existingLink = await _context.RequirementTestSuites.FirstOrDefaultAsync(rts =>
+				rts.RequirementId == requirementId && rts.TestSuiteId == testSuiteId && !rts.IsDeleted
+			);
+
+			if (existingLink != null)
+				throw new Exception("Test suite is already linked to this requirement.");
+
+			var link = new RequirementTestSuite
+			{
+				RequirementId = requirementId,
+				TestSuiteId = testSuiteId,
+				CreatedAt = DateTime.UtcNow,
+				ModifiedAt = DateTime.UtcNow
+			};
+
+			await _context.RequirementTestSuites.AddAsync(link);
+			await _context.SaveChangesAsync();
+		}
+
+		public async Task UnlinkTestSuiteFromRequirementAsync(
+			Guid requirementId,
+			Guid projectId,
+			string tenantId,
+			Guid testSuiteId
+		)
+		{
+			var requirement = await _context.Requirements.FirstOrDefaultAsync(r =>
+				r.Id == requirementId
+				&& r.ProjectId == projectId
+				&& r.TenantId == tenantId
+				&& !r.IsDeleted
+			);
+
+			if (requirement == null)
+				throw new Exception("Requirement not found.");
+
+			var link = await _context.RequirementTestSuites.FirstOrDefaultAsync(rts =>
+				rts.RequirementId == requirementId && rts.TestSuiteId == testSuiteId && !rts.IsDeleted
+			);
+
+			if (link == null)
+				throw new Exception("Test suite is not linked to this requirement.");
+
+			link.IsDeleted = true;
+			link.ModifiedAt = DateTime.UtcNow;
+			await _context.SaveChangesAsync();
+		}
+
 		private TestSuiteDto MapToDto( TestSuite testSuite,List<TestSuite> allTestSuites )
 		{
 			return new TestSuiteDto

@@ -13,6 +13,7 @@ namespace EffortlessQA.Data.Dtos
 		public DateTime CreatedAt { get; set; }
         public DateTime? ModifiedAt { get; set; }
         public Guid? ParentSuiteId { get; set; }
+		public Guid? RequirementId { get; set; }
 		public List<TestSuiteDto> Children { get; set; } = new();
 	}
 
@@ -22,7 +23,8 @@ namespace EffortlessQA.Data.Dtos
         public string? Description { get; set; }
 		public string TenantId { get; set; }
 		public Guid? ParentSuiteId { get; set; }
-        public Guid ProjectId { get; set; }
+		public Guid? RequirementId { get; set; }
+		public Guid ProjectId { get; set; }
 	}
 
     public class UpdateTestSuiteDto
@@ -55,4 +57,8 @@ namespace EffortlessQA.Data.Dtos
         [MaxLength(500)]
         public string? Description { get; set; }
     }
+	public class LinkTestSuiteDto
+	{
+		public Guid TestSuiteId { get; set; }
+	}
 }

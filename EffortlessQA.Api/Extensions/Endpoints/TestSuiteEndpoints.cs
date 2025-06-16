@@ -322,6 +322,116 @@ namespace EffortlessQA.Api.Extensions
                 .RequireAuthorization("AdminOnly")
                 .WithTags(TESTSUITE_TAG)
                 .WithMetadata();
-        }
+
+			// POST /api/v1/projects/{projectId}/requirements/{requirementId}/testsuites
+			app.MapPost(
+					"/api/v1/projects/{projectId}/requirements/{requirementId}/testsuites",
+					async (
+						Guid projectId,
+						Guid requirementId,
+						[FromBody] LinkTestSuiteDto dto,
+						ITestSuiteService testSuiteService,
+						HttpContext context
+					) =>
+					{
+						try
+						{
+							var tenantId = context.User.FindFirst("TenantId")?.Value;
+							if (string.IsNullOrEmpty(tenantId))
+							{
+								return Results.Unauthorized();
+							}
+							await testSuiteService.LinkTestSuiteToRequirementAsync(
+								requirementId,
+								projectId,
+								tenantId,
+								dto.TestSuiteId
+							);
+							return Results.Ok(
+								new ApiResponse<object>
+								{
+									Data = null,
+									Meta = new
+									{
+										Message = "Test suite linked to requirement successfully"
+									}
+								}
+							);
+						}
+						catch (Exception ex)
+						{
+							return Results.BadRequest(
+								new ApiResponse<object>
+								{
+									Error = new ErrorResponse
+									{
+										Code = "BadRequest",
+										Message = ex.Message
+									}
+								}
+							);
+						}
+					}
+				)
+				.WithName("LinkTestSuiteToRequirement")
+				.RequireAuthorization("AdminOnly")
+				.WithTags(REQUIREMENT_TAG)
+				.WithMetadata();
+
+			// DELETE /api/v1/projects/{projectId}/requirements/{requirementId}/testsuites/{testSuiteId}
+			app.MapDelete(
+					"/api/v1/projects/{projectId}/requirements/{requirementId}/testsuites/{testSuiteId}",
+					async (
+						Guid projectId,
+						Guid requirementId,
+						Guid testSuiteId,
+						ITestSuiteService testSuiteService,
+						HttpContext context
+					) =>
+					{
+						try
+						{
+							var tenantId = context.User.FindFirst("TenantId")?.Value;
+							if (string.IsNullOrEmpty(tenantId))
+							{
+								return Results.Unauthorized();
+							}
+							await testSuiteService.UnlinkTestSuiteFromRequirementAsync(
+								requirementId,
+								projectId,
+								tenantId,
+								testSuiteId
+							);
+							return Results.Ok(
+								new ApiResponse<object>
+								{
+									Data = null,
+									Meta = new
+									{
+										Message = "Test suite unlinked from requirement successfully"
+									}
+								}
+							);
+						}
+						catch (Exception ex)
+						{
+							return Results.BadRequest(
+								new ApiResponse<object>
+								{
+									Error = new ErrorResponse
+									{
+										Code = "BadRequest",
+										Message = ex.Message
+									}
+								}
+							);
+						}
+					}
+				)
+				.WithName("UnlinkTestSuiteFromRequirement")
+				.RequireAuthorization("AdminOnly")
+				.WithTags(REQUIREMENT_TAG)
+				.WithMetadata();
+		}
     }
 }

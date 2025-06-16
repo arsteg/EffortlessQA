@@ -30,5 +30,17 @@ namespace EffortlessQA.Api.Services.Interface
             UpdateTestSuiteDto dto
         );
         Task DeleteTestSuiteAsync(Guid testSuiteId, Guid projectId, string tenantId);
-    }
+		Task LinkTestSuiteToRequirementAsync(
+			Guid requirementId,
+			Guid projectId,
+			string tenantId,
+			Guid testSuiteId
+		);
+		Task UnlinkTestSuiteFromRequirementAsync(
+			Guid requirementId,
+			Guid projectId,
+			string tenantId,
+			Guid testSuiteId
+		);
+	}
 }
