@@ -11,6 +11,9 @@ namespace EffortlessQA.Data.Entities
     [Auditable]
     public class RequirementTestSuite : EntityBase
     {
+        [Key]
+        public Guid Id { get; set; } = Guid.NewGuid();
+
         [Required]
         public Guid RequirementId { get; set; }
 
@@ -22,10 +25,5 @@ namespace EffortlessQA.Data.Entities
 
         [ForeignKey("TestSuiteId")]
         public TestSuite TestSuite { get; set; }
-
-        [MaxLength(50)]
-        public string? TenantId { get; set; } // Optional, for multi-tenancy consistency
-
-        public int? Weight { get; set; } // Optional, for prioritization (similar to RequirementTestCase)
     }
 }
