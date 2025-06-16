@@ -47,8 +47,8 @@ namespace EffortlessQA.Api.Services.Implementation
                 .ToListAsync();
 
             var totalResults = testRunResults.Count;
-            var passCount = testRunResults.Count(trr => trr.Status == TestExecutionStatus.Pass);
-            var failCount = testRunResults.Count(trr => trr.Status == TestExecutionStatus.Fail);
+            var passCount = testRunResults.Count(trr => trr.Status == TestExecutionStatus.Passed);
+            var failCount = testRunResults.Count(trr => trr.Status == TestExecutionStatus.Failed);
             var passRate = totalResults > 0 ? (passCount * 100.0 / totalResults) : 0;
             var failRate = totalResults > 0 ? (failCount * 100.0 / totalResults) : 0;
 
@@ -146,8 +146,8 @@ namespace EffortlessQA.Api.Services.Implementation
                 .ToListAsync();
 
             var totalTests = results.Count;
-            var passCount = results.Count(r => r.Status == TestExecutionStatus.Pass);
-            var failCount = results.Count(r => r.Status == TestExecutionStatus.Fail);
+            var passCount = results.Count(r => r.Status == TestExecutionStatus.Passed);
+            var failCount = results.Count(r => r.Status == TestExecutionStatus.Failed);
             var blockedCount = results.Count(r => r.Status == TestExecutionStatus.Blocked);
             var skippedCount = results.Count(r => r.Status == TestExecutionStatus.Skipped);
 
@@ -205,7 +205,7 @@ namespace EffortlessQA.Api.Services.Implementation
                 {
                     r.Id,
                     r.Title,
-                    TestCaseCount = r.RequirementTestCases.Count(rtc => !rtc.TestCase.IsDeleted)
+                    TestCaseCount = r.RequirementTestSuites.Count(rtc => !rtc.TestSuite.IsDeleted)
                 })
                 .ToListAsync();
 

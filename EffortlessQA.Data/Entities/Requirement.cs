@@ -33,6 +33,6 @@ namespace EffortlessQA.Data.Entities
         public Requirement? ParentRequirement { get; set; }
 
         // Navigation property
-        public List<RequirementTestCase> RequirementTestCases { get; set; } = new();
+        public List<RequirementTestSuite> RequirementTestSuites { get; set; }
     }
 }

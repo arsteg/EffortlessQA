@@ -165,9 +165,9 @@ namespace EffortlessQA.Data
                 .Entity<RequirementTestCase>()
                 .HasKey(rt => new { rt.RequirementId, rt.TestCaseId });
             modelBuilder
-                .Entity<RequirementTestCase>()
+                .Entity<RequirementTestSuite>()
                 .HasOne(rt => rt.Requirement)
-                .WithMany(r => r.RequirementTestCases)
+                .WithMany(r => r.RequirementTestSuites)
                 .HasForeignKey(rt => rt.RequirementId);
             modelBuilder
                 .Entity<RequirementTestCase>()

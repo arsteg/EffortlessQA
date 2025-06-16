@@ -1,4 +1,5 @@
 ﻿using EffortlessQA.Data.Dtos;
+using EffortlessQA.Data.Dtos.EffortlessQA.Data.Dtos;
 
 namespace EffortlessQA.Api.Services.Interface
 {
@@ -16,5 +17,6 @@ namespace EffortlessQA.Api.Services.Interface
         Task DeleteProjectAsync(Guid projectId, string tenantId);
         Task AssignUserToProjectAsync(Guid projectId, string tenantId, AssignUserToProjectDto dto);
         Task RemoveUserFromProjectAsync(Guid projectId, Guid userId, string tenantId);
+        Task<ProjectHierarchyDto> GetProjectHierarchyAsync(Guid projectId);
     }
 }

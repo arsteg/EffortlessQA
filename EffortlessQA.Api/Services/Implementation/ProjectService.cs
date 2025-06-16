@@ -1,6 +1,7 @@
 ﻿using EffortlessQA.Api.Services.Interface;
 using EffortlessQA.Data;
 using EffortlessQA.Data.Dtos;
+using EffortlessQA.Data.Dtos.EffortlessQA.Data.Dtos;
 using EffortlessQA.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -257,6 +258,175 @@ namespace EffortlessQA.Api.Services.Implementation
             role.IsDeleted = true;
             role.ModifiedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<ProjectHierarchyDto> GetProjectHierarchyAsync(Guid projectId)
+        {
+            var project = await _context
+                .Projects.Where(p => p.Id == projectId && !p.IsDeleted)
+                .Include(p => p.Requirements.Where(r => !r.IsDeleted))
+                .ThenInclude(r => r.ParentRequirement)
+                .Include(p => p.Requirements)
+                .ThenInclude(r => r.RequirementTestSuites)
+                .ThenInclude(rtc => rtc.TestSuite)
+                .Include(p => p.TestSuites.Where(ts => !ts.IsDeleted))
+                .ThenInclude(ts => ts.ParentSuite)
+                .Include(p => p.TestSuites)
+                .ThenInclude(ts => ts.TestCases.Where(tc => !tc.IsDeleted))
+                .ThenInclude(tc => tc.TestRunResults.Where(trr => !trr.IsDeleted))
+                .Include(p => p.TestSuites)
+                .ThenInclude(ts => ts.TestCases)
+                .ThenInclude(tc => tc.Defects.Where(d => !d.IsDeleted))
+                .Include(p => p.TestRuns.Where(tr => !tr.IsDeleted))
+                .ThenInclude(tr => tr.TestRunResults.Where(trr => !trr.IsDeleted))
+                .ThenInclude(trr => trr.Defects.Where(d => !d.IsDeleted))
+                .FirstOrDefaultAsync();
+
+            if (project == null)
+                throw new Exception("Project not found.");
+
+            // Map to DTO
+            var projectDto = new ProjectHierarchyDto
+            {
+                Id = project.Id,
+                Name = project.Name,
+                Description = project.Description,
+                TenantId = project.TenantId,
+                Requirements = BuildRequirementHierarchy(project.Requirements, null),
+                TestSuites = BuildTestSuiteHierarchy(project.TestSuites, null),
+                TestRuns = project
+                    .TestRuns.Select(tr => new TestRunHierarchyDto
+                    {
+                        Id = tr.Id,
+                        Name = tr.Name,
+                        Description = tr.Description,
+                        AssignedTesterId = tr.AssignedTesterId,
+                        TestRunResults = tr
+                            .TestRunResults.Select(trr => new TestRunResultHierarchyDto
+                            {
+                                Id = trr.Id,
+                                TestCaseId = trr.TestCaseId,
+                                Status = trr.Status,
+                                Comments = trr.Comments,
+                                Defects = trr
+                                    .Defects.Select(d => new DefectHierarchyDto
+                                    {
+                                        Id = d.Id,
+                                        Title = d.Title,
+                                        Description = d.Description,
+                                        Severity = d.Severity,
+                                        Status = d.Status,
+                                        ExternalId = d.ExternalId,
+                                        AssignedUserId = d.AssignedUserId,
+                                        ResolutionNotes = d.ResolutionNotes
+                                    })
+                                    .ToList()
+                            })
+                            .ToList()
+                    })
+                    .ToList()
+            };
+
+            return projectDto;
+        }
+
+        private List<RequirementHierarchyDto> BuildRequirementHierarchy(
+            List<Requirement> requirements,
+            Guid? parentId
+        )
+        {
+            return requirements
+                .Where(r => r.ParentRequirementId == parentId)
+                .Select(r => new RequirementHierarchyDto
+                {
+                    Id = r.Id,
+                    Title = r.Title,
+                    Description = r.Description,
+                    Tags = r.Tags,
+                    ParentRequirementId = r.ParentRequirementId,
+                    ChildRequirements = BuildRequirementHierarchy(requirements, r.Id),
+                    TestSuites = r
+                        .RequirementTestSuites.Select(rtc => new TestSuiteHierarchyDto
+                        {
+                            Id = rtc.TestSuite.Id,
+                            Name = rtc.TestSuite.Name,
+                            Description = rtc.TestSuite.Description,
+                            ParentSuiteId = rtc.TestSuite.ParentSuiteId,
+                            ChildSuites = new List<TestSuiteHierarchyDto>(),
+                            TestCases = new List<TestCaseHierarchyDto>()
+                        })
+                        .ToList()
+                })
+                .ToList();
+        }
+
+        private List<TestSuiteHierarchyDto> BuildTestSuiteHierarchy(
+            List<TestSuite> testSuites,
+            Guid? parentId
+        )
+        {
+            return testSuites
+                .Where(ts => ts.ParentSuiteId == parentId)
+                .Select(ts => new TestSuiteHierarchyDto
+                {
+                    Id = ts.Id,
+                    Name = ts.Name,
+                    Description = ts.Description,
+                    ParentSuiteId = ts.ParentSuiteId,
+                    ChildSuites = BuildTestSuiteHierarchy(testSuites, ts.Id),
+                    TestCases = ts
+                        .TestCases.Select(tc => new TestCaseHierarchyDto
+                        {
+                            Id = tc.Id,
+                            Title = tc.Title,
+                            Description = tc.Description,
+                            Precondition = tc.Precondition,
+                            TestData = tc.TestData,
+                            ActualResult = tc.ActualResult,
+                            Comments = tc.Comments,
+                            Screenshot = tc.Screenshot,
+                            Priority = tc.Priority,
+                            Status = tc.Status,
+                            Tags = tc.Tags,
+                            TestRunResults = tc
+                                .TestRunResults.Select(trr => new TestRunResultHierarchyDto
+                                {
+                                    Id = trr.Id,
+                                    TestCaseId = trr.TestCaseId,
+                                    Status = trr.Status,
+                                    Comments = trr.Comments,
+                                    Defects = trr
+                                        .Defects.Select(d => new DefectHierarchyDto
+                                        {
+                                            Id = d.Id,
+                                            Title = d.Title,
+                                            Description = d.Description,
+                                            Severity = d.Severity,
+                                            Status = d.Status,
+                                            ExternalId = d.ExternalId,
+                                            AssignedUserId = d.AssignedUserId,
+                                            ResolutionNotes = d.ResolutionNotes
+                                        })
+                                        .ToList()
+                                })
+                                .ToList(),
+                            Defects = tc
+                                .Defects.Select(d => new DefectHierarchyDto
+                                {
+                                    Id = d.Id,
+                                    Title = d.Title,
+                                    Description = d.Description,
+                                    Severity = d.Severity,
+                                    Status = d.Status,
+                                    ExternalId = d.ExternalId,
+                                    AssignedUserId = d.AssignedUserId,
+                                    ResolutionNotes = d.ResolutionNotes
+                                })
+                                .ToList()
+                        })
+                        .ToList()
+                })
+                .ToList();
         }
     }
 }

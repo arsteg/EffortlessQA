@@ -1,5 +1,6 @@
 ﻿using EffortlessQA.Api.Services.Interface;
 using EffortlessQA.Data.Dtos;
+using EffortlessQA.Data.Dtos.EffortlessQA.Data.Dtos;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EffortlessQA.Api.Extensions
@@ -338,6 +339,50 @@ namespace EffortlessQA.Api.Extensions
                 )
                 .WithName("RemoveUserFromProject")
                 .RequireAuthorization("AdminOnly")
+                .WithTags(PROJECT_TAG)
+                .WithMetadata();
+
+            app.MapGet(
+                    "/api/v1/projects/{projectId}/hierarchy",
+                    async (Guid projectId, IProjectService projectService, HttpContext context) =>
+                    {
+                        try
+                        {
+                            var tenantId = context.User.FindFirst("TenantId")?.Value;
+                            if (string.IsNullOrEmpty(tenantId))
+                            {
+                                return Results.Unauthorized();
+                            }
+                            var hierarchy = await projectService.GetProjectHierarchyAsync(
+                                projectId
+                            );
+                            return Results.Ok(
+                                new ApiResponse<ProjectHierarchyDto>
+                                {
+                                    Data = hierarchy,
+                                    Meta = new
+                                    {
+                                        Message = "Project hierarchy retrieved successfully"
+                                    }
+                                }
+                            );
+                        }
+                        catch (Exception ex)
+                        {
+                            return Results.BadRequest(
+                                new ApiResponse<object>
+                                {
+                                    Error = new ErrorResponse
+                                    {
+                                        Code = "BadRequest",
+                                        Message = ex.Message
+                                    }
+                                }
+                            );
+                        }
+                    }
+                )
+                .WithName("GetProjectHierarchy")
                 .WithTags(PROJECT_TAG)
                 .WithMetadata();
         }

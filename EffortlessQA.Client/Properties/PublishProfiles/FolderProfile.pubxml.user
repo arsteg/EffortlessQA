@@ -3,4 +3,9 @@
 https://go.microsoft.com/fwlink/?LinkID=208121.
 -->
 <Project>
+  <PropertyGroup>
+    <_PublishTargetUrl>C:\Work\EffortlessQA\EffortlessQA.Client\bin\Release\net8.0\browser-wasm\publish\</_PublishTargetUrl>
+    <History>True|2025-06-14T04:11:03.5736320Z;</History>
+    <LastFailureDetails />
+  </PropertyGroup>
 </Project>

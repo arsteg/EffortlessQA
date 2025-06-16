@@ -3839,7 +3839,8 @@
         context._completeHide(relatedTarget);
       }
     }
-    static dataApiKeydownHandler(event) {
+      static data
+      downHandler(event) {
       // If not an UP | DOWN | ESCAPE key => not a dropdown command
       // If input/textarea && if key is other than ESCAPE => not a dropdown command
 

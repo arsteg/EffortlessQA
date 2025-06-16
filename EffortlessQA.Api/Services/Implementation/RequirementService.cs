@@ -410,7 +410,7 @@ namespace EffortlessQA.Api.Services.Implementation
                 TenantId = requirement.TenantId,
                 ParentRequirementId = requirement.ParentRequirementId,
                 TestCaseIds = requirement
-                    .RequirementTestCases?.Select(rt => rt.TestCaseId)
+                    .RequirementTestSuites?.Select(rt => rt.TestSuiteId)
                     .ToList(),
                 CreatedAt = requirement.CreatedAt,
                 UpdatedAt = requirement.ModifiedAt,
