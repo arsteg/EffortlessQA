@@ -28,6 +28,6 @@ namespace EffortlessQA.Data.Entities
         //[Index]
         public string TenantId { get; set; }
 
-        public JsonDocument? Preferences { get; set; } // JSONB for user-specific settings
+        public string? Preferences { get; set; } // JSONB for user-specific settings
     }
 }

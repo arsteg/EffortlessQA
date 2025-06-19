@@ -27,7 +27,7 @@ namespace EffortlessQA.Data.Entities
         [Required, MaxLength(20)]
         public string Action { get; set; } // e.g., "StatusChanged", "CommentAdded"
 
-        public JsonDocument? Details { get; set; } // JSONB for status changes, comments
+        public string? Details { get; set; } // JSONB for status changes, comments
 
         [Required, MaxLength(50)]
         // [Index]

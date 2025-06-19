@@ -29,7 +29,7 @@ namespace EffortlessQA.Data.Entities
         [MaxLength(1000)]
         public string? Comments { get; set; }
 
-        public JsonDocument? Attachments { get; set; }
+        public string Attachments { get; set; }
 
         [Required, MaxLength(50)]
         public string TenantId { get; set; }

@@ -175,9 +175,13 @@ namespace EffortlessQA.Api.Services.Implementation
                     EntityId = Guid.Parse(tenantId),
                     UserId = user.Id,
                     TenantId = tenantId,
-                    Details = JsonDocument.Parse(
-                        JsonSerializer.Serialize(new { Name = tenant.Name, Email = tenant.Email })
-                    ),
+                    Details = JsonDocument
+                        .Parse(
+                            JsonSerializer.Serialize(
+                                new { Name = tenant.Name, Email = tenant.Email }
+                            )
+                        )
+                        .ToString(),
                     CreatedAt = DateTime.UtcNow
                 };
                 await _context.AuditLogs.AddAsync(tenantAuditLog);
@@ -191,9 +195,13 @@ namespace EffortlessQA.Api.Services.Implementation
                     UserId = user.Id,
                     //ProjectId = Guid.Empty,
                     TenantId = tenantId,
-                    Details = JsonDocument.Parse(
-                        JsonSerializer.Serialize(new { Email = user.Email, Name = user.FirstName })
-                    ),
+                    Details = JsonDocument
+                        .Parse(
+                            JsonSerializer.Serialize(
+                                new { Email = user.Email, Name = user.FirstName }
+                            )
+                        )
+                        .ToString(),
                     CreatedAt = DateTime.UtcNow
                 };
                 await _context.AuditLogs.AddAsync(userAuditLog);
@@ -606,9 +614,11 @@ namespace EffortlessQA.Api.Services.Implementation
                 EntityId = userId,
                 UserId = userId,
                 TenantId = user.TenantId,
-                Details = JsonDocument.Parse(
-                    JsonSerializer.Serialize(new { Message = "User changed their password" })
-                ),
+                Details = JsonDocument
+                    .Parse(
+                        JsonSerializer.Serialize(new { Message = "User changed their password" })
+                    )
+                    .ToString(),
                 CreatedAt = DateTime.UtcNow
             };
             await _context.AuditLogs.AddAsync(auditLog);

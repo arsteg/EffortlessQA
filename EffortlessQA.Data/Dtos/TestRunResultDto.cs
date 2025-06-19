@@ -11,7 +11,7 @@ namespace EffortlessQA.Data.Dtos
         public Guid TestRunId { get; set; }
         public TestExecutionStatus Status { get; set; }
         public string? Comments { get; set; }
-        public JsonDocument? Attachments { get; set; }
+        public string Attachments { get; set; }
         public string TenantId { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }

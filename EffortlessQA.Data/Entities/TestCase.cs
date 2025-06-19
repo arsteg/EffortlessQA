@@ -15,9 +15,9 @@ namespace EffortlessQA.Data.Entities
 
         public string? Description { get; set; }
 
-        public JsonDocument? Steps { get; set; } // JSONB for AI-ready metadata
+        public string Steps { get; set; } // JSONB for AI-ready metadata
 
-        public JsonDocument? ExpectedResults { get; set; }
+        public string ExpectedResults { get; set; }
 
         public string? ActualResult { get; set; }
 

@@ -59,7 +59,7 @@ namespace EffortlessQA.Api.Services.Implementation
                 TestRunId = testRunId,
                 Status = dto.Status,
                 Comments = dto.Comments,
-                Attachments = dto.Attachments != null ? JsonDocument.Parse(dto.Attachments) : null,
+                Attachments = dto.Attachments,
                 TenantId = tenantId,
                 CreatedAt = DateTime.UtcNow,
                 ModifiedAt = DateTime.UtcNow
@@ -172,9 +172,7 @@ namespace EffortlessQA.Api.Services.Implementation
             testRunResult.Status = dto.Status ?? testRunResult.Status;
             testRunResult.Comments = dto.Comments ?? testRunResult.Comments;
             testRunResult.Attachments =
-                dto.Attachments != null
-                    ? JsonDocument.Parse(dto.Attachments)
-                    : testRunResult.Attachments;
+                dto.Attachments != null ? dto.Attachments : testRunResult.Attachments;
             testRunResult.ModifiedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
@@ -224,9 +222,7 @@ namespace EffortlessQA.Api.Services.Implementation
                 testRunResult.Status = update.Status ?? testRunResult.Status;
                 testRunResult.Comments = update.Comments ?? testRunResult.Comments;
                 testRunResult.Attachments =
-                    update.Attachments != null
-                        ? JsonDocument.Parse(update.Attachments)
-                        : testRunResult.Attachments;
+                    update.Attachments != null ? update.Attachments : testRunResult.Attachments;
                 testRunResult.ModifiedAt = DateTime.UtcNow;
 
                 updatedDtos.Add(

@@ -3,6 +3,7 @@ using System;
 using EffortlessQA.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EffortlessQA.Data.Migrations
 {
     [DbContext(typeof(EffortlessQAContext))]
-    partial class EffortlessQAContextModelSnapshot : ModelSnapshot
+    [Migration("20250619033515_changedJsonDocDataTypeToString")]
+    partial class changedJsonDocDataTypeToString
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

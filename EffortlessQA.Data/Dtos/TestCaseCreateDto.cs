@@ -12,9 +12,9 @@ namespace EffortlessQA.Data.Dtos
         [MaxLength(1000)]
         public string? Description { get; set; }
 
-        public JsonDocument? Steps { get; set; }
+        public string Steps { get; set; }
 
-        public JsonDocument? ExpectedResults { get; set; }
+        public string ExpectedResults { get; set; }
 
         [Required, MaxLength(20)]
         [RegularExpression("High|Medium|Low")]

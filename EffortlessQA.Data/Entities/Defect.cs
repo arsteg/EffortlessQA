@@ -25,7 +25,7 @@ namespace EffortlessQA.Data.Entities
         // [Index]
         public DefectStatus Status { get; set; }
 
-        public JsonDocument? Attachments { get; set; }
+        public string Attachments { get; set; }
 
         [MaxLength(100)]
         public string? ExternalId { get; set; } // For Jira/GitHub
