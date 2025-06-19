@@ -24,7 +24,6 @@ namespace EffortlessQA.Data.Entities
 
         public long? Phone { get; set; } // Use long to handle all number lengths
 
-        [MaxLength(500)]
         public string? Description { get; set; }
 
         [MaxLength(255)]

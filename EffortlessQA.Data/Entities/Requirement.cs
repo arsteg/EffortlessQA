@@ -11,8 +11,6 @@ namespace EffortlessQA.Data.Entities
 
         [Required, MaxLength(200)]
         public string Title { get; set; }
-
-        [MaxLength(1000)]
         public string? Description { get; set; }
 
         public string[]? Tags { get; set; } // Stored as text[] in PostgreSQL

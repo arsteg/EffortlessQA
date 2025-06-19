@@ -188,7 +188,7 @@
                             }
                             else
                             {
-                                @context.Description
+                                <div>@((MarkupString)context.Description)</div>
                             }
                         </MudTd>
                         <MudTd>
@@ -395,7 +395,7 @@
                     Margin="Margin.Normal"
                     HelperText="Enter a unique test suite name (min 3 characters)"
                     Class="mud-input-rounded" />
-                    <MudTextField T="string"
+                    @* <MudTextField T="string"
                     Label="Description"
                     @bind-Value="_newTestSuite.Description"
                     Required="true"
@@ -405,7 +405,8 @@
                     Clearable="true"
                     Margin="Margin.Normal"
                     HelperText="Describe the test suite in detail"
-                    Class="mud-input-rounded" />
+                    Class="mud-input-rounded" /> *@
+                    <TinyMceEditor @bind-Value="@_newTestSuite.Description" />
                     <MudSelect T="Guid?"
                                Label="Requirement"
                                @bind-Value="_newTestSuite.RequirementId"
@@ -449,7 +450,7 @@
                     Margin="Margin.Normal"
                     HelperText="Enter a unique test suite name (min 3 characters)"
                     Class="mud-input-rounded" />
-                    <MudTextField T="string"
+                    @* <MudTextField T="string"
                     Label="Description"
                     @bind-Value="_editTestSuite.Description"
                     Required="true"
@@ -459,7 +460,9 @@
                     Clearable="true"
                     Margin="Margin.Normal"
                     HelperText="Describe the test suite in detail"
-                    Class="mud-input-rounded" />
+                    Class="mud-input-rounded" /> *@
+                    <TinyMceEditor @bind-Value="@_editTestSuite.Description" />
+
                     <MudSelect T="Guid?"
                                Label="Requirement"
                                @bind-Value="_editTestSuite.RequirementId"

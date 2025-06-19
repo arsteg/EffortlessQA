@@ -13,7 +13,6 @@ namespace EffortlessQA.Data.Entities
         // [Index(IsUnique = true)]
         public string Name { get; set; } // e.g., "CreateTestCase", "DeleteProject"
 
-        [MaxLength(500)]
         public string? Description { get; set; }
 
         // Navigation property

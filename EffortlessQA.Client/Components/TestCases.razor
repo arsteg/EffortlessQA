@@ -188,7 +188,7 @@
                             }
                             else
                             {
-                                @context.Description
+                                <div>@((MarkupString)context.Description)</div>
                             }
                         </MudTd>
                         <MudTd>
@@ -427,7 +427,7 @@
                                   Margin="Margin.Normal"
                                   HelperText="Enter a unique test case title (min 3 characters)"
                                   Class="mud-input-rounded" />
-                    <MudTextField T="string"
+                    @* <MudTextField T="string"
                                   Label="Description"
                                   @bind-Value="_newTestCase.Description"
                                   Lines="5"
@@ -435,7 +435,9 @@
                                   Clearable="true"
                                   Margin="Margin.Normal"
                                   HelperText="Describe the test case in detail"
-                                  Class="mud-input-rounded" />
+                                  Class="mud-input-rounded" /> *@
+                    <TinyMceEditor @bind-Value="@_newTestCase.Description" />
+
                     <MudTextField T="string"
                                   Label="Steps"
                                   @bind-Value="_newTestCase.Steps"
@@ -592,7 +594,7 @@
                                   Margin="Margin.Normal"
                                   HelperText="Enter a unique test case title (min 3 characters)"
                                   Class="mud-input-rounded" />
-                    <MudTextField T="string"
+                   @*  <MudTextField T="string"
                                   Label="Description"
                                   @bind-Value="_editTestCase.Description"
                                   Lines="5"
@@ -600,7 +602,8 @@
                                   Clearable="true"
                                   Margin="Margin.Normal"
                                   HelperText="Describe the test case in detail"
-                                  Class="mud-input-rounded" />
+                                  Class="mud-input-rounded" /> *@
+                    <TinyMceEditor @bind-Value="@_editTestCase.Description" />
                     <MudTextField T="string"
                                   Label="Steps"
                                   @bind-Value="_editTestCase.Steps"
