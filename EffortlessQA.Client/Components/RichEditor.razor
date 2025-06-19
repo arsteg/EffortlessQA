@@ -1,0 +1,30 @@
+﻿@page "/richeditor"
+
+@using MudBlazor
+
+<MudCard>
+    <MudCardContent>
+        <MudText Typo="Typo.h6">Rich Text Editor with TinyMCE</MudText>
+        <TinyMceEditor @bind-Value="@richContent" />
+    </MudCardContent>
+    <MudCardActions>
+        <MudButton OnClick="@ShowContent" Variant="Variant.Filled" Color="Color.Primary">Show Content</MudButton>
+    </MudCardActions>
+</MudCard>
+
+<MudDialog @bind-IsVisible="_showDialog">
+    <MudDialogTitle>Editor Content</MudDialogTitle>
+    <MudDialogContent>
+        <div>@(new MarkupString(richContent))</div>
+    </MudDialogContent>
+</MudDialog>
+
+@code {
+    private string richContent = "<p>Welcome to TinyMCE in Blazor!</p>";
+    private bool _showDialog = false;
+
+    private void ShowContent()
+    {
+        _showDialog = true;
+    }
+}
