@@ -25,6 +25,6 @@ namespace EffortlessQA.Data.Entities
         //[Index]
         public string TenantId { get; set; }
 
-        public string Details { get; set; } // JSONB for additional context
+        public JsonDocument? Details { get; set; } // JSONB for additional context
     }
 }

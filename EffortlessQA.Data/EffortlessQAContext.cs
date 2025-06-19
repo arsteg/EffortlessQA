@@ -258,7 +258,7 @@ namespace EffortlessQA.Data
                                 EntityType = entityType.Name,
                                 EntityId = GetEntityId(entityType, entry.Entity),
                                 TenantId = tenantId,
-                                Details = details.ToString(),
+                                Details = JsonDocument.Parse(JsonSerializer.Serialize(details)),
                                 CreatedBy = currentUserId ?? Guid.Empty,
                                 CreatedAt = DateTime.UtcNow
                             }
