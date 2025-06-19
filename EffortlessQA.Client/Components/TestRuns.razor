@@ -174,7 +174,7 @@
                             }
                             else
                             {
-                                <div>@((MarkupString)context.Description)</div>
+                                <MudTd><div>@((MarkupString)context.Description)</div></MudTd>
                             }
                         </MudTd>
                         <MudTd>
@@ -275,7 +275,10 @@
                                   Margin="Margin.Normal"
                                   HelperText="Describe the test run in detail"
                                   Class="mud-input-rounded" /> *@
-                    <TinyMceEditor @bind-Value="@_newTestRun.Description" />
+                    <MudText Typo="Typo.subtitle1">
+                        Description
+                        <TinyMceEditor @bind-Value="@_newTestRun.Description" />
+                    </MudText>
                     <MudSelect T="Guid?"
                                Label="Assigned Tester"
                                @bind-Value="_newTestRun.AssignedTesterId"
@@ -345,7 +348,10 @@
                                   Margin="Margin.Normal"
                                   HelperText="Describe the test run in detail"
                                   Class="mud-input-rounded" /> *@
-                    <TinyMceEditor @bind-Value="@_editTestRun.Description" />
+                    <MudText Typo="Typo.subtitle1">
+                        Description
+                        <TinyMceEditor @bind-Value="@_editTestRun.Description" />
+                    </MudText>
                     @*<MudSelect T="Guid?"
                                Label="Assigned Tester"
                                @bind-Value="_editTestRun.AssignedTesterId"

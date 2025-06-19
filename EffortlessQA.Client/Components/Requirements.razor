@@ -187,7 +187,7 @@
                             }
                             else
                             {
-                                <div>@((MarkupString)context.Description)</div>
+                                <MudTd><div>@((MarkupString)context.Description)</div></MudTd>
                             }
                         </MudTd>
                         <MudTd>
@@ -279,7 +279,8 @@
                                         }
                                         else
                                         {
-                                            @child.Description
+                                            @* @child.Description *@
+                                            <MudTd><div>@((MarkupString)child.Description)</div></MudTd>
                                         }
                                     </td>
                                     <td style="vertical-align: middle;">
@@ -398,7 +399,10 @@
                                   HelperText="Describe the requirement in detail"
                                   Class="mud-input-rounded" /> *@
 
-                    <TinyMceEditor @bind-Value="@_newRequirement.Description" />
+                    <MudText Typo="Typo.subtitle1">
+                        Description
+                        <TinyMceEditor @bind-Value="@_newRequirement.Description" />
+                    </MudText>
                     <MudTextField T="string"
                                   Label="Tags"
                                   @bind-Value="_tagsInput"
@@ -463,7 +467,11 @@
                                   Margin="Margin.Normal"
                                   HelperText="Describe the requirement in detail"
                                   Class="mud-input-rounded" /> *@
-                    <TinyMceEditor @bind-Value="@_editRequirement.Description" />
+
+                    <MudText Typo="Typo.subtitle1">
+                        Description
+                        <TinyMceEditor @bind-Value="@_editRequirement.Description" />
+                    </MudText>
                     @*<MudTextField T="string"
                                   Label="Tags"
                                   @bind-Value="_editTagsInput"
@@ -1219,7 +1227,8 @@
             }
             else
             {
-                @child.Description
+                // @child.Description
+                <MudTd><div>@((MarkupString)child.Description)</div></MudTd>
             }
             </td>
             <td>

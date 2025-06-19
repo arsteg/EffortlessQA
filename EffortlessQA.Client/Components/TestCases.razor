@@ -188,7 +188,9 @@
                             }
                             else
                             {
-                                <div>@((MarkupString)context.Description)</div>
+                            <MudTd>
+                                    <div>@((MarkupString)context.Description)</div>
+                            </MudTd>
                             }
                         </MudTd>
                         <MudTd>
@@ -244,7 +246,10 @@
                             }
                             else
                             {
-                                @context.Steps
+                                @* @context.Steps *@
+                                <MudTd>    
+                                    <div>@((MarkupString)context.Steps)</div>
+                                </MudTd>
                             }
                         </MudTd>
                         <MudTd>
@@ -259,7 +264,8 @@
                             }
                             else
                             {
-                                @context.ExpectedResults
+                                @* @context.ExpectedResults *@
+                                <MudTd><div>@((MarkupString)context.ExpectedResults)</div></MudTd>
                             }
                         </MudTd>
                         <MudTd>
@@ -295,7 +301,8 @@
                             }
                             else
                             {
-                                @context.Precondition
+                                @* @context.Precondition *@
+                                <MudTd><div>@((MarkupString)context.Precondition)</div></MudTd>
                             }
                         </MudTd>
                         <MudTd>
@@ -310,7 +317,8 @@
                             }
                             else
                             {
-                                @context.ActualResult
+                                @* @context.ActualResult *@
+                                <MudTd><div>@((MarkupString)context.ActualResult)</div></MudTd>
                             }
                         </MudTd>
                         <MudTd>
@@ -343,7 +351,9 @@
                                 @context.TestData
                             }
                         </MudTd>
-                        <MudTd>@context.Screenshot</MudTd>
+                        @* <MudTd>@context.Screenshot</MudTd> *@
+
+                        <MudTd><div>@((MarkupString)context.Screenshot)</div></MudTd>
                         <MudTd Style="display: flex; justify-content: center; gap: 8px; vertical-align: middle;">
                             @if (context.IsEditing)
                             {
@@ -415,6 +425,22 @@
             <MudItem xs="12">
                 <MudText Typo="Typo.h6" Color="Color.Primary" Class="mb-4">Create New Test Case</MudText>
                 <MudForm @ref="_form" @bind-IsValid="_formIsValid" Class="d-flex flex-column gap-6">
+                    <MudSelect T="Guid"
+                               Label="Test Suite"
+                               @bind-Value="_newTestCase.TestSuiteId"
+                               Required="true"
+                               RequiredError="Test Suite is required"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Normal"
+                               Class="mud-input-rounded"
+                               AnchorOrigin="Origin.BottomCenter"
+                               TransformOrigin="Origin.TopCenter"
+                               ToStringFunc="@(id => _testSuites?.FirstOrDefault(ts => ts.Id == id)?.Name ?? "Unknown Test Suite")">
+                        @foreach (var testSuite in _testSuites)
+                        {
+                            <MudSelectItem Value="@testSuite.Id">@(testSuite.Name ?? $"Test Suite ID: {testSuite.Id}")</MudSelectItem>
+                        }
+                    </MudSelect>
                     <MudTextField T="string"
                                   Label="Test Case Title"
                                   @bind-Value="_newTestCase.Title"
@@ -436,9 +462,13 @@
                                   Margin="Margin.Normal"
                                   HelperText="Describe the test case in detail"
                                   Class="mud-input-rounded" /> *@
-                    <TinyMceEditor @bind-Value="@_newTestCase.Description" />
-
-                    <MudTextField T="string"
+                    @* <TinyMceEditor @bind-Value="@_newTestCase.Description" /> *@
+                        <MudText Typo="Typo.subtitle1">
+                            Description
+                        <TinyMceEditor @bind-Value="@_newTestCase.Description" />
+                        </MudText>
+                    
+                    @*<MudTextField T="string"
                                   Label="Steps"
                                   @bind-Value="_newTestCase.Steps"
                                   Lines="5"
@@ -446,8 +476,12 @@
                                   Clearable="true"
                                   Margin="Margin.Normal"
                                   HelperText='Enter test steps in JSON format (e.g., ["step1", "step2"])'
-                                  Class="mud-input-rounded" />
-                    <MudTextField T="string"
+                                  Class="mud-input-rounded" />*@
+                    <MudText Typo="Typo.subtitle1">
+                        Steps
+                        <TinyMceEditor @bind-Value="@_newTestCase.Steps" />
+                    </MudText>
+                    @*<MudTextField T="string"
                                   Label="Expected Results"
                                   @bind-Value="_newTestCase.ExpectedResults"
                                   Lines="5"
@@ -455,8 +489,12 @@
                                   Clearable="true"
                                   Margin="Margin.Normal"
                                   HelperText='Enter expected results in JSON format (e.g., {"step1": "description"})'
-                                  Class="mud-input-rounded" />
-                    <MudTextField T="string"
+                                  Class="mud-input-rounded" />*@
+                    <MudText Typo="Typo.subtitle1">
+                        Expected Results
+                        <TinyMceEditor @bind-Value="@_newTestCase.ExpectedResults" />
+                    </MudText>
+                    @*<MudTextField T="string"
                                   Label="Actual Result"
                                   @bind-Value="_newTestCase.ActualResult"
                                   Lines="3"
@@ -464,7 +502,11 @@
                                   Clearable="true"
                                   Margin="Margin.Normal"
                                   HelperText="Enter the actual result of the test"
-                                  Class="mud-input-rounded" />
+                                  Class="mud-input-rounded" />*@
+                    <MudText Typo="Typo.subtitle1">
+                        Actual Result
+                        <TinyMceEditor @bind-Value="@_newTestCase.ActualResult" />
+                    </MudText>
                     <MudTextField T="string"
                                   Label="Comments"
                                   @bind-Value="_newTestCase.Comments"
@@ -483,7 +525,7 @@
                                   Margin="Margin.Normal"
                                   HelperText="Enter test data used"
                                   Class="mud-input-rounded" />
-                    <MudTextField T="string"
+                    @*<MudTextField T="string"
                                   Label="Precondition"
                                   @bind-Value="_newTestCase.Precondition"
                                   Lines="3"
@@ -491,7 +533,11 @@
                                   Clearable="true"
                                   Margin="Margin.Normal"
                                   HelperText="Enter any preconditions for the test"
-                                  Class="mud-input-rounded" />
+                                  Class="mud-input-rounded" />*@
+                    <MudText Typo="Typo.subtitle1">
+                        Precondition
+                        <TinyMceEditor @bind-Value="@_newTestCase.Precondition" />
+                    </MudText>
                     <MudSelect T="TestExecutionStatus?"
                                Label="Status"
                                @bind-Value="_newTestCase.Status"
@@ -504,14 +550,18 @@
                             <MudSelectItem Value="@((TestExecutionStatus?)status)">@status</MudSelectItem>
                         }
                     </MudSelect>
-                    <MudTextField T="string"
+                    @*<MudTextField T="string"
                                   Label="Screenshot"
                                   @bind-Value="_newTestCase.Screenshot"
                                   Variant="Variant.Outlined"
                                   Clearable="true"
                                   Margin="Margin.Normal"
                                   HelperText="Enter screenshot URL or reference"
-                                  Class="mud-input-rounded" />
+                                  Class="mud-input-rounded" />*@
+                    <MudText Typo="Typo.subtitle1">
+                        Screenshot
+                        <TinyMceEditor @bind-Value="@_newTestCase.Screenshot" />
+                    </MudText>
                     <MudSelect T="PriorityLevel"
                                Label="Priority"
                                @bind-Value="_newTestCase.Priority"
@@ -534,22 +584,6 @@
                                   Margin="Margin.Normal"
                                   HelperText="Enter tags separated by commas"
                                   Class="mud-input-rounded" />
-                    <MudSelect T="Guid"
-                               Label="Test Suite"
-                               @bind-Value="_newTestCase.TestSuiteId"
-                               Required="true"
-                               RequiredError="Test Suite is required"
-                               Variant="Variant.Outlined"
-                               Margin="Margin.Normal"
-                               Class="mud-input-rounded"
-                               AnchorOrigin="Origin.BottomCenter"
-                               TransformOrigin="Origin.TopCenter"
-                               ToStringFunc="@(id => _testSuites?.FirstOrDefault(ts => ts.Id == id)?.Name ?? "Unknown Test Suite")">
-                        @foreach (var testSuite in _testSuites)
-                        {
-                            <MudSelectItem Value="@testSuite.Id">@(testSuite.Name ?? $"Test Suite ID: {testSuite.Id}")</MudSelectItem>
-                        }
-                    </MudSelect>
                     <MudSelect T="Guid?"
                                Label="Folder"
                                @bind-Value="_newTestCase.FolderId"
@@ -603,8 +637,11 @@
                                   Margin="Margin.Normal"
                                   HelperText="Describe the test case in detail"
                                   Class="mud-input-rounded" /> *@
-                    <TinyMceEditor @bind-Value="@_editTestCase.Description" />
-                    <MudTextField T="string"
+                    <MudText Typo="Typo.subtitle1">
+                        Description
+                        <TinyMceEditor @bind-Value="@_editTestCase.Description" />
+                    </MudText>
+                    @*<MudTextField T="string"
                                   Label="Steps"
                                   @bind-Value="_editTestCase.Steps"
                                   Lines="5"
@@ -621,8 +658,16 @@
                                   Clearable="true"
                                   Margin="Margin.Normal"
                                   HelperText='Enter expected results in JSON format (e.g., {"step1": "description"})'
-                                  Class="mud-input-rounded" />
-                    <MudTextField T="string"
+                                  Class="mud-input-rounded" />*@
+                    <MudText Typo="Typo.subtitle1">
+                        Steps
+                        <TinyMceEditor @bind-Value="@_editTestCase.Steps" />
+                    </MudText>
+                    <MudText Typo="Typo.subtitle1">
+                        Expected Results
+                        <TinyMceEditor @bind-Value="@_editTestCase.ExpectedResults" />
+                    </MudText>
+                    @*<MudTextField T="string"
                                   Label="Actual Result"
                                   @bind-Value="_editTestCase.ActualResult"
                                   Lines="3"
@@ -630,7 +675,11 @@
                                   Clearable="true"
                                   Margin="Margin.Normal"
                                   HelperText="Enter the actual result of the test"
-                                  Class="mud-input-rounded" />
+                                  Class="mud-input-rounded" />*@
+                    <MudText Typo="Typo.subtitle1">
+                        Actual Result
+                        <TinyMceEditor @bind-Value="@_editTestCase.ActualResult" />
+                    </MudText>
                     <MudTextField T="string"
                                   Label="Comments"
                                   @bind-Value="_editTestCase.Comments"
@@ -649,7 +698,7 @@
                                   Margin="Margin.Normal"
                                   HelperText="Enter test data used"
                                   Class="mud-input-rounded" />
-                    <MudTextField T="string"
+                    @*<MudTextField T="string"
                                   Label="Precondition"
                                   @bind-Value="_editTestCase.Precondition"
                                   Lines="3"
@@ -657,7 +706,11 @@
                                   Clearable="true"
                                   Margin="Margin.Normal"
                                   HelperText="Enter any preconditions for the test"
-                                  Class="mud-input-rounded" />
+                                  Class="mud-input-rounded" />*@
+                    <MudText Typo="Typo.subtitle1">
+                        Precondition
+                        <TinyMceEditor @bind-Value="@_editTestCase.Precondition" />
+                    </MudText>
                     <MudSelect T="TestExecutionStatus?"
                                Label="Status"
                                @bind-Value="_editTestCase.Status"
@@ -670,14 +723,18 @@
                             <MudSelectItem Value="@((TestExecutionStatus?)status)">@status</MudSelectItem>
                         }
                     </MudSelect>
-                    <MudTextField T="string"
+                    @*<MudTextField T="string"
                                   Label="Screenshot"
                                   @bind-Value="_editTestCase.Screenshot"
                                   Variant="Variant.Outlined"
                                   Clearable="true"
                                   Margin="Margin.Normal"
                                   HelperText="Enter screenshot URL or reference"
-                                  Class="mud-input-rounded" />
+                                  Class="mud-input-rounded" />*@
+                    <MudText Typo="Typo.subtitle1">
+                        Screenshot
+                        <TinyMceEditor @bind-Value="@_editTestCase.Screenshot" />
+                    </MudText>
                     <MudSelect T="PriorityLevel"
                                Label="Priority"
                                @bind-Value="_editTestCase.Priority"

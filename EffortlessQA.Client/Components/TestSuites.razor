@@ -188,7 +188,7 @@
                             }
                             else
                             {
-                                <div>@((MarkupString)context.Description)</div>
+                                <MudTd><div>@((MarkupString)context.Description)</div></MudTd>
                             }
                         </MudTd>
                         <MudTd>
@@ -284,7 +284,7 @@
                                         }
                                         else
                                         {
-                                            @child.Description
+                                            <div>@((MarkupString)child.Description)</div>
                                         }
                                     </td>
                                     <td style="vertical-align: middle;">
@@ -406,7 +406,10 @@
                     Margin="Margin.Normal"
                     HelperText="Describe the test suite in detail"
                     Class="mud-input-rounded" /> *@
-                    <TinyMceEditor @bind-Value="@_newTestSuite.Description" />
+                    <MudText Typo="Typo.subtitle1">
+                        Description
+                        <TinyMceEditor @bind-Value="@_newTestSuite.Description" />
+                    </MudText>
                     <MudSelect T="Guid?"
                                Label="Requirement"
                                @bind-Value="_newTestSuite.RequirementId"
@@ -461,7 +464,10 @@
                     Margin="Margin.Normal"
                     HelperText="Describe the test suite in detail"
                     Class="mud-input-rounded" /> *@
-                    <TinyMceEditor @bind-Value="@_editTestSuite.Description" />
+                    <MudText Typo="Typo.subtitle1">
+                        Description
+                        <TinyMceEditor @bind-Value="@_editTestSuite.Description" />
+                    </MudText>
 
                     <MudSelect T="Guid?"
                                Label="Requirement"
@@ -1341,7 +1347,7 @@
             }
             else
             {
-                @child.Description
+                <div>@((MarkupString)child.Description)</div>
             }
             </td>
             <td style="vertical-align: middle;">
