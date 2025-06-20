@@ -133,9 +133,13 @@ namespace EffortlessQA.Api.Services.Implementation
 				.Where(ts => ts.ProjectId == projectId && ts.TenantId == tenantId && !ts.IsDeleted)
 				.ToListAsync();
 
+			var requirementTestSuites = await _context.RequirementTestSuites
+				.Where(rts => rts.TestSuite.TenantId == tenantId && !rts.TestSuite.IsDeleted)
+				.ToListAsync();
+
 			var testSuiteDtos = topLevelTestSuites
-				.Select(ts => MapToDto(ts,allTestSuites))
-				.ToList();
+				  .Select(ts => MapToDto(ts,allTestSuites,requirementTestSuites))
+				  .ToList();
 
 			return new PagedResult<TestSuiteDto>
 			{
@@ -229,9 +233,13 @@ namespace EffortlessQA.Api.Services.Implementation
 				.Where(ts => ts.TenantId == tenantId && !ts.IsDeleted)
 				.ToListAsync();
 
+			var requirementTestSuites = await _context.RequirementTestSuites
+				.Where(rts => rts.TestSuite.TenantId == tenantId && !rts.TestSuite.IsDeleted)
+				.ToListAsync();
+
 			var testSuiteDtos = topLevelTestSuites
-				.Select(ts => MapToDto(ts,allTestSuites))
-				.ToList();
+				  .Select(ts => MapToDto(ts,allTestSuites,requirementTestSuites))
+				  .ToList();
 
 			return new PagedResult<TestSuiteDto>
 			{
@@ -410,6 +418,27 @@ namespace EffortlessQA.Api.Services.Implementation
 				Children = allTestSuites
 					.Where(ts => ts.ParentSuiteId == testSuite.Id && !ts.IsDeleted)
 					.Select(ts => MapToDto(ts,allTestSuites))
+					.ToList()
+			};
+		}
+		private TestSuiteDto MapToDto( TestSuite testSuite,List<TestSuite> allTestSuites,List<RequirementTestSuite> requirementTestSuites )
+		{
+			return new TestSuiteDto
+			{
+				Id = testSuite.Id,
+				Name = testSuite.Name,
+				Description = testSuite.Description,
+				ProjectId = testSuite.ProjectId,
+				TenantId = testSuite.TenantId,
+				IsEditing = false, // Default value, adjust as needed
+				CreatedAt = testSuite.CreatedAt,
+				ModifiedAt = testSuite.ModifiedAt,
+				ParentSuiteId = testSuite.ParentSuiteId,
+				RequirementId = requirementTestSuites
+					.FirstOrDefault(rts => rts.TestSuiteId == testSuite.Id)?.RequirementId,
+				Children = allTestSuites
+					.Where(ts => ts.ParentSuiteId == testSuite.Id && !ts.IsDeleted)
+					.Select(ts => MapToDto(ts,allTestSuites,requirementTestSuites))
 					.ToList()
 			};
 		}

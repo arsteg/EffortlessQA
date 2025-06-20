@@ -43,7 +43,7 @@ public class TestCaseService : ITestCaseService
                 throw new Exception("Test folder not found.");
         }
 
-        var testCase = new TestCase
+		var testCase = new TestCase
         {
             Id = Guid.NewGuid(),
             Title = dto.Title,
@@ -421,8 +421,8 @@ public class TestCaseService : ITestCaseService
 
         testCase.Title = dto.Title ?? testCase.Title;
         testCase.Description = dto.Description ?? testCase.Description;
-        testCase.Steps = dto.Steps;
-        testCase.ExpectedResults = testCase.ExpectedResults;
+        testCase.Steps = dto.Steps ?? testCase.Steps;
+        testCase.ExpectedResults = dto.ExpectedResults ?? testCase.ExpectedResults;
 
         testCase.Priority = dto.Priority ?? testCase.Priority;
         testCase.Tags = dto.Tags ?? testCase.Tags;

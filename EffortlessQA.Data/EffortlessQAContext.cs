@@ -101,8 +101,8 @@ namespace EffortlessQA.Data
             }
 
             // JSONB mappings
-            modelBuilder.Entity<TestCase>().Property(t => t.Steps).HasColumnType("jsonb");
-            modelBuilder.Entity<TestCase>().Property(t => t.ExpectedResults).HasColumnType("jsonb");
+            //modelBuilder.Entity<TestCase>().Property(t => t.Steps).HasColumnType("jsonb");
+            //modelBuilder.Entity<TestCase>().Property(t => t.ExpectedResults).HasColumnType("jsonb");
             modelBuilder
                 .Entity<TestRunResult>()
                 .Property(t => t.Attachments)
