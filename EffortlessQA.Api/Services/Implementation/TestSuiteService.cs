@@ -376,31 +376,43 @@ namespace EffortlessQA.Api.Services.Implementation
 
 		public async Task UnlinkTestSuiteFromRequirementAsync(
 			Guid requirementId,
-			Guid projectId,
+			Guid projectId, // Kept for API consistency, but not used in query unless required
 			string tenantId,
-			Guid testSuiteId
-		)
-		{
-			var requirement = await _context.Requirements.FirstOrDefaultAsync(r =>
-				r.Id == requirementId
-				&& r.ProjectId == projectId
-				&& r.TenantId == tenantId
-				&& !r.IsDeleted
-			);
+			Guid testSuiteId )
+				{
+					// Query requirement, aligning with LinkTestSuiteToRequirementAsync
+					var requirement = await _context.Requirements.FirstOrDefaultAsync(r =>
+						r.Id == requirementId &&
+						r.TenantId == tenantId &&
+						!r.IsDeleted);
 
-			if (requirement == null)
-				throw new Exception("Requirement not found.");
+					if (requirement == null)
+						throw new Exception("Requirement not found.");
 
-			var link = await _context.RequirementTestSuites.FirstOrDefaultAsync(rts =>
-				rts.RequirementId == requirementId && rts.TestSuiteId == testSuiteId && !rts.IsDeleted
-			);
+					// Query the link
+					var link = await _context.RequirementTestSuites.FirstOrDefaultAsync(rts =>
+						rts.RequirementId == requirementId &&
+						rts.TestSuiteId == testSuiteId &&
+						!rts.IsDeleted);
 
-			if (link == null)
-				throw new Exception("Test suite is not linked to this requirement.");
+					if (link == null)
+						throw new Exception("Test suite is not linked to this requirement.");
 
-			link.IsDeleted = true;
-			link.ModifiedAt = DateTime.UtcNow;
-			await _context.SaveChangesAsync();
+					// Soft delete the link
+					link.IsDeleted = true;
+					link.ModifiedAt = DateTime.UtcNow;
+
+					// Ensure changes are saved
+					try
+					{
+						await _context.SaveChangesAsync();
+					}
+					catch (Exception ex)
+					{
+						// Log the exception (replace with your logging mechanism)
+						Console.WriteLine($"Error saving changes: {ex.Message}");
+						throw new Exception("Failed to unlink test suite from requirement.",ex);
+					}
 		}
 
 		private TestSuiteDto MapToDto( TestSuite testSuite,List<TestSuite> allTestSuites )
@@ -435,7 +447,7 @@ namespace EffortlessQA.Api.Services.Implementation
 				ModifiedAt = testSuite.ModifiedAt,
 				ParentSuiteId = testSuite.ParentSuiteId,
 				RequirementId = requirementTestSuites
-					.FirstOrDefault(rts => rts.TestSuiteId == testSuite.Id)?.RequirementId,
+					.FirstOrDefault(rts => rts.TestSuiteId == testSuite.Id && !rts.IsDeleted)?.RequirementId,
 				Children = allTestSuites
 					.Where(ts => ts.ParentSuiteId == testSuite.Id && !ts.IsDeleted)
 					.Select(ts => MapToDto(ts,allTestSuites,requirementTestSuites))

@@ -225,7 +225,8 @@
                                 <MudIconButton Icon="@Icons.Material.Filled.Link"
                                 Color="Color.Info"
                                 Size="Size.Small"
-                                OnClick="@(() => OpenLinkRequirementDialogAsync(context))" />
+                                OnClick="@(() => OpenLinkRequirementDialogAsync(context))"
+                                Disabled="@(context.RequirementId.HasValue)" />
                                 <MudIconButton Icon="@Icons.Material.Filled.LinkOff"
                                 Color="Color.Warning"
                                 Size="Size.Small"
@@ -321,7 +322,8 @@
                                             <MudIconButton Icon="@Icons.Material.Filled.Link"
                                             Color="Color.Info"
                                             Size="Size.Small"
-                                            OnClick="@(() => OpenLinkRequirementDialogAsync(child))" />
+                                            OnClick="@(() => OpenLinkRequirementDialogAsync(child))"
+                                            Disabled="@(child.RequirementId.HasValue)" />
                                             <MudIconButton Icon="@Icons.Material.Filled.LinkOff"
                                             Color="Color.Warning"
                                             Size="Size.Small"
@@ -1384,7 +1386,8 @@
                 <MudIconButton Icon="@Icons.Material.Filled.Link"
                                Color="Color.Info"
                                Size="Size.Small"
-                               OnClick="@(() => OpenLinkRequirementDialogAsync(child))" />
+                               OnClick="@(() => OpenLinkRequirementDialogAsync(child))"
+                               Disabled="@(child.RequirementId.HasValue)" />
                 <MudIconButton Icon="@Icons.Material.Filled.LinkOff"
                                Color="Color.Warning"
                                Size="Size.Small"
