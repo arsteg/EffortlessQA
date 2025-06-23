@@ -1,0 +1,43 @@
+﻿@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
+@inject HttpClient HttpClient
+
+<div id="@EditorId" style="height: @Height;"></div>
+
+@code {
+    [Parameter]
+    public string Value { get; set; }
+
+    [Parameter]
+    public EventCallback<string> ValueChanged { get; set; }
+
+    [Parameter]
+    public string EntityId { get; set; } = Guid.NewGuid().ToString();
+
+    [Parameter]
+    public string FieldName { get; set; } = "default";
+
+    [Parameter]
+    public string Height { get; set; } = "500px";
+
+    private string EditorId { get; } = $"tinymce-{Guid.NewGuid()}";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("initializeTinyMce", EditorId, Value, DotNetObjectReference.Create(this), EntityId, FieldName);
+        }
+    }
+
+    [JSInvokable]
+    public async Task UpdateValue(string content)
+    {
+        await ValueChanged.InvokeAsync(content);
+    }
+
+    public async Task DisposeAsync()
+    {
+        await JSRuntime.InvokeVoidAsync("destroyTinyMce", EditorId);
+    }
+}

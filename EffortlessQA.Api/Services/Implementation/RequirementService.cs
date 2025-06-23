@@ -2,6 +2,7 @@
 using EffortlessQA.Data;
 using EffortlessQA.Data.Dtos;
 using EffortlessQA.Data.Entities;
+using Ganss.Xss;
 using Microsoft.EntityFrameworkCore;
 
 namespace EffortlessQA.Api.Services.Implementation
@@ -10,11 +11,24 @@ namespace EffortlessQA.Api.Services.Implementation
     {
         private readonly EffortlessQAContext _context;
         private readonly IConfiguration _configuration;
+        private readonly AzureBlobStorageService _blobStorageService;
+        private readonly HtmlSanitizer _sanitizer;
+        private readonly ILogger<RequirementService> _logger;
 
-        public RequirementService(EffortlessQAContext context, IConfiguration configuration)
+        public RequirementService(
+            EffortlessQAContext context,
+            IConfiguration configuration,
+            AzureBlobStorageService blobStorageService,
+            ILogger<RequirementService> logger
+        )
         {
             _context = context;
             _configuration = configuration;
+            _blobStorageService = blobStorageService;
+            _sanitizer = new HtmlSanitizer();
+            _sanitizer.AllowedTags.Add("img");
+            _sanitizer.AllowedAttributes.Add("src");
+            _logger = logger;
         }
 
         public async Task<RequirementDto> CreateRequirementAsync(
@@ -34,7 +48,7 @@ namespace EffortlessQA.Api.Services.Implementation
             {
                 Id = Guid.NewGuid(),
                 Title = dto.Title,
-                Description = dto.Description,
+                Description = _sanitizer.Sanitize(dto.Description),
                 Tags = dto.Tags,
                 ProjectId = projectId,
                 TenantId = tenantId,
@@ -282,6 +296,24 @@ namespace EffortlessQA.Api.Services.Implementation
             if (requirement == null)
                 throw new Exception("Requirement not found.");
 
+            var newDescription = _sanitizer.Sanitize(dto.Description ?? requirement.Description);
+            try
+            {
+                await _blobStorageService.DeleteUnusedImagesAsync(
+                    newDescription,
+                    requirementId.ToString(),
+                    "Description"
+                );
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Failed to delete unused images for requirement {RequirementId}",
+                    requirementId
+                );
+            }
+
             requirement.Title = dto.Title ?? requirement.Title;
             requirement.Description = dto.Description ?? requirement.Description;
             requirement.Tags = dto.Tags ?? requirement.Tags;
@@ -317,6 +349,57 @@ namespace EffortlessQA.Api.Services.Implementation
 
             if (requirement == null)
                 throw new Exception("Requirement not found.");
+
+            // Delete images for the current requirement
+            try
+            {
+                await _blobStorageService.DeleteAllImagesForEntityAsync(
+                    requirementId.ToString(),
+                    "Description"
+                );
+                _logger.LogInformation(
+                    "Deleted images for requirement {RequirementId}",
+                    requirementId
+                );
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Failed to delete images for requirement {RequirementId}",
+                    requirementId
+                );
+            }
+
+            // Delete child requirements
+            var childRequirements = await _context
+                .Requirements.Where(r => r.ParentRequirementId == requirementId && !r.IsDeleted)
+                .ToListAsync();
+
+            foreach (var child in childRequirements)
+            {
+                try
+                {
+                    await _blobStorageService.DeleteAllImagesForEntityAsync(
+                        child.Id.ToString(),
+                        "Description"
+                    );
+                    _logger.LogInformation(
+                        "Deleted images for child requirement {ChildRequirementId}",
+                        child.Id
+                    );
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(
+                        ex,
+                        "Failed to delete images for child requirement {ChildRequirementId}",
+                        child.Id
+                    );
+                }
+                child.IsDeleted = true;
+                child.ModifiedAt = DateTime.UtcNow;
+            }
 
             requirement.IsDeleted = true;
             requirement.ModifiedAt = DateTime.UtcNow;
@@ -400,7 +483,7 @@ namespace EffortlessQA.Api.Services.Implementation
 
         private RequirementDto MapToDto(Requirement requirement, List<Requirement> allRequirements)
         {
-            return new RequirementDto
+            var dto = new RequirementDto
             {
                 Id = requirement.Id,
                 Title = requirement.Title,
@@ -419,6 +502,40 @@ namespace EffortlessQA.Api.Services.Implementation
                     .Select(r => MapToDto(r, allRequirements))
                     .ToList()
             };
+            //dto.Description = await _blobStorageService.ExtractAndSecureImageUrlsAsync(
+            //    dto.Description, requirement.Id.ToString(),
+            //    "Description"
+            //);
+            return dto;
+        }
+
+        private async Task<RequirementDto> MapToDtoAsync(
+            Requirement requirement,
+            List<Requirement> allRequirements
+        )
+        {
+            var dto = new RequirementDto
+            {
+                Id = requirement.Id,
+                Title = requirement.Title,
+                Description = requirement.Description,
+                Tags = requirement.Tags,
+                ProjectId = requirement.ProjectId,
+                TenantId = requirement.TenantId,
+                ParentRequirementId = requirement.ParentRequirementId,
+                TestCaseIds = requirement
+                    .RequirementTestSuites?.Select(rt => rt.TestSuiteId)
+                    .ToList(),
+                CreatedAt = requirement.CreatedAt,
+                UpdatedAt = requirement.ModifiedAt,
+                Children = allRequirements
+                    .Where(r => r.ParentRequirementId == requirement.Id)
+                    .Select(r => MapToDto(r, allRequirements))
+                    .ToList()
+            };
+
+            //dto.Description = await _blobStorageService.ExtractAndSecureImageUrlsAsync(dto.Description, requirement.Id.ToString(), "Description");
+            return dto;
         }
     }
 }

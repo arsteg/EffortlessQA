@@ -13,7 +13,7 @@
     <!-- Inside <head> of wwwroot/index.html -->
     <script src="https://cdn.tiny.cloud/1/xmzulretoo1aqn4flc0pncsn3084668glqlagzoh822xaizd/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
     <script src="js/tinymce-blazor.js"></script>
-
+    <script src="js/tinymce.js"></script>
 
 </head>
 <body>
@@ -29,7 +29,42 @@
             link.click();
             document.body.removeChild(link);
         };     
-        
+
+        window.initializeTinyMce = function (editorId, dotNetRef) {
+            tinymce.init({
+                selector: `#${editorId}`,
+                plugins: 'image link lists table paste wordcount advlist autolink charmap code emoticons fullscreen hr media pagebreak preview searchreplace visualblocks visualchars',
+                toolbar: 'undo redo | formatselect | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image table | code preview',
+                menubar: 'file edit view insert format tools table help',
+                height: 500,
+                images_upload_handler: async function (blobInfo, success, failure) {
+                    try {
+                        const blob = blobInfo.blobUri();
+                        const fileName = blobInfo.filename();
+                        await dotNetRef.invokeMethodAsync('HandleImageUpload', blob, fileName);
+                    } catch (error) {
+                        failure('Image upload failed: ' + error.message);
+                    }
+                },
+                setup: function (editor) {
+                    editor.on('Change', function (e) {
+                        dotNetRef.invokeMethodAsync('UpdateValue', editor.getContent());
+                    });
+                },
+                content_style: 'body { font-family: Calibri, sans-serif; font-size: 11pt; }'
+            });
+        };
+
+        window.setTinyMceImageUrl = function (editorId, url) {
+            tinymce.get(editorId).insertContent(`<img src="${url}" />`);
+        };
+
+        window.showTinyMceError = function (editorId, message) {
+            tinymce.get(editorId).notificationManager.open({
+                text: message,
+                type: 'error'
+            });
+        };
 
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>

@@ -401,7 +401,7 @@
 
                     <MudText Typo="Typo.subtitle1">
                         Description
-                        <TinyMceEditor @bind-Value="@_newRequirement.Description" />
+                        <TinyMceEditor @bind-Value="_newRequirement.Description"/>
                     </MudText>
                     <MudTextField T="string"
                                   Label="Tags"
@@ -470,7 +470,7 @@
 
                     <MudText Typo="Typo.subtitle1">
                         Description
-                        <TinyMceEditor @bind-Value="@_editRequirement.Description" />
+                        <TinyMceEditor @bind-Value="_editRequirement.Description"/>
                     </MudText>
                     @*<MudTextField T="string"
                                   Label="Tags"
@@ -497,8 +497,10 @@
     private List<RequirementDto> _parentRequirements = new();
     private List<TestCaseDto> _availableTestCases = new();
     private string _testCasesInput = string.Empty;
-    private CreateRequirementDto _newRequirement = new();
+    private CreateRequirementDto _newRequirement  = new() { Id = Guid.NewGuid() };
     private RequirementDto _editRequirement = new();
+
+
     private string _tagsInput = string.Empty;
     private string _editTagsInput = string.Empty;
     private bool _showCreateDialog;

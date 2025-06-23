@@ -5,7 +5,7 @@ https://go.microsoft.com/fwlink/?LinkID=208121.
 <Project>
   <PropertyGroup>
     <_PublishTargetUrl>C:\Work\EffortlessQA\EffortlessQA.Client\bin\Release\net8.0\browser-wasm\publish\</_PublishTargetUrl>
-    <History>True|2025-06-19T05:06:12.4795532Z;True|2025-06-19T10:07:57.7086149+05:30;True|2025-06-19T10:06:00.2314372+05:30;True|2025-06-19T09:24:00.3696070+05:30;True|2025-06-19T09:07:58.3377642+05:30;True|2025-06-14T09:41:03.5736320+05:30;</History>
+    <History>True|2025-06-20T05:16:49.9589964Z;True|2025-06-19T10:36:12.4795532+05:30;True|2025-06-19T10:07:57.7086149+05:30;True|2025-06-19T10:06:00.2314372+05:30;True|2025-06-19T09:24:00.3696070+05:30;True|2025-06-19T09:07:58.3377642+05:30;True|2025-06-14T09:41:03.5736320+05:30;</History>
     <LastFailureDetails />
   </PropertyGroup>
 </Project>

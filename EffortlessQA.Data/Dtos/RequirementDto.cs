@@ -40,11 +40,12 @@ namespace EffortlessQA.Data.Dtos
 
     public class CreateRequirementDto
     {
+        public Guid Id { get; set; }
         public string Title { get; set; }
         public string? Description { get; set; }
         public string[]? Tags { get; set; }
         public Guid ProjectId { get; set; }
-		public string TenantId { get; set; }
+        public string TenantId { get; set; }
         public Guid? ParentRequirementId { get; set; }
         public List<RequirementTestCase>? RequirementTestCases { get; set; } = new();
     }

@@ -58,63 +58,66 @@ namespace EffortlessQA.Api.Extensions
                 .WithTags(REQUIREMENT_TAG)
                 .WithMetadata();
 
-			// GET /api/v1/projects/requirements
-			app.MapGet(
-					   "/api/v1/projects/requirements", 
-                       async ( 
-                           IRequirementService requirementService, 
-                           HttpContext context, 
-                           [FromQuery] int page = 1, 
-                           [FromQuery] int limit = 50, 
-                           [FromQuery] string? filter = null, 
-                           [FromQuery] string[]? tags = null 
-                           ) => 
-                       {
-                               try {
-                               var tenantId = context.User.FindFirst("TenantId")?.Value; 
-                               if (string.IsNullOrEmpty(tenantId)) 
-                               { return Results.Unauthorized(); 
-                               } 
-                               var requirements = await requirementService.GetRequirementsAsync( 
-                                   tenantId, 
-                                   page, 
-                                   limit, 
-                                   filter, 
-                                   tags );
-							   return Results.Ok(
-	                                new ApiResponse<PagedResult<RequirementDto>>
-	                                {
-		                                Data = requirements,
-		                                Meta = new
-		                                {
-			                                Page = page,
-			                                Limit = limit,
-			                                Total = requirements.TotalCount
-		                                }
-	                                }
-                                );
-						   }
-						   catch (Exception ex)
-						   {
-							   return Results.BadRequest(
-								   new ApiResponse<object>
-								   {
-									   Error = new ErrorResponse
-									   {
-										   Code = "BadRequest",
-										   Message = ex.Message
-									   }
-								   }
-							   );
-						   }
-					   }
-				)
-				.WithName("GetAllRequirements")
-				.WithTags(REQUIREMENT_TAG)
-				.WithMetadata();
+            // GET /api/v1/projects/requirements
+            app.MapGet(
+                    "/api/v1/projects/requirements",
+                    async (
+                        IRequirementService requirementService,
+                        HttpContext context,
+                        [FromQuery] int page = 1,
+                        [FromQuery] int limit = 50,
+                        [FromQuery] string? filter = null,
+                        [FromQuery] string[]? tags = null
+                    ) =>
+                    {
+                        try
+                        {
+                            var tenantId = context.User.FindFirst("TenantId")?.Value;
+                            if (string.IsNullOrEmpty(tenantId))
+                            {
+                                return Results.Unauthorized();
+                            }
+                            var requirements = await requirementService.GetRequirementsAsync(
+                                tenantId,
+                                page,
+                                limit,
+                                filter,
+                                tags
+                            );
+                            return Results.Ok(
+                                new ApiResponse<PagedResult<RequirementDto>>
+                                {
+                                    Data = requirements,
+                                    Meta = new
+                                    {
+                                        Page = page,
+                                        Limit = limit,
+                                        Total = requirements.TotalCount
+                                    }
+                                }
+                            );
+                        }
+                        catch (Exception ex)
+                        {
+                            return Results.BadRequest(
+                                new ApiResponse<object>
+                                {
+                                    Error = new ErrorResponse
+                                    {
+                                        Code = "BadRequest",
+                                        Message = ex.Message
+                                    }
+                                }
+                            );
+                        }
+                    }
+                )
+                .WithName("GetAllRequirements")
+                .WithTags(REQUIREMENT_TAG)
+                .WithMetadata();
 
-			// GET /api/v1/projects/{projectId}/requirements
-			app.MapGet(
+            // GET /api/v1/projects/{projectId}/requirements
+            app.MapGet(
                     "/api/v1/projects/{projectId}/requirements",
                     async (
                         Guid projectId,
@@ -347,7 +350,7 @@ namespace EffortlessQA.Api.Extensions
                                 projectId,
                                 tenantId,
                                 dto.TestCaseId
-							);
+                            );
                             return Results.Ok(
                                 new ApiResponse<object>
                                 {

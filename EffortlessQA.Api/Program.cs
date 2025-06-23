@@ -105,6 +105,8 @@ builder.Services.AddScoped<ITestCaseService, TestCaseService>();
 builder.Services.AddScoped<ITestRunResultService, TestRunResultService>();
 builder.Services.AddScoped<ITestFolderService, TestFolderService>();
 
+builder.Services.AddSingleton<AzureBlobStorageService>();
+
 builder.Services.AddHttpContextAccessor();
 
 // CORS

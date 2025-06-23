@@ -1,4 +1,5 @@
-﻿using EffortlessQA.Data.Dtos;
+﻿using EffortlessQA.Api.Services.Implementation;
+using EffortlessQA.Data.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
@@ -82,6 +83,45 @@ namespace EffortlessQA.Api.Extensions
                 .RequireAuthorization("TesterOrAdmin")
                 .WithTags(COMMON_TAG)
                 .WithMetadata();
+
+            app.MapPost(
+                    "/api/v1/common/images/upload",
+                    async (
+                        HttpContext context,
+                        AzureBlobStorageService blobStorageService,
+                        IFormFile file,
+                        [FromQuery] string entityId,
+                        [FromQuery] string fieldName
+                    ) =>
+                    {
+                        try
+                        {
+                            var tenantId = context.User.FindFirst("TenantId")?.Value;
+                            if (string.IsNullOrEmpty(tenantId))
+                                return Results.Unauthorized();
+
+                            if (file == null || file.Length == 0)
+                                return Results.BadRequest(new { Error = "No file uploaded." });
+
+                            using var stream = file.OpenReadStream();
+                            var imageUrl = await blobStorageService.UploadImageAsync(
+                                stream,
+                                file.FileName,
+                                entityId,
+                                fieldName
+                            );
+
+                            return Results.Ok(new { location = imageUrl });
+                        }
+                        catch (Exception ex)
+                        {
+                            return Results.BadRequest(new { Error = ex.Message });
+                        }
+                    }
+                )
+                .WithName("UploadImage")
+                .RequireAuthorization()
+                .WithTags("Images");
         }
 
         private static byte[] GeneratePdf(PdfGenerationDto dto)
