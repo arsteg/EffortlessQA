@@ -112,17 +112,22 @@ builder.Services.AddHttpContextAccessor();
 // CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(
-        "AllowSpecificOrigins",
-        policy =>
-        {
-            var allowedOrigins = builder.Environment.IsDevelopment()
+	options.AddPolicy(
+		"AllowSpecificOrigins",
+		policy =>
+		{
+			var allowedOrigins = builder.Environment.IsDevelopment()
                 ? new[] { "https://localhost:7129", "https://localhost:7129/" } // Allow both with/without trailing slash
                 : new[] { "https://effortlessqa.netlify.app", "https://effortlessqa.netlify.app/" }; // Production
 
             policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials(); // Required for authenticated requests
-        }
-    );
+		}
+	);
+});
+
+builder.Services.AddAntiforgery(options =>
+{
+	options.HeaderName = "X-CSRF-TOKEN"; // Optional: Customize the header name if needed
 });
 
 // Swagger
@@ -181,6 +186,7 @@ var app = builder.Build();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseAntiforgery();
 app.UseCors("AllowSpecificOrigins");
 
 //app.UseMiddleware<TenantValidationMiddleware>(); // Temporarily disabled

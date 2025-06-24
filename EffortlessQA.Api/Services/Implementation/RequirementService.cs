@@ -48,8 +48,9 @@ namespace EffortlessQA.Api.Services.Implementation
             {
                 Id = Guid.NewGuid(),
                 Title = dto.Title,
-                Description = _sanitizer.Sanitize(dto.Description),
-                Tags = dto.Tags,
+                //Description = _sanitizer.Sanitize(dto.Description),
+				Description = dto.Description,
+				Tags = dto.Tags,
                 ProjectId = projectId,
                 TenantId = tenantId,
                 CreatedAt = DateTime.UtcNow,

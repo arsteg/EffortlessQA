@@ -1,6 +1,8 @@
 ﻿@using Microsoft.JSInterop
 @inject IJSRuntime JSRuntime
 @inject HttpClient HttpClient
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+
 
 <div id="@EditorId" style="height: @Height;"></div>
 
@@ -21,12 +23,29 @@
     public string Height { get; set; } = "500px";
 
     private string EditorId { get; } = $"tinymce-{Guid.NewGuid()}";
+    private string _authToken;
 
+    protected override async Task OnInitializedAsync()
+    {
+        // Retrieve the auth token from local storage
+        // _authToken = await LocalStorage.GetItemAsync<string>("authToken");
+        // if (string.IsNullOrEmpty(_authToken))
+        // {
+        //     await JSRuntime.InvokeVoidAsync("console.log","Blazor: Auth token is missing");
+        // }
+        // else
+        // {
+        //     await JSRuntime.InvokeVoidAsync("console.log","Blazor: Auth token retrieved successfully");
+        //     await JSRuntime.InvokeVoidAsync("console.log",$"Blazor: Auth token retrieved successfully: {_authToken}");
+        // }
+    }
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            await JSRuntime.InvokeVoidAsync("initializeTinyMce", EditorId, Value, DotNetObjectReference.Create(this), EntityId, FieldName);
+            // _authToken = await LocalStorage.GetItemAsync<string>("authToken");
+            _authToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlMDlhZDc5MS00MGQxLTQ5MzctODI5Yi1lNGM5Y2Q3ZTYyN2YiLCJlbWFpbCI6Im1vaGRyYWZpb25saW5lQGdtYWlsLmNvbSIsInRlbmFudElkIjoiNTUwYjA2ZjQ3ZDI4NDkxMGJhM2MyNzE1MGU1MmFhMTgiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJBZG1pbiIsImV4cCI6MTc4MjI5Njc5MywiaXNzIjoiRWZmb3J0bGVzc1FBIiwiYXVkIjoiRWZmb3J0bGVzc1FBVXNlcnMifQ.5PrfCfRYGd9DQyx2a27b2by7gCftasrfSFsYEgq4Vrw";
+            await JSRuntime.InvokeVoidAsync("initializeTinyMce",EditorId,Value,DotNetObjectReference.Create(this),EntityId,FieldName,_authToken);
         }
     }
 

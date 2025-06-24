@@ -27,19 +27,32 @@
 
             xhr.onload = function () {
                 if (xhr.status < 200 || xhr.status >= 300) {
-                    failure('HTTP Error: ' + xhr.status);
+                    console.error('Image upload failed with status: ' + xhr.status + ', response: ' + xhr.responseText);
+                    failure('HTTP Error: ' + xhr.status + ' - ' + xhr.responseText);
+                    dotNetRef.invokeMethodAsync('ShowError', 'Image upload failed: HTTP Error ' + xhr.status);
                     return;
                 }
-                var json = JSON.parse(xhr.responseText);
-                if (!json || typeof json.location != 'string') {
-                    failure('Invalid JSON: ' + xhr.responseText);
-                    return;
+                try {
+                    var json = JSON.parse(xhr.responseText);
+                    if (!json || typeof json.location !== 'string') {
+                        console.error('Invalid JSON response: ' + xhr.responseText);
+                        failure('Invalid JSON: ' + xhr.responseText);
+                        dotNetRef.invokeMethodAsync('ShowError', 'Image upload failed: Invalid server response');
+                        return;
+                    }
+                    console.log('Image uploaded successfully: ' + json.location);
+                    success(json.location);
+                } catch (e) {
+                    console.error('Error parsing JSON response: ' + e.message);
+                    failure('Error parsing response: ' + e.message);
+                    dotNetRef.invokeMethodAsync('ShowError', 'Image upload failed: Error parsing server response');
                 }
-                success(json.location);
             };
 
             xhr.onerror = function () {
+                console.error('Image upload failed due to network error.');
                 failure('Image upload failed due to a network error.');
+                dotNetRef.invokeMethodAsync('ShowError', 'Image upload failed: Network error');
             };
 
             formData = new FormData();

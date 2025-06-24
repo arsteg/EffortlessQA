@@ -89,9 +89,7 @@ namespace EffortlessQA.Api.Extensions
                     async (
                         HttpContext context,
                         AzureBlobStorageService blobStorageService,
-                        IFormFile file,
-                        [FromQuery] string entityId,
-                        [FromQuery] string fieldName
+                        IFormFile file
                     ) =>
                     {
                         try
@@ -107,8 +105,8 @@ namespace EffortlessQA.Api.Extensions
                             var imageUrl = await blobStorageService.UploadImageAsync(
                                 stream,
                                 file.FileName,
-                                entityId,
-                                fieldName
+                                "entityId",
+                                "fieldName"
                             );
 
                             return Results.Ok(new { location = imageUrl });
@@ -120,9 +118,10 @@ namespace EffortlessQA.Api.Extensions
                     }
                 )
                 .WithName("UploadImage")
-                .RequireAuthorization()
+				.DisableAntiforgery()
+				.RequireAuthorization()
                 .WithTags("Images");
-        }
+		}
 
         private static byte[] GeneratePdf(PdfGenerationDto dto)
         {

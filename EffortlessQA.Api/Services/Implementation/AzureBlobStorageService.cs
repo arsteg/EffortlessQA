@@ -122,7 +122,8 @@ namespace EffortlessQA.Api.Services.Implementation
                 ExpiresOn = DateTimeOffset.UtcNow.AddHours(1),
                 //Permissions = BlobSasPermissions.Read
             };
-            var sasUri = blobClient.GenerateSasUri(sasBuilder);
+			sasBuilder.SetPermissions(BlobSasPermissions.Write); // Use SetPermissions for Write permission
+			var sasUri = blobClient.GenerateSasUri(sasBuilder);
             return sasUri.ToString();
         }
 
