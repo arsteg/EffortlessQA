@@ -1,13 +1,14 @@
 ﻿window.tinyMCEBlazor = {
-    initEditor: function (textareaId, dotNetHelper, entityId, fieldName, authToken) {
+    initEditor: function (textareaId, dotNetHelper, entityId, fieldName, authToken, baseUrl) {
         tinymce.init({
             selector: `#${textareaId}`,
             height: 500,
             plugins: [
                 'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'image', 'link', 'lists', 'media', 'searchreplace', 'table',
                 'visualblocks', 'wordcount', 'checklist', 'mediaembed', 'casechange', 'formatpainter', 'pageembed', 'a11ychecker',
-                'tinymcespellchecker', 'permanentpen', 'powerpaste', 'advtable', 'advcode', 'editimage', 'advtemplate', 'mentions',
-                'tinycomments', 'tableofcontents', 'footnotes', 'mergetags', 'autocorrect', 'typography', 'inlinecss', 'markdown'
+                'tinymcespellchecker', 'permanentpen', 'powerpaste', 'advtable', 'advcode', 'editimage', 'advtemplate', 'ai', 'mentions',
+                'tinycomments', 'tableofcontents', 'footnotes', 'mergetags', 'autocorrect', 'typography', 'inlinecss', 'markdown',
+                'importword', 'exportword', 'exportpdf'
             ],
             toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | ' +
                 'link image media table mergetags | addcomment showcomments | spellcheckdialog a11ycheck typography | ' +
@@ -18,17 +19,18 @@
                 { value: 'First.Name', title: 'First Name' },
                 { value: 'Email', title: 'Email' }
             ],
-            images_upload_url: `https://localhost:7196/api/v1/common/images/upload`,
+            images_upload_url: `${baseUrl}common/images/upload?entityId=${encodeURIComponent(entityId)}&fieldName=${encodeURIComponent(fieldName)}`,
             automatic_uploads: true,
             paste_data_images: true,
+            //paste_data_images: false,
             images_upload_handler: function (blobInfo, success, failure, progress) {
                 const formData = new FormData();
                 formData.append('file', blobInfo.blob(), blobInfo.filename());
 
-                fetch(`https://localhost:7196/api/v1/common/images/upload`, {
+                fetch(`${baseUrl}common/images/upload?entityId=${encodeURIComponent(entityId)}&fieldName=${encodeURIComponent(fieldName)}`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlMDlhZDc5MS00MGQxLTQ5MzctODI5Yi1lNGM5Y2Q3ZTYyN2YiLCJlbWFpbCI6Im1vaGRyYWZpb25saW5lQGdtYWlsLmNvbSIsInRlbmFudElkIjoiNTUwYjA2ZjQ3ZDI4NDkxMGJhM2MyNzE1MGU1MmFhMTgiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJBZG1pbiIsImV4cCI6MTc4MjI5Njc5MywiaXNzIjoiRWZmb3J0bGVzc1FBIiwiYXVkIjoiRWZmb3J0bGVzc1FBVXNlcnMifQ.5PrfCfRYGd9DQyx2a27b2by7gCftasrfSFsYEgq4Vrw`,
+                        'Authorization': `Bearer ${authToken}`,
                         'Accept': '*/*'
                     },
                     body: formData,
@@ -43,6 +45,7 @@
                         if (json && json.location) {
                             console.log('Image uploaded successfully:', json.location);
                             success(json.location);
+                            dotNetHelper.invokeMethodAsync('OnImageUploaded', json.location);
                         } else {
                             console.error('Invalid response:', json);
                             if (typeof failure === 'function') {
@@ -59,24 +62,40 @@
                         }
                     });
             },
+            ai_request: (request, respondWith) =>
+                respondWith.string(() => Promise.reject('See docs to implement AI Assistant')),
             setup: function (editor) {
                 editor.on('change', function () {
                     dotNetHelper.invokeMethodAsync('OnEditorChange', editor.getContent());
                 });
-                editor.on('init', function () {
-                    editor.setContent('');
-                });
+                //editor.on('init', function () {
+                //    editor.setContent();
+                //});
             }
         });
     },
     setContent: function (textareaId, content) {
-        const editor = tinymce.get(textareaId);
-        if (editor) {
-            editor.setContent(content || '');
-        }
+        tinymce.get(textareaId)?.setContent(content);
     },
     getContent: function (textareaId) {
-        const editor = tinymce.get(textareaId);
-        return editor ? editor.getContent() : '';
+        return tinymce.get(textareaId)?.getContent();
+    }
+};
+
+window.setTinyMceImageUrl = function (editorId, url) {
+    tinymce.get(editorId).insertContent(`<img src="${url}" />`);
+};
+
+window.showTinyMceError = function (editorId, message) {
+    tinymce.get(editorId).notificationManager.open({
+        text: message,
+        type: 'error'
+    });
+};
+
+window.destroyTinyMce = function (editorId) {
+    const editor = tinymce.get(editorId);
+    if (editor) {
+        editor.remove();
     }
 };

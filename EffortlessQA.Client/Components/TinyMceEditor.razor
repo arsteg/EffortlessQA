@@ -1,5 +1,7 @@
 ﻿@inject IJSRuntime JS
 @implements IAsyncDisposable
+@inject IHttpClientFactory HttpClientFactory
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
 
 <div>
     <textarea id="@_editorId">@_value</textarea>
@@ -13,13 +15,29 @@
     private DotNetObjectReference<TinyMceEditor> _objRef;
     private string _value;
 
+    [Parameter]
+    public string EntityId { get; set; } = Guid.NewGuid().ToString();
+    [Parameter]
+    public string FieldName { get; set; } = "default";
+
+    [Parameter]
+    public string Height { get; set; } = "500px";
+
+    private string EditorId { get; } = $"tinymce-{Guid.NewGuid()}";
+    private string _authToken;
+    private string _baseUrl;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             _value = Value;
             _objRef = DotNetObjectReference.Create(this);
-            await JS.InvokeVoidAsync("tinyMCEBlazor.initEditor", _editorId, _objRef);
+            var httpClient = HttpClientFactory.CreateClient("EffortlessQA.Api");
+            _baseUrl = httpClient.BaseAddress?.ToString()?.TrimEnd('/') + "/";
+
+            _authToken = await LocalStorage.GetItemAsync<string>("authToken");
+            await JS.InvokeVoidAsync("tinyMCEBlazor.initEditor",_editorId,_objRef,EntityId,FieldName,_authToken,_baseUrl);
         }
     }
 
@@ -29,9 +47,21 @@
         _value = content;
         await ValueChanged.InvokeAsync(content);
     }
-
+    [JSInvokable]
+    public async Task OnImageUploaded( string imageUrl )
+    {
+        // Optionally store the image URL or update component state
+        await JS.InvokeVoidAsync("setTinyMceImageUrl",_editorId,imageUrl);
+    }
+    [JSInvokable]
+    public async Task OnEditorError( string errorMessage )
+    {
+        // Handle errors (e.g., show notification)
+        await JS.InvokeVoidAsync("showTinyMceError",_editorId,errorMessage);
+    }
     public async ValueTask DisposeAsync()
     {
+        await JS.InvokeVoidAsync("destroyTinyMce", _editorId);
         _objRef?.Dispose();
     }
 }

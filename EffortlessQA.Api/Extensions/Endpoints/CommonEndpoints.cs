@@ -89,8 +89,10 @@ namespace EffortlessQA.Api.Extensions
                     async (
                         HttpContext context,
                         AzureBlobStorageService blobStorageService,
-                        IFormFile file
-                    ) =>
+                        IFormFile file,
+						[FromQuery] string entityId,
+						[FromQuery] string fieldName
+					) =>
                     {
                         try
                         {
@@ -105,9 +107,9 @@ namespace EffortlessQA.Api.Extensions
                             var imageUrl = await blobStorageService.UploadImageAsync(
                                 stream,
                                 file.FileName,
-                                "entityId",
-                                "fieldName"
-                            );
+                                entityId,
+								fieldName
+							);
 
                             return Results.Ok(new { location = imageUrl });
                         }

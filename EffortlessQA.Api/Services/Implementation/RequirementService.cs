@@ -44,12 +44,45 @@ namespace EffortlessQA.Api.Services.Implementation
             if (project == null)
                 throw new Exception("Project not found.");
 
-            var requirement = new Requirement
+            Guid RequirementID;
+			string _sanitizerdescription = _sanitizer.Sanitize(dto.Description);
+			string containerMarker = "effortlessqablobstoragecontainer/";
+			int containerIndex = _sanitizerdescription.IndexOf(containerMarker);
+
+			if (containerIndex >= 0)
+			{
+				int startIndex = containerIndex + containerMarker.Length;
+				int endIndex = _sanitizerdescription.IndexOf("/default/",startIndex);
+
+				if (endIndex > startIndex)
+				{
+					string possibleGuid = _sanitizerdescription.Substring(startIndex,endIndex - startIndex);
+					if (Guid.TryParse(possibleGuid,out Guid extractedId))
+					{
+						RequirementID = extractedId;
+					}
+					else
+					{
+						RequirementID = Guid.NewGuid(); // fallback
+					}
+				}
+				else
+				{
+					RequirementID = Guid.NewGuid(); // fallback
+				}
+			}
+			else
+			{
+				RequirementID = Guid.NewGuid(); // fallback
+			}
+
+
+			var requirement = new Requirement
             {
-                Id = Guid.NewGuid(),
+                Id = RequirementID,
                 Title = dto.Title,
-                //Description = _sanitizer.Sanitize(dto.Description),
-				Description = dto.Description,
+                Description = _sanitizerdescription,
+				//Description = dto.Description,
 				Tags = dto.Tags,
                 ProjectId = projectId,
                 TenantId = tenantId,
@@ -280,62 +313,90 @@ namespace EffortlessQA.Api.Services.Implementation
             };
         }
 
-        public async Task<RequirementDto> UpdateRequirementAsync(
-            Guid requirementId,
-            Guid projectId,
-            string tenantId,
-            UpdateRequirementDto dto
-        )
-        {
-            var requirement = await _context.Requirements.FirstOrDefaultAsync(r =>
-                r.Id == requirementId
-                && r.ProjectId == projectId
-                && r.TenantId == tenantId
-                && !r.IsDeleted
-            );
+		public async Task<RequirementDto> UpdateRequirementAsync(
+			Guid requirementId,
+			Guid projectId,
+			string tenantId,
+			UpdateRequirementDto dto
+		)
+		{
+			var requirement = await _context.Requirements.FirstOrDefaultAsync(r =>
+				r.Id == requirementId
+				&& r.ProjectId == projectId
+				&& r.TenantId == tenantId
+				&& !r.IsDeleted
+			);
 
-            if (requirement == null)
-                throw new Exception("Requirement not found.");
+			if (requirement == null)
+				throw new Exception("Requirement not found.");
+			Guid RequirementID;
+			string _sanitizerdescription = _sanitizer.Sanitize(dto.Description ?? requirement.Description);
+			string containerMarker = "effortlessqablobstoragecontainer/";
+			int containerIndex = _sanitizerdescription.IndexOf(containerMarker);
 
-            var newDescription = _sanitizer.Sanitize(dto.Description ?? requirement.Description);
-            try
-            {
-                await _blobStorageService.DeleteUnusedImagesAsync(
-                    newDescription,
-                    requirementId.ToString(),
-                    "Description"
-                );
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(
-                    ex,
-                    "Failed to delete unused images for requirement {RequirementId}",
-                    requirementId
-                );
-            }
+			if (containerIndex >= 0)
+			{
+				int startIndex = containerIndex + containerMarker.Length;
+				int endIndex = _sanitizerdescription.IndexOf("/default/",startIndex);
 
-            requirement.Title = dto.Title ?? requirement.Title;
-            requirement.Description = dto.Description ?? requirement.Description;
-            requirement.Tags = dto.Tags ?? requirement.Tags;
-            requirement.ModifiedAt = DateTime.UtcNow;
+				if (endIndex > startIndex)
+				{
+					string possibleGuid = _sanitizerdescription.Substring(startIndex,endIndex - startIndex);
+					if (Guid.TryParse(possibleGuid,out Guid extractedId))
+					{ RequirementID = extractedId; }
+					else
+					{ RequirementID = requirement.Id; }
+				}
+				else
+				{ RequirementID = requirement.Id; }
+			}
+			else
+			{ RequirementID = requirement.Id; }
 
-            await _context.SaveChangesAsync();
+			//var newDescription = _sanitizer.Sanitize(dto.Description ?? requirement.Description);
+			//var newDescription = dto.Description ?? requirement.Description;
+			if (RequirementID != requirement.Id)
+			{
+				try
+				{
+					await _blobStorageService.DeleteUnusedImagesAsync(
+						_sanitizerdescription,
+						requirementId.ToString(),
+						"default"
+					);
+				}
+				catch (Exception ex)
+				{
+					_logger.LogWarning(
+						ex,
+						"Failed to delete unused images for requirement {RequirementId}",
+						requirementId
+					);
+				}
+			}
 
-            return new RequirementDto
-            {
-                Id = requirement.Id,
-                Title = requirement.Title,
-                Description = requirement.Description,
-                Tags = requirement.Tags,
-                ProjectId = requirement.ProjectId,
-                TenantId = requirement.TenantId,
-                CreatedAt = requirement.CreatedAt,
-                UpdatedAt = requirement.ModifiedAt
-            };
-        }
+			requirement.Id = RequirementID;
+			requirement.Title = dto.Title ?? requirement.Title;
+			requirement.Description = _sanitizer.Sanitize(dto.Description ?? requirement.Description);
+			requirement.Tags = dto.Tags ?? requirement.Tags;
+			requirement.ModifiedAt = DateTime.UtcNow;
 
-        public async Task DeleteRequirementAsync(
+			await _context.SaveChangesAsync();
+
+			return new RequirementDto
+			{
+				Id = requirement.Id,
+				Title = requirement.Title,
+				Description = requirement.Description,
+				Tags = requirement.Tags,
+				ProjectId = requirement.ProjectId,
+				TenantId = requirement.TenantId,
+				CreatedAt = requirement.CreatedAt,
+				UpdatedAt = requirement.ModifiedAt
+			};
+		}
+
+		public async Task DeleteRequirementAsync(
             Guid requirementId,
             Guid projectId,
             string tenantId
@@ -356,8 +417,8 @@ namespace EffortlessQA.Api.Services.Implementation
             {
                 await _blobStorageService.DeleteAllImagesForEntityAsync(
                     requirementId.ToString(),
-                    "Description"
-                );
+					"default"
+				);
                 _logger.LogInformation(
                     "Deleted images for requirement {RequirementId}",
                     requirementId
