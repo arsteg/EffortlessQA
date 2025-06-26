@@ -119,7 +119,7 @@ namespace EffortlessQA.Api.Services.Implementation
                 BlobName = blobName,
                 Resource = "b",
                 StartsOn = DateTimeOffset.UtcNow.AddMinutes(-5),
-                ExpiresOn = DateTimeOffset.UtcNow.AddHours(1),
+                ExpiresOn = DateTimeOffset.UtcNow.AddYears(1),
                 //Permissions = BlobSasPermissions.Read
             };
 			sasBuilder.SetPermissions(BlobSasPermissions.Read); // Use SetPermissions for Write permission

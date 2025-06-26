@@ -2,30 +2,38 @@
     initEditor: function (textareaId, dotNetHelper, entityId, fieldName, authToken, baseUrl) {
         tinymce.init({
             selector: `#${textareaId}`,
+            plugins: 'image link lists table paste wordcount advlist autolink charmap code emoticons fullscreen hr media pagebreak preview searchreplace visualblocks visualchars template',
+            toolbar: 'undo redo | formatselect | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image table | fontsizeselect | removeformat | code preview fullscreen',
+            menubar: 'file edit view insert format tools table help',
             height: 500,
-            plugins: [
-                'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'image', 'link', 'lists', 'media', 'searchreplace', 'table',
-                'visualblocks', 'wordcount', 'checklist', 'mediaembed', 'casechange', 'formatpainter', 'pageembed', 'a11ychecker',
-                'tinymcespellchecker', 'permanentpen', 'powerpaste', 'advtable', 'advcode', 'editimage', 'advtemplate', 'ai', 'mentions',
-                'tinycomments', 'tableofcontents', 'footnotes', 'mergetags', 'autocorrect', 'typography', 'inlinecss', 'markdown',
-                'importword', 'exportword', 'exportpdf'
+            content_style: 'body { font-family: Calibri, sans-serif; font-size: 11pt; margin: 1cm; } p { margin: 0; line-height: 1.15; }',
+            paste_as_text: false,
+            paste_data_images: true,
+            fontsize_formats: '8pt 9pt 10pt 11pt 12pt 14pt 18pt 24pt 36pt',
+            style_formats: [
+                { title: 'Heading 1', block: 'h1' },
+                { title: 'Heading 2', block: 'h2' },
+                { title: 'Heading 3', block: 'h3' },
+                { title: 'Normal', block: 'p' }
             ],
-            toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | ' +
-                'link image media table mergetags | addcomment showcomments | spellcheckdialog a11ycheck typography | ' +
-                'align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
-            tinycomments_mode: 'embedded',
-            tinycomments_author: 'Author name',
-            mergetags_list: [
-                { value: 'First.Name', title: 'First Name' },
-                { value: 'Email', title: 'Email' }
+            templates: [
+                { title: 'Default Template', description: 'Standard format', content: '<p><strong>Title:</strong> [Title]</p><p><strong>Description:</strong> [Description]</p>' }
             ],
             images_upload_url: `${baseUrl}common/images/upload?entityId=${encodeURIComponent(entityId)}&fieldName=${encodeURIComponent(fieldName)}`,
             automatic_uploads: true,
             paste_data_images: true,
-            //paste_data_images: false,
+
             images_upload_handler: function (blobInfo, success, failure, progress) {
                 const formData = new FormData();
                 formData.append('file', blobInfo.blob(), blobInfo.filename());
+
+                //let tempImageId = 'temp_' + Date.now();
+                //let editor = tinymce.get(editorId);
+                //let tempImage = editor.dom.select('img[src*="blob:"],img[src*="data:image"]').pop();
+                //if (tempImage) {
+                //    tempImage.setAttribute('data-temp-id', tempImageId);
+                //    dotNetObjRef.invokeMethodAsync('OnImagePasted', tempImageId);
+                //}
 
                 fetch(`${baseUrl}common/images/upload?entityId=${encodeURIComponent(entityId)}&fieldName=${encodeURIComponent(fieldName)}`, {
                     method: 'POST',

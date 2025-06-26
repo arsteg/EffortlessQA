@@ -10,24 +10,18 @@
 @code {
     [Parameter] public string Value { get; set; }
     [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public string EntityId { get; set; } = Guid.NewGuid().ToString(); // Default GUID, overridden by parent
+    [Parameter] public string FieldName { get; set; } = "default";
+    [Parameter] public string Height { get; set; } = "500px";
 
     private string _editorId = $"editor_{Guid.NewGuid().ToString("N")}";
     private DotNetObjectReference<TinyMceEditor> _objRef;
     private string _value;
-
-    [Parameter]
-    public string EntityId { get; set; } = Guid.NewGuid().ToString();
-    [Parameter]
-    public string FieldName { get; set; } = "default";
-
-    [Parameter]
-    public string Height { get; set; } = "500px";
-
-    private string EditorId { get; } = $"tinymce-{Guid.NewGuid()}";
     private string _authToken;
     private string _baseUrl;
+    private string _lastPastedImageId;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnAfterRenderAsync( bool firstRender )
     {
         if (firstRender)
         {
@@ -35,33 +29,33 @@
             _objRef = DotNetObjectReference.Create(this);
             var httpClient = HttpClientFactory.CreateClient("EffortlessQA.Api");
             _baseUrl = httpClient.BaseAddress?.ToString()?.TrimEnd('/') + "/";
-
             _authToken = await LocalStorage.GetItemAsync<string>("authToken");
             await JS.InvokeVoidAsync("tinyMCEBlazor.initEditor",_editorId,_objRef,EntityId,FieldName,_authToken,_baseUrl);
         }
     }
 
     [JSInvokable]
-    public async Task OnEditorChange(string content)
+    public async Task OnEditorChange( string content )
     {
         _value = content;
         await ValueChanged.InvokeAsync(content);
     }
+
     [JSInvokable]
     public async Task OnImageUploaded( string imageUrl )
     {
-        // Optionally store the image URL or update component state
+        Console.WriteLine($"Image uploaded: {imageUrl}");
         await JS.InvokeVoidAsync("setTinyMceImageUrl",_editorId,imageUrl);
     }
     [JSInvokable]
     public async Task OnEditorError( string errorMessage )
     {
-        // Handle errors (e.g., show notification)
         await JS.InvokeVoidAsync("showTinyMceError",_editorId,errorMessage);
     }
+
     public async ValueTask DisposeAsync()
     {
-        await JS.InvokeVoidAsync("destroyTinyMce", _editorId);
+        await JS.InvokeVoidAsync("destroyTinyMce",_editorId);
         _objRef?.Dispose();
     }
 }

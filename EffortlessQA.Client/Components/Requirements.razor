@@ -401,7 +401,7 @@
 
                     <MudText Typo="Typo.subtitle1">
                         Description
-                        <TinyMceEditor @bind-Value="_newRequirement.Description"/>
+                        <TinyMceEditor @bind-Value="_newRequirement.Description" EntityId="@_newRequirement.Id.ToString()" />
                     </MudText>
                     <MudTextField T="string"
                                   Label="Tags"
@@ -470,7 +470,7 @@
 
                     <MudText Typo="Typo.subtitle1">
                         Description
-                        <TinyMceEditor @bind-Value="_editRequirement.Description"/>
+                        <TinyMceEditor @bind-Value="_editRequirement.Description" EntityId="@_editRequirement.Id.ToString()" />
                     </MudText>
                     @*<MudTextField T="string"
                                   Label="Tags"
@@ -622,14 +622,14 @@
         }
     }
 
-    private async Task OnPageSizeChanged(int newSize)
+    private async Task OnPageSizeChanged( int newSize )
     {
         _pageSize = newSize;
-        Snackbar.Add($"Page size changed to {_pageSize}", Severity.Info);
+        Snackbar.Add($"Page size changed to {_pageSize}",Severity.Info);
         await _table.ReloadServerData();
     }
 
-    private async Task HandleSearchRequirements(string term)
+    private async Task HandleSearchRequirements( string term )
     {
         _searchTerm = term;
         await _table.ReloadServerData();
@@ -640,13 +640,13 @@
         await _table.ReloadServerData();
         var allRequirements = await RequirementService.GetRequirementsAsync();
         _parentRequirements = FlattenRequirements(allRequirements).ToList();
-        Snackbar.Add("Requirements refreshed successfully", Severity.Success);
+        Snackbar.Add("Requirements refreshed successfully",Severity.Success);
     }
 
-    private void StartInlineEdit(RequirementDto requirement)
+    private void StartInlineEdit( RequirementDto requirement )
     {
         requirement.IsEditing = true;
-        _testCasesInput = string.Join(",", requirement.TestCaseIds?.Select(id => id.ToString()) ?? new List<string>());
+        _testCasesInput = string.Join(",",requirement.TestCaseIds?.Select(id => id.ToString()) ?? new List<string>());
         _originalRequirements[requirement.Id] = new RequirementDto
                 {
                     Id = requirement.Id,
@@ -661,12 +661,12 @@
                 };
     }
 
-    private async Task SaveInlineEditAsync(RequirementDto requirement)
+    private async Task SaveInlineEditAsync( RequirementDto requirement )
     {
         var titleValidationResult = ValidateTitle(requirement.Title);
         if (titleValidationResult != null)
         {
-            Snackbar.Add(titleValidationResult, Severity.Error);
+            Snackbar.Add(titleValidationResult,Severity.Error);
             return;
         }
 
@@ -674,36 +674,36 @@
         {
             if (!string.IsNullOrWhiteSpace(_tagsInput))
             {
-                requirement.Tags = _tagsInput.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                .Select(t => t.Trim()).ToArray();
+                requirement.Tags = _tagsInput.Split(',',StringSplitOptions.RemoveEmptyEntries)
+            .Select(t => t.Trim()).ToArray();
             }
             if (!string.IsNullOrWhiteSpace(_testCasesInput))
             {
-                requirement.TestCaseIds = _testCasesInput.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                .Select(id => Guid.Parse(id.Trim())).ToList();
+                requirement.TestCaseIds = _testCasesInput.Split(',',StringSplitOptions.RemoveEmptyEntries)
+            .Select(id => Guid.Parse(id.Trim())).ToList();
             }
 
             await RequirementService.UpdateRequirementAsync(requirement);
             requirement.IsEditing = false;
             _originalRequirements.Remove(requirement.Id);
             _testCasesInput = string.Empty;
-            Snackbar.Add("Requirement updated successfully", Severity.Success);
+            Snackbar.Add("Requirement updated successfully",Severity.Success);
         }
         catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
-            Snackbar.Add("Unauthorized: Please check your permissions or login again.", Severity.Error);
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
             NavigationManager.NavigateTo("/login");
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to update requirement: {ex.Message}", Severity.Error);
+            Snackbar.Add($"Failed to update requirement: {ex.Message}",Severity.Error);
             Console.WriteLine($"Error updating requirement: {ex}");
         }
     }
 
-    private void CancelInlineEdit(RequirementDto requirement)
+    private void CancelInlineEdit( RequirementDto requirement )
     {
-        if (_originalRequirements.TryGetValue(requirement.Id, out var original))
+        if (_originalRequirements.TryGetValue(requirement.Id,out var original))
         {
             requirement.Title = original.Title;
             requirement.Description = original.Description;
@@ -718,29 +718,29 @@
         }
     }
 
-    private async Task DeleteRequirementAsync(Guid id, Guid projectId)
+    private async Task DeleteRequirementAsync( Guid id,Guid projectId )
     {
-        var parameters = new DialogParameters { { "ContentText", "Are you sure you want to delete this requirement and its children?" } };
-        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirm Delete", parameters, options);
+        var parameters = new DialogParameters { { "ContentText","Are you sure you want to delete this requirement and its children?" } };
+        var options = new DialogOptions { CloseButton = true,MaxWidth = MaxWidth.Small,FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirm Delete",parameters,options);
         var result = await dialog.Result;
 
         if (!result.Canceled)
         {
             try
             {
-                await RequirementService.DeleteRequirementAsync(id, projectId);
+                await RequirementService.DeleteRequirementAsync(id,projectId);
                 await _table.ReloadServerData();
-                Snackbar.Add("Requirement deleted successfully", Severity.Success);
+                Snackbar.Add("Requirement deleted successfully",Severity.Success);
             }
             catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                Snackbar.Add("Unauthorized: Please check your permissions or login again.", Severity.Error);
+                Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
                 NavigationManager.NavigateTo("/login");
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Failed to delete requirement: {ex.Message}", Severity.Error);
+                Snackbar.Add($"Failed to delete requirement: {ex.Message}",Severity.Error);
                 Console.WriteLine($"Error deleting requirement: {ex}");
             }
         }
@@ -748,9 +748,9 @@
 
     private async Task BulkDeleteRequirementsAsync()
     {
-        var parameters = new DialogParameters { { "ContentText", $"Are you sure you want to delete {_selectedRequirements.Count} requirements and their children?" } };
-        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirm Bulk Delete", parameters, options);
+        var parameters = new DialogParameters { { "ContentText",$"Are you sure you want to delete {_selectedRequirements.Count} requirements and their children?" } };
+        var options = new DialogOptions { CloseButton = true,MaxWidth = MaxWidth.Small,FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirm Bulk Delete",parameters,options);
         var result = await dialog.Result;
 
         if (!result.Canceled)
@@ -759,20 +759,20 @@
             {
                 foreach (var requirement in _selectedRequirements.ToList())
                 {
-                    await RequirementService.DeleteRequirementAsync(requirement.Id, requirement.ProjectId);
+                    await RequirementService.DeleteRequirementAsync(requirement.Id,requirement.ProjectId);
                 }
                 await _table.ReloadServerData();
                 _selectedRequirements.Clear();
-                Snackbar.Add("Selected requirements deleted successfully", Severity.Success);
+                Snackbar.Add("Selected requirements deleted successfully",Severity.Success);
             }
             catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                Snackbar.Add("Unauthorized: Please check your permissions or login again.", Severity.Error);
+                Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
                 NavigationManager.NavigateTo("/login");
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Failed to delete requirements: {ex.Message}", Severity.Error);
+                Snackbar.Add($"Failed to delete requirements: {ex.Message}",Severity.Error);
                 Console.WriteLine($"Error deleting requirements: {ex}");
             }
         }
@@ -782,7 +782,7 @@
     #region Dialog Operations
     private async Task OpenCreateDialogAsync()
     {
-        _newRequirement = new CreateRequirementDto();
+        _newRequirement = new CreateRequirementDto { Id = Guid.NewGuid() };
         _tagsInput = string.Empty;
         _testCasesInput = string.Empty;
         _projects = await ProjectService.GetProjectsAsync();
@@ -792,9 +792,10 @@
         _showCreateDialog = true;
         await Task.Run(() => _form?.ResetValidation());
     }
-    private async Task OpenCreateDialogEditAsync(Guid RequirementParentId)
+
+    private async Task OpenCreateDialogEditAsync( Guid RequirementParentId )
     {
-        _newRequirement = new CreateRequirementDto();
+        _newRequirement = new CreateRequirementDto { Id = Guid.NewGuid() };
         _tagsInput = string.Empty;
         _testCasesInput = string.Empty;
         _newRequirement.TenantId = _tenantId;
@@ -846,7 +847,7 @@
     {
         if (!_formIsValid)
         {
-            Snackbar.Add("Please fill in all required fields", Severity.Error);
+            Snackbar.Add("Please fill in all required fields",Severity.Error);
             return;
         }
 
@@ -854,33 +855,35 @@
         {
             if (!string.IsNullOrWhiteSpace(_tagsInput))
             {
-                _newRequirement.Tags = _tagsInput.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                .Select(t => t.Trim()).ToArray();
+                _newRequirement.Tags = _tagsInput.Split(',',StringSplitOptions.RemoveEmptyEntries)
+            .Select(t => t.Trim()).ToArray();
             }
             if (!string.IsNullOrWhiteSpace(_testCasesInput))
             {
-                _newRequirement.RequirementTestCases = _testCasesInput.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                .Select(id => new RequirementTestCase { TestCaseId = Guid.Parse(id.Trim()) })
-                .ToList();
+                _newRequirement.RequirementTestCases = _testCasesInput.Split(',',StringSplitOptions.RemoveEmptyEntries)
+            .Select(id => new RequirementTestCase { TestCaseId = Guid.Parse(id.Trim()) })
+            .ToList();
             }
             _newRequirement.TenantId = _tenantId;
-            await RequirementService.CreateRequirementAsync(_newRequirement, ApplicationContextService.SelectedProjectId??Guid.Empty);
+            await RequirementService.CreateRequirementAsync(_newRequirement,ApplicationContextService.SelectedProjectId ?? Guid.Empty);
             await _table.ReloadServerData();
             _showCreateDialog = false;
             _newRequirement = new CreateRequirementDto();
             _tagsInput = string.Empty;
             _testCasesInput = string.Empty;
             _form?.ResetValidation();
-            Snackbar.Add("Requirement created successfully", Severity.Success);
+            Snackbar.Add("Requirement created successfully",Severity.Success);
         }
-        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        catch (HttpRequestException ex) when (ex
+
+    .StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
-            Snackbar.Add("Unauthorized: Please check your permissions or login again.", Severity.Error);
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
             NavigationManager.NavigateTo("/login");
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to create requirement: {ex.Message}", Severity.Error);
+            Snackbar.Add($"Failed to create requirement: {ex.Message}",Severity.Error);
             Console.WriteLine($"Error creating requirement: {ex}");
         }
     }
@@ -898,12 +901,12 @@
             if (!string.IsNullOrWhiteSpace(_editTagsInput))
             {
                 _editRequirement.Tags = _editTagsInput.Split(',',StringSplitOptions.RemoveEmptyEntries)
-                .Select(t => t.Trim()).ToArray();
+            .Select(t => t.Trim()).ToArray();
             }
             if (!string.IsNullOrWhiteSpace(_testCasesInput))
             {
                 _editRequirement.TestCaseIds = _testCasesInput.Split(',',StringSplitOptions.RemoveEmptyEntries)
-                .Select(id => Guid.Parse(id.Trim())).ToList();
+            .Select(id => Guid.Parse(id.Trim())).ToList();
             }
 
             await RequirementService.UpdateRequirementAsync(_editRequirement);
@@ -941,25 +944,25 @@
 
             if (!requirements.Any())
             {
-                Snackbar.Add("No requirements found to export.", Severity.Warning);
+                Snackbar.Add("No requirements found to export.",Severity.Warning);
                 return;
             }
 
             using var memoryStream = new MemoryStream();
             using var writer = new StreamWriter(memoryStream);
-            using var csv = new CsvWriter(writer, CultureInfo.InvariantCulture);
+            using var csv = new CsvWriter(writer,CultureInfo.InvariantCulture);
             csv.WriteRecords(requirements.Select(r => new
             {
                 r.Id,
                 r.Title,
                 r.Description,
-                Tags = string.Join(",", r.Tags ?? new string[0]),
+                Tags = string.Join(",",r.Tags ?? new string[0]),
                 Project = _projects.FirstOrDefault(p => p.Id == r.ProjectId)?.Name ?? "None",
                 ParentRequirement = _parentRequirements.FirstOrDefault(pr => pr.Id == r.ParentRequirementId)?.Title ?? "None",
                 r.TenantId,
                 r.CreatedAt,
                 r.UpdatedAt,
-                TestCaseIds = string.Join(",", r.TestCaseIds ?? new List<Guid>())
+                TestCaseIds = string.Join(",",r.TestCaseIds ?? new List<Guid>())
             }));
             await writer.FlushAsync();
             memoryStream.Position = 0;
@@ -1229,7 +1232,6 @@
             }
             else
             {
-                // @child.Description
                 <MudTd><div>@((MarkupString)child.Description)</div></MudTd>
             }
             </td>

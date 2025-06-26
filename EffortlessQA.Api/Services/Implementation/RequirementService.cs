@@ -44,44 +44,11 @@ namespace EffortlessQA.Api.Services.Implementation
             if (project == null)
                 throw new Exception("Project not found.");
 
-            Guid RequirementID;
-			string _sanitizerdescription = _sanitizer.Sanitize(dto.Description);
-			string containerMarker = "effortlessqablobstoragecontainer/";
-			int containerIndex = _sanitizerdescription.IndexOf(containerMarker);
-
-			if (containerIndex >= 0)
-			{
-				int startIndex = containerIndex + containerMarker.Length;
-				int endIndex = _sanitizerdescription.IndexOf("/default/",startIndex);
-
-				if (endIndex > startIndex)
-				{
-					string possibleGuid = _sanitizerdescription.Substring(startIndex,endIndex - startIndex);
-					if (Guid.TryParse(possibleGuid,out Guid extractedId))
-					{
-						RequirementID = extractedId;
-					}
-					else
-					{
-						RequirementID = Guid.NewGuid(); // fallback
-					}
-				}
-				else
-				{
-					RequirementID = Guid.NewGuid(); // fallback
-				}
-			}
-			else
-			{
-				RequirementID = Guid.NewGuid(); // fallback
-			}
-
-
 			var requirement = new Requirement
             {
-                Id = RequirementID,
+                Id = dto.Id,
                 Title = dto.Title,
-                Description = _sanitizerdescription,
+                Description = _sanitizer.Sanitize(dto.Description),
 				//Description = dto.Description,
 				Tags = dto.Tags,
                 ProjectId = projectId,
@@ -329,54 +296,27 @@ namespace EffortlessQA.Api.Services.Implementation
 
 			if (requirement == null)
 				throw new Exception("Requirement not found.");
-			Guid RequirementID;
-			string _sanitizerdescription = _sanitizer.Sanitize(dto.Description ?? requirement.Description);
-			string containerMarker = "effortlessqablobstoragecontainer/";
-			int containerIndex = _sanitizerdescription.IndexOf(containerMarker);
-
-			if (containerIndex >= 0)
-			{
-				int startIndex = containerIndex + containerMarker.Length;
-				int endIndex = _sanitizerdescription.IndexOf("/default/",startIndex);
-
-				if (endIndex > startIndex)
-				{
-					string possibleGuid = _sanitizerdescription.Substring(startIndex,endIndex - startIndex);
-					if (Guid.TryParse(possibleGuid,out Guid extractedId))
-					{ RequirementID = extractedId; }
-					else
-					{ RequirementID = requirement.Id; }
-				}
-				else
-				{ RequirementID = requirement.Id; }
-			}
-			else
-			{ RequirementID = requirement.Id; }
 
 			//var newDescription = _sanitizer.Sanitize(dto.Description ?? requirement.Description);
 			//var newDescription = dto.Description ?? requirement.Description;
-			if (RequirementID != requirement.Id)
-			{
-				try
-				{
-					await _blobStorageService.DeleteUnusedImagesAsync(
-						_sanitizerdescription,
-						requirementId.ToString(),
-						"default"
-					);
-				}
-				catch (Exception ex)
-				{
-					_logger.LogWarning(
-						ex,
-						"Failed to delete unused images for requirement {RequirementId}",
-						requirementId
-					);
-				}
-			}
+   //         try
+   //         {
+   //             await _blobStorageService.DeleteUnusedImagesAsync(
+   //                 newDescription,
+   //                 requirementId.ToString(),
+   //                 "default"
+   //             );
+   //         }
+   //         catch (Exception ex)
+   //         {
+   //             _logger.LogWarning(
+   //                 ex,
+   //                 "Failed to delete unused images for requirement {RequirementId}",
+   //                 requirementId
+   //             );
+   //         }
 
-			requirement.Id = RequirementID;
-			requirement.Title = dto.Title ?? requirement.Title;
+            requirement.Title = dto.Title ?? requirement.Title;
 			requirement.Description = _sanitizer.Sanitize(dto.Description ?? requirement.Description);
 			requirement.Tags = dto.Tags ?? requirement.Tags;
 			requirement.ModifiedAt = DateTime.UtcNow;
