@@ -11,6 +11,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EffortlessQA.Data", "Effort
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EffortlessQA.Tests", "EffortlessQA.Tests\EffortlessQA.Tests.csproj", "{F8AEC8EB-BD6F-4B95-B335-0A6388DA1D7C}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EffortlessQA.UI", "EffortlessQA.UI\EffortlessQA.UI.csproj", "{A8D7B276-E55B-4AA7-AB58-AE4DE68E35B2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -69,6 +71,18 @@ Global
 		{F8AEC8EB-BD6F-4B95-B335-0A6388DA1D7C}.Release|x64.Build.0 = Release|Any CPU
 		{F8AEC8EB-BD6F-4B95-B335-0A6388DA1D7C}.Release|x86.ActiveCfg = Release|Any CPU
 		{F8AEC8EB-BD6F-4B95-B335-0A6388DA1D7C}.Release|x86.Build.0 = Release|Any CPU
+		{A8D7B276-E55B-4AA7-AB58-AE4DE68E35B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A8D7B276-E55B-4AA7-AB58-AE4DE68E35B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A8D7B276-E55B-4AA7-AB58-AE4DE68E35B2}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A8D7B276-E55B-4AA7-AB58-AE4DE68E35B2}.Debug|x64.Build.0 = Debug|Any CPU
+		{A8D7B276-E55B-4AA7-AB58-AE4DE68E35B2}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A8D7B276-E55B-4AA7-AB58-AE4DE68E35B2}.Debug|x86.Build.0 = Debug|Any CPU
+		{A8D7B276-E55B-4AA7-AB58-AE4DE68E35B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A8D7B276-E55B-4AA7-AB58-AE4DE68E35B2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A8D7B276-E55B-4AA7-AB58-AE4DE68E35B2}.Release|x64.ActiveCfg = Release|Any CPU
+		{A8D7B276-E55B-4AA7-AB58-AE4DE68E35B2}.Release|x64.Build.0 = Release|Any CPU
+		{A8D7B276-E55B-4AA7-AB58-AE4DE68E35B2}.Release|x86.ActiveCfg = Release|Any CPU
+		{A8D7B276-E55B-4AA7-AB58-AE4DE68E35B2}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
