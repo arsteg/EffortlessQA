@@ -1,0 +1,270 @@
+﻿@page "/dashboard"
+@using EffortlessQA.UI.Services
+@using EffortlessQA.Data.Dtos
+@using MudBlazor
+@inject ApplicationContextService ApplicationContextService
+@inject ReportingService ReportingService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@implements IDisposable
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <!-- Header -->
+    <MudGrid>
+        <MudItem xs="12">
+            <MudPaper Elevation="2" Class="pa-4 d-flex align-center justify-space-between">
+                <div>
+                    <MudText Typo="Typo.h5" Color="Color.Primary">
+                        Dashboard
+                    </MudText>                    
+                </div>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh" OnClick="RefreshData">
+                    Refresh
+                </MudButton>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <!-- Loading State -->
+    @if (_isLoading)
+    {
+        <MudGrid Class="mt-4">
+            <MudItem xs="12">
+                <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+            </MudItem>
+        </MudGrid>
+    }
+    else if (_errorMessage != null)
+    {
+        <MudGrid Class="mt-4">
+            <MudItem xs="12">
+                <MudAlert Severity="Severity.Error">@_errorMessage</MudAlert>
+            </MudItem>
+        </MudGrid>
+    }
+    else
+    {
+        <!-- Metrics Cards -->
+        <MudGrid Class="mt-4">
+            <MudItem xs="12" sm="6" md="3">
+                <MudCard Elevation="2">
+                    <MudCardContent Class="d-flex align-center">
+                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Large" Class="mr-3" />
+                        <div>
+                            <MudText Typo="Typo.body2">Passed Tests</MudText>
+                            <MudText Typo="Typo.h6">@_dashboardData.PassedTests</MudText>
+                        </div>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudCard Elevation="2">
+                    <MudCardContent Class="d-flex align-center">
+                        <MudIcon Icon="@Icons.Material.Filled.Error" Color="Color.Error" Size="Size.Large" Class="mr-3" />
+                        <div>
+                            <MudText Typo="Typo.body2">Failed Tests</MudText>
+                            <MudText Typo="Typo.h6">@_dashboardData.FailedTests</MudText>
+                        </div>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudCard Elevation="2">
+                    <MudCardContent Class="d-flex align-center">
+                        <MudIcon Icon="@Icons.Material.Filled.Pending" Color="Color.Warning" Size="Size.Large" Class="mr-3" />
+                        <div>
+                            <MudText Typo="Typo.body2">Pending Tests</MudText>
+                            <MudText Typo="Typo.h6">@_dashboardData.PendingTests</MudText>
+                        </div>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudCard Elevation="2">
+                    <MudCardContent Class="d-flex align-center">
+                        <MudIcon Icon="@Icons.Material.Filled.BugReport" Color="Color.Secondary" Size="Size.Large" Class="mr-3" />
+                        <div>
+                            <MudText Typo="Typo.body2">Open Defects</MudText>
+                            <MudText Typo="Typo.h6">@(_dashboardData.HighPriorityDefects + _dashboardData.MediumPriorityDefects + _dashboardData.LowPriorityDefects)</MudText>
+                        </div>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        </MudGrid>
+
+        <!-- Charts -->
+        <MudGrid Class="mt-4">
+            <MudItem xs="12" md="6">
+                <MudCard Elevation="2">
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">Test Run Status</MudText>
+                        <MudChart ChartType="ChartType.Bar" 
+                                  ChartSeries="@_testRunSeries" 
+                                  XAxisLabels="@_testRunLabels" 
+                                  Height="300px"
+                                  Options="@(new ChartOptions { YAxisTicks = 1, YAxisFormat = "N0" })" />
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudCard Elevation="2">
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">Defect Priority Distribution</MudText>
+                        <MudChart ChartType="ChartType.Pie" 
+                                  ChartSeries="@_defectSeries" 
+                                  LegendLabels="@_defectLabels"
+                                  Height="300px" />
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        </MudGrid>
+
+        <!-- Project Progress -->
+        <MudGrid Class="mt-4">
+            <MudItem xs="12" md="6">
+                <MudCard Elevation="2">
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">Project Progress</MudText>
+                        <MudProgressLinear Color="Color.Primary" Value="@_dashboardData.TestCoverage" Class="mt-2" />
+                        <MudText Typo="Typo.body2" Class="mt-2">Test Coverage: @_dashboardData.TestCoverage%</MudText>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudCard Elevation="2">
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">Quick Actions</MudText>
+                        <MudButtonGroup Variant="Variant.Filled" Color="Color.Primary" Class="mt-2">
+                            <MudButton StartIcon="@Icons.Material.Filled.PlayArrow" OnClick="@(() => NavigationManager.NavigateTo("/test-runs"))">View Test Runs</MudButton>
+                            <MudButton StartIcon="@Icons.Material.Filled.BugReport" OnClick="@(() => NavigationManager.NavigateTo("/defects"))">View Defects</MudButton>
+                            <MudButton StartIcon="@Icons.Material.Filled.Add" OnClick="@(() => NavigationManager.NavigateTo("/test-cases/new"))">New Test Case</MudButton>
+                        </MudButtonGroup>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        </MudGrid>
+
+        <!-- Recent Test Runs -->
+        <MudGrid Class="mt-4">
+            <MudItem xs="12">
+                <MudCard Elevation="2">
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">Recent Test Runs</MudText>
+                    @*     <MudTable Items="@_dashboardData.RecentTestRuns" Dense="true" Hover="true" Bordered="true" Striped="true">
+                            <HeaderContent>
+                                <MudTh>Name</MudTh>
+                                <MudTh>Status</MudTh>
+                                <MudTh>Date</MudTh>
+                                <MudTh>Actions</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="Name">@context.Name</MudTd>
+                                <MudTd DataLabel="Status">
+                                    <MudChip Color="@GetStatusColor(context.Status)">@context.Status</MudChip>
+                                </MudTd>
+                                <MudTd DataLabel="Date">@context.RunDate.ToString("MMM dd, yyyy HH:mm")</MudTd>
+                                <MudTd DataLabel="Actions">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Primary" Size="Size.Small" OnClick="@(() => ViewTestRun(context.Id))" />
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable> *@
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        </MudGrid>
+    }
+</MudContainer>
+
+@code {
+    private DashboardDataDto _dashboardData = new();
+    private List<ChartSeries> _testRunSeries = new();
+    private string[] _testRunLabels = { "Passed", "Failed", "Pending" };
+    private List<ChartSeries> _defectSeries = new();
+    private string[] _defectLabels = { "High", "Medium", "Low" };
+    private bool _isLoading = true;
+    private string _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+
+        // Subscribe to project changes
+        ApplicationContextService.OnProjectChanged += async () =>
+        {
+            await LoadData();
+            await InvokeAsync(StateHasChanged);
+        };
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            _isLoading = true;
+            _errorMessage = null;
+
+            if (ApplicationContextService.SelectedProjectId.HasValue)
+            {
+                //_dashboardData = await ReportingService.GetDashboardDataAsync(ApplicationContextService.SelectedProjectId.Value);
+                UpdateCharts();
+            }
+            else
+            {
+                _dashboardData = new();
+                _testRunSeries = new();
+                _defectSeries = new();
+                Snackbar.Add("Please select a project to view dashboard data.", Severity.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to load dashboard data: {ex.Message}";
+            Snackbar.Add(_errorMessage, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void UpdateCharts()
+    {
+        _testRunSeries = new List<ChartSeries>
+        {
+            new ChartSeries { Name = "Test Runs", Data = new double[] { _dashboardData.PassedTests, _dashboardData.FailedTests, _dashboardData.PendingTests } }
+        };
+        _defectSeries = new List<ChartSeries>
+        {
+            new ChartSeries { Name = "Defects", Data = new double[] { _dashboardData.HighPriorityDefects, _dashboardData.MediumPriorityDefects, _dashboardData.LowPriorityDefects } }
+        };
+    }
+
+    private async Task RefreshData()
+    {
+        await LoadData();
+        Snackbar.Add("Dashboard refreshed", Severity.Success);
+    }
+
+    private void ViewTestRun(Guid testRunId)
+    {
+        NavigationManager.NavigateTo($"/test-runs/{testRunId}");
+    }
+
+    private Color GetStatusColor(string status) => status switch
+    {
+        "Passed" => Color.Success,
+        "Failed" => Color.Error,
+        "Pending" => Color.Warning,
+        _ => Color.Default
+    };
+
+    public void Dispose()
+    {
+        ApplicationContextService.OnProjectChanged -= async () =>
+        {
+            await LoadData();
+            await InvokeAsync(StateHasChanged);
+        };
+    }
+}

@@ -1,0 +1,970 @@
+﻿@page "/test-runs"
+@using ClosedXML.Excel
+@using CsvHelper
+@using EffortlessQA.UI.Components.dialogs
+@using EffortlessQA.UI.Models
+@using EffortlessQA.UI.Services
+@using EffortlessQA.Data.Dtos
+@using EffortlessQA.Data.Entities
+@using MudBlazor
+@using System.Globalization
+@using System.Text.Json
+@inject TestRunService TestRunService
+@inject CommonService CommonService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@inject IJSRuntime JSRuntime
+@inject IDialogService DialogService
+@inject ProjectService ProjectService
+@inject ApplicationContextService ApplicationContextService
+
+<MudThemeProvider Theme="_customTheme" />
+<MudContainer MaxWidth="MaxWidth.False" Class="py-8 px-4 px-md-8">
+    <MudGrid Spacing="4">
+        <!-- Header -->
+        <MudItem xs="12">
+            <MudText Typo="Typo.h5" Color="Color.Primary" Class="mb-4">Manage Test Runs</MudText>
+        </MudItem>
+
+        <!-- Toolbar -->
+        <MudItem xs="12">
+            <MudPaper Elevation="2" Class="pa-4" Style="border-radius: 8px;">
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" sm="4" md="3">
+                        <MudTextField T="string"
+                                      Label="Search"
+                                      Placeholder="Enter test run name..."
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Search"
+                                      @bind-Value="_searchTerm"
+                                      DebounceInterval="500"
+                                      OnDebounceIntervalElapsed="HandleSearchTestRuns"
+                                      Variant="Variant.Outlined"
+                                      Clearable="true"
+                                      Class="mud-input-rounded" />
+                    </MudItem>
+                    <MudItem xs="12" sm="8" md="9" Class="d-flex align-center justify-end gap-2">
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                           Color="Color.Primary"
+                                           Size="Size.Medium"
+                                           OnClick="@OpenCreateDialogAsync"
+                                           OnMouseOver="@(() => LogHover("Add Test Run"))"
+                                           AriaLabel="Add Test Run"
+                                           Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Add Test Run</MudText>
+                        </div>
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                                           Color="Color.Secondary"
+                                           Size="Size.Medium"
+                                           OnClick="@RefreshTestRunsAsync"
+                                           OnMouseOver="@(() => LogHover("Refresh test runs"))"
+                                           AriaLabel="Refresh test runs"
+                                           Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Refresh</MudText>
+                        </div>
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.TextSnippet"
+                                           Color="Color.Default"
+                                           Size="Size.Medium"
+                                           OnClick="@ExportToCsvAsync"
+                                           OnMouseOver="@(() => LogHover("Export to CSV"))"
+                                           AriaLabel="Export to CSV"
+                                           Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Export CSV</MudText>
+                        </div>
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.GridOn"
+                                           Color="Color.Default"
+                                           Size="Size.Medium"
+                                           OnClick="@ExportToExcelAsync"
+                                           OnMouseOver="@(() => LogHover("Export to Excel"))"
+                                           AriaLabel="Export to Excel"
+                                           Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Export Excel</MudText>
+                        </div>
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.PictureAsPdf"
+                                           Color="Color.Default"
+                                           Size="Size.Medium"
+                                           OnClick="@ExportToPdfAsync"
+                                           OnMouseOver="@(() => LogHover("Export to PDF"))"
+                                           AriaLabel="Export to PDF"
+                                           Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Export PDF</MudText>
+                        </div>
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.CloudUpload"
+                                           Color="Color.Primary"
+                                           Size="Size.Medium"
+                                           OnClick="@ImportFromFileAsync"
+                                           OnMouseOver="@(() => LogHover("Import Excel/CSV"))"
+                                           AriaLabel="Import Excel or CSV"
+                                           Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Import Excel/CSV</MudText>
+                        </div>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Table -->
+        <MudItem xs="12">
+            <MudPaper Elevation="2" Class="pa-4" Style="border-radius: 8px;">
+                <MudTable ServerData="@(new Func<TableState, CancellationToken, Task<TableData<TestRunDto>>>(LoadTestRunsAsync))"
+                          @ref="_table"
+                          Hover="true"
+                          Breakpoint="Breakpoint.Sm"
+                          Loading="@_isLoading"
+                          Dense="true"
+                          AllowMultiSelection="true"
+                          @bind-SelectedItems="_selectedTestRuns"
+                          Class="mud-table-clean"
+                          RowsPerPage="@_pageSize">
+                    <ToolBarContent>
+                        <MudText Typo="Typo.subtitle1" Color="Color.Primary">Test Runs</MudText>
+                        <MudSpacer />
+                        @if (_selectedTestRuns.Any())
+                        {
+                            <MudButton Variant="Variant.Text"
+                                       Color="Color.Error"
+                                       StartIcon="@Icons.Material.Filled.Delete"
+                                       OnClick="@BulkDeleteTestRunsAsync"
+                                       Size="Size.Small">Delete (@_selectedTestRuns.Count)</MudButton>
+                        }
+                    </ToolBarContent>
+                    <HeaderContent>
+                        <MudTh>
+                            <MudTableSortLabel SortLabel="name" T="TestRunDto" InitialDirection="SortDirection.Ascending">Name</MudTableSortLabel>
+                        </MudTh>
+                        <MudTh>
+                            <MudTableSortLabel SortLabel="description" T="TestRunDto">Description</MudTableSortLabel>
+                        </MudTh>
+                        <MudTh>Assigned Tester</MudTh>
+                        <MudTh>Project</MudTh>
+                        <MudTh Style="width: 120px; text-align: center;">Actions</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>
+                            @if (context.IsEditing)
+                            {
+                                <MudTextField T="string"
+                                              @bind-Value="context.Name"
+                                              Required="true"
+                                              RequiredError="Name is required"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense"
+                                              Class="mud-input-compact" />
+                            }
+                            else
+                            {
+                                @context.Name
+                            }
+                        </MudTd>
+                        <MudTd>
+                            @if (context.IsEditing)
+                            {
+                                <MudTextField T="string"
+                                              @bind-Value="context.Description"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense"
+                                              Lines="2"
+                                              Class="mud-input-compact" />
+                            }
+                            else
+                            {
+                                <MudTd><div>@((MarkupString)context.Description)</div></MudTd>
+                            }
+                        </MudTd>
+                        <MudTd>
+                            @* @(_users.FirstOrDefault(u => u.Id == context.AssignedTesterId)?.Name ?? "None") *@
+                        </MudTd>
+                        <MudTd>
+                            @(_projects.FirstOrDefault(p => p.Id == context.ProjectId)?.Name ?? "None")
+                        </MudTd>
+                        <MudTd Style="display: flex; justify-content: center; gap: 8px; vertical-align: middle;">
+                            @if (context.IsEditing)
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Save"
+                                               Color="Color.Success"
+                                               Size="Size.Small"
+                                               OnClick="@(() => SaveInlineEditAsync(context))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Cancel"
+                                               Color="Color.Secondary"
+                                               Size="Size.Small"
+                                               OnClick="@(() => CancelInlineEdit(context))" />
+                            }
+                            else
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                               Color="Color.Primary"
+                                               Size="Size.Small"
+                                               OnClick="@(() => StartInlineEdit(context))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.NoteAlt"
+                                               Color="Color.Info"
+                                               Size="Size.Small"
+                                               OnClick="@(() => OpenEditDialogAsync(context))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                               Color="Color.Error"
+                                               Size="Size.Small"
+                                               OnClick="@(() => DeleteTestRunAsync(context.Id, context.ProjectId))" />
+                            }
+                        </MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <div class="d-flex align-center gap-3">
+                            <MudText Typo="Typo.body2" Class="mr-2">Rows per page:</MudText>
+                            @foreach (var size in new int[] { 10,25,50,100 })
+                            {
+                                <MudButton Variant="@(_pageSize == size ? Variant.Filled : Variant.Outlined)"
+                                           Color="Color.Primary"
+                                           Size="Size.Small"
+                                           OnClick="@(() => OnPageSizeChanged(size))"
+                                           Class="mud-button-compact"
+                                           AriaLabel="@($"Set rows per page to {size}")">
+                                    @size
+                                </MudButton>
+                            }
+                            <MudTablePager RowsPerPageString="" DisableRowsPerPage="true" />
+                        </div>
+                    </PagerContent>
+                    <LoadingContent>
+                        <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
+                    </LoadingContent>
+                    <NoRecordsContent>
+                        <MudPaper Elevation="0" Class="pa-8 d-flex flex-column align-center justify-center" Style="min-height: 400px; background: transparent;">
+                            <MudIcon Icon="@Icons.Material.Filled.FolderOpen" Size="Size.Large" Color="Color.Primary" Class="mb-4" />
+                            <MudText Typo="Typo.h6" Color="Color.Primary" Align="Align.Center">No Test Runs Found</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center" Class="mb-6 mt-3">
+                                Click "Add Test Run" above to create your first test run.
+                            </MudText>
+                        </MudPaper>
+                    </NoRecordsContent>
+                </MudTable>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+<!-- Create New Test Run Dialog -->
+<MudDialog @bind-Visible="_showCreateDialog" Options="new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true, CloseButton = true }" Style="min-height: 80vh; max-height: 90vh;">
+    <DialogContent>
+        <MudGrid Class="pa-6">
+            <MudItem xs="12">
+                <MudText Typo="Typo.h6" Color="Color.Primary" Class="mb-4">Create New Test Run</MudText>
+                <MudForm @ref="_form" @bind-IsValid="_formIsValid" Class="d-flex flex-column gap-6">
+                    <MudTextField T="string"
+                                  Label="Test Run Name"
+                                  @bind-Value="_newTestRun.Name"
+                                  Required="true"
+                                  RequiredError="Name is required"
+                                  Validation="@(new Func<string, string>(ValidateName))"
+                                  Variant="Variant.Outlined"
+                                  Clearable="true"
+                                  AutoFocus="true"
+                                  Margin="Margin.Normal"
+                                  HelperText="Enter a unique test run name (min 3 characters)"
+                                  Class="mud-input-rounded" />
+                    @* <MudTextField T="string"
+                                  Label="Description"
+                                  @bind-Value="_newTestRun.Description"
+                                  Lines="15"
+                                  Variant="Variant.Outlined"
+                                  Clearable="true"
+                                  Margin="Margin.Normal"
+                                  HelperText="Describe the test run in detail"
+                                  Class="mud-input-rounded" /> *@
+                    <MudText Typo="Typo.subtitle1">
+                        Description
+                       @*  <TinyMceEditor @bind-Value="@_newTestRun.Description" /> *@
+                    </MudText>
+                    <MudSelect T="Guid?"
+                               Label="Assigned Tester"
+                               @bind-Value="_newTestRun.AssignedTesterId"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Normal"
+                               Class="mud-input-rounded"
+                               AnchorOrigin="Origin.BottomCenter"
+                               TransformOrigin="Origin.TopCenter"
+                               ToStringFunc="@(id => _users.FirstOrDefault(u => u.Id == id)?.FirstName ?? "None")">
+                        <MudSelectItem T="Guid?" Value="@(null)">None</MudSelectItem>
+                        @foreach (var user in _users)
+                        {
+                            <MudSelectItem T="Guid?" Value="@user.Id">@(user.FirstName ?? $"User ID: {user.Id}")</MudSelectItem>
+                        }
+                    </MudSelect>
+                    @*<MudSelect T="Guid"
+                               Label="Project"
+                               @bind-Value="_newTestRun.ProjectId"
+                               Required="true"
+                               RequiredError="Project is required"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Normal"
+                               Class="mud-input-rounded"
+                               AnchorOrigin="Origin.BottomCenter"
+                               TransformOrigin="Origin.TopCenter"
+                               ToStringFunc="@(id => _projects.FirstOrDefault(p => p.Id == id)?.Name ?? "Unknown Project")">
+                        @foreach (var project in _projects)
+                        {
+                            <MudSelectItem Value="@project.Id">@(project.Name ?? $"Project ID: {project.Id}")</MudSelectItem>
+                        }
+                    </MudSelect>*@
+                </MudForm>
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@CancelCreate" Variant="Variant.Text" Color="Color.Secondary" Size="Size.Medium">Cancel</MudButton>
+        <MudButton OnClick="@CreateTestRunAsync" Variant="Variant.Filled" Color="Color.Primary" Disabled="!_formIsValid" Size="Size.Medium">Create</MudButton>
+    </DialogActions>
+</MudDialog>
+
+<!-- Edit Test Run Dialog -->
+<MudDialog @bind-Visible="_showEditDialog" Options="new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true, CloseButton = true }" Style="min-height: 80vh; max-height: 90vh;">
+    <DialogContent>
+        <MudGrid Class="pa-6">
+            <MudItem xs="12">
+                <MudText Typo="Typo.h6" Color="Color.Primary" Class="mb-4">Edit Test Run</MudText>
+                <MudForm @ref="_editForm" @bind-IsValid="_editFormIsValid" Class="d-flex flex-column gap-6">
+                    <MudTextField T="string"
+                                  Label="Test Run Name"
+                                  @bind-Value="_editTestRun.Name"
+                                  Required="true"
+                                  RequiredError="Name is required"
+                                  Validation="@(new Func<string, string>(ValidateName))"
+                                  Variant="Variant.Outlined"
+                                  Clearable="true"
+                                  AutoFocus="true"
+                                  Margin="Margin.Normal"
+                                  HelperText="Enter a unique test run name (min 3 characters)"
+                                  Class="mud-input-rounded" />
+                   @*  <MudTextField T="string"
+                                  Label="Description"
+                                  @bind-Value="_editTestRun.Description"
+                                  Lines="15"
+                                  Variant="Variant.Outlined"
+                                  Clearable="true"
+                                  Margin="Margin.Normal"
+                                  HelperText="Describe the test run in detail"
+                                  Class="mud-input-rounded" /> *@
+                    <MudText Typo="Typo.subtitle1">
+                        Description
+                       @*  <TinyMceEditor @bind-Value="@_editTestRun.Description" /> *@
+                    </MudText>
+                    @*<MudSelect T="Guid?"
+                               Label="Assigned Tester"
+                               @bind-Value="_editTestRun.AssignedTesterId"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Normal"
+                               Class="mud-input-rounded"
+                               AnchorOrigin="Origin.BottomCenter"
+                               TransformOrigin="Origin.TopCenter"
+                               ToStringFunc="@(id => _users.FirstOrDefault(u => u.Id == id)?.FirstName ?? "None")">
+                        <MudSelectItem Value="@(null)">None</MudSelectItem>
+                        @foreach (var user in _users)
+                        {
+                            <MudSelectItem Value="@user.Id">@(user.FirstName ?? $"User ID: {user.Id}")</MudSelectItem>
+                        }
+                    </MudSelect>*@
+                </MudForm>
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@CancelEdit" Variant="Variant.Text" Color="Color.Secondary" Size="Size.Medium">Cancel</MudButton>
+        <MudButton OnClick="@SaveEditAsync" Variant="Variant.Filled" Color="Color.Primary" Disabled="!_editFormIsValid" Size="Size.Medium">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    #region Fields
+    private List<TestRunDto> _testRuns = new();
+    private List<ProjectDto> _projects = new();
+    private List<UserDto> _users = new();
+    private CreateTestRunDto _newTestRun = new();
+    private TestRunDto _editTestRun = new();
+    private bool _showCreateDialog;
+    private bool _showEditDialog;
+    private string _searchTerm = string.Empty;
+    private bool _isLoading;
+    private MudTable<TestRunDto> _table;
+    private HashSet<TestRunDto> _selectedTestRuns = new();
+    private MudForm _form;
+    private MudForm _editForm;
+    private bool _formIsValid;
+    private bool _editFormIsValid;
+    private int _pageSize = 10;
+    private Dictionary<Guid,TestRunDto> _originalTestRuns = new();
+    private readonly string _tenantId = "default"; // Replace with dynamic tenant ID logic
+
+    private readonly MudTheme _customTheme = new()
+        {
+            PaletteDark = new PaletteDark
+            {
+                Primary = "#2196F3",
+                Secondary = "#F50057",
+                Background = "#121212",
+                Surface = "#1E1E1E",
+                TextPrimary = "#FFFFFF",
+                TextSecondary = "#B0BEC5",
+                AppbarBackground = "#2196F3",
+                ActionDefault = "#FFFFFF"
+            },
+            Typography = new Typography
+            {
+            // Customize typography if needed
+            },
+            LayoutProperties = new LayoutProperties
+            {
+                DefaultBorderRadius = "8px"
+            }
+        };
+    #endregion
+
+    #region Lifecycle
+    protected override async Task OnInitializedAsync()
+    {
+        _projects = await ProjectService.GetProjectsAsync();
+        _users = await TestRunService.GetUsersAsync(); //Assume a method to fetch users
+        _newTestRun.AssignedTesterId = _users?.FirstOrDefault()?.Id;
+        await _table?.ReloadServerData();
+    }
+    #endregion
+
+    #region Table Operations
+    private async Task<TableData<TestRunDto>> LoadTestRunsAsync( TableState state,CancellationToken cancellationToken )
+    {
+        _isLoading = true;
+        try
+        {
+            string filter = string.Empty;
+            if (!string.IsNullOrEmpty(_searchTerm))
+                filter += $"name:{_searchTerm}";
+            if (!string.IsNullOrEmpty(state.SortLabel))
+                filter += $"{(string.IsNullOrEmpty(filter) ? "" : ",")}sort:{state.SortLabel}:{(state.SortDirection == SortDirection.Ascending ? "asc" : "desc")}";
+
+            var query = new TestRunQuery
+                {
+                    SearchTerm = _searchTerm,
+                    SortBy = state.SortLabel,
+                    SortDirection = state.SortDirection == SortDirection.Ascending ? "asc" : "desc",
+                    Page = state.Page + 1,
+                    PageSize = _pageSize
+                };
+
+            var result = await TestRunService.GetPagedTestRunsAsync(query);
+
+            return new TableData<TestRunDto>
+                {
+                    TotalItems = result.TotalCount,
+                    Items = result.Items
+                };
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
+            return new TableData<TestRunDto> { TotalItems = 0,Items = new List<TestRunDto>() };
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load test runs: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error loading test runs: {ex}");
+            return new TableData<TestRunDto> { TotalItems = 0,Items = new List<TestRunDto>() };
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task OnPageSizeChanged( int newSize )
+    {
+        _pageSize = newSize;
+        Snackbar.Add($"Page size changed to {_pageSize}",Severity.Info);
+        await _table.ReloadServerData();
+    }
+
+    private async Task HandleSearchTestRuns( string term )
+    {
+        _searchTerm = term;
+        await _table.ReloadServerData();
+    }
+
+    private async Task RefreshTestRunsAsync()
+    {
+        await _table.ReloadServerData();
+        Snackbar.Add("Test runs refreshed successfully",Severity.Success);
+    }
+
+    private void StartInlineEdit( TestRunDto testRun )
+    {
+        testRun.IsEditing = true;
+        _originalTestRuns[testRun.Id] = new TestRunDto
+            {
+                Id = testRun.Id,
+                Name = testRun.Name,
+                Description = testRun.Description,
+                AssignedTesterId = testRun.AssignedTesterId,
+                ProjectId = testRun.ProjectId,
+                TenantId = testRun.TenantId,
+                CreatedAt = testRun.CreatedAt,
+                UpdatedAt = testRun.UpdatedAt
+            };
+    }
+
+    private async Task SaveInlineEditAsync( TestRunDto testRun )
+    {
+        var nameValidationResult = ValidateName(testRun.Name);
+        if (nameValidationResult != null)
+        {
+            Snackbar.Add(nameValidationResult,Severity.Error);
+            return;
+        }
+
+        try
+        {
+            await TestRunService.UpdateTestRunAsync(testRun);
+            testRun.IsEditing = false;
+            _originalTestRuns.Remove(testRun.Id);
+            Snackbar.Add("Test run updated successfully",Severity.Success);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to update test run: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error updating test run: {ex}");
+        }
+    }
+
+    private void CancelInlineEdit( TestRunDto testRun )
+    {
+        if (_originalTestRuns.TryGetValue(testRun.Id,out var original))
+        {
+            testRun.Name = original.Name;
+            testRun.Description = original.Description;
+            testRun.AssignedTesterId = original.AssignedTesterId;
+            testRun.ProjectId = original.ProjectId;
+            testRun.TenantId = original.TenantId;
+            testRun.IsEditing = false;
+            _originalTestRuns.Remove(testRun.Id);
+        }
+    }
+
+    private async Task DeleteTestRunAsync( Guid id,Guid projectId )
+    {
+        var parameters = new DialogParameters { { "ContentText","Are you sure you want to delete this test run?" } };
+        var options = new DialogOptions { CloseButton = true,MaxWidth = MaxWidth.Small,FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirm Delete",parameters,options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            try
+            {
+                await TestRunService.DeleteTestRunAsync(id,projectId);
+                await _table.ReloadServerData();
+                Snackbar.Add("Test run deleted successfully",Severity.Success);
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+                NavigationManager.NavigateTo("/login");
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to delete test run: {ex.Message}",Severity.Error);
+                Console.WriteLine($"Error deleting test run: {ex}");
+            }
+        }
+    }
+
+    private async Task BulkDeleteTestRunsAsync()
+    {
+        var parameters = new DialogParameters { { "ContentText",$"Are you sure you want to delete {_selectedTestRuns.Count} test runs?" } };
+        var options = new DialogOptions { CloseButton = true,MaxWidth = MaxWidth.Small,FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirm Bulk Delete",parameters,options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            try
+            {
+                foreach (var testRun in _selectedTestRuns.ToList())
+                {
+                    await TestRunService.DeleteTestRunAsync(testRun.Id,testRun.ProjectId);
+                }
+                await _table.ReloadServerData();
+                _selectedTestRuns.Clear();
+                Snackbar.Add("Selected test runs deleted successfully",Severity.Success);
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+                NavigationManager.NavigateTo("/login");
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to delete test runs: {ex.Message}",Severity.Error);
+                Console.WriteLine($"Error deleting test runs: {ex}");
+            }
+        }
+    }
+    #endregion
+
+    #region Dialog Operations
+    private async Task OpenCreateDialogAsync()
+    {
+        _newTestRun = new CreateTestRunDto();
+        // _projects = await ProjectService.GetProjectsAsync();
+        _users = await TestRunService.GetUsersAsync();
+        _newTestRun.AssignedTesterId = _users?.FirstOrDefault()?.Id;
+        _newTestRun.TenantId = _tenantId;
+        _showCreateDialog = true;
+        await Task.Run(() => _form?.ResetValidation());
+    }
+
+    private async Task OpenEditDialogAsync( TestRunDto testRun )
+    {
+        _editTestRun = new TestRunDto
+            {
+                Id = testRun.Id,
+                Name = testRun.Name,
+                Description = testRun.Description,
+                AssignedTesterId = testRun.AssignedTesterId,
+                ProjectId = testRun.ProjectId,
+                TenantId = testRun.TenantId,
+                CreatedAt = testRun.CreatedAt,
+                UpdatedAt = testRun.UpdatedAt
+            };
+        // _projects = await ProjectService.GetProjectsAsync();
+        // _users = await TestRunService.GetUsersAsync();
+        _showEditDialog = true;
+        await Task.Run(() => _editForm?.ResetValidation());
+    }
+
+    private void CancelCreate()
+    {
+        _showCreateDialog = false;
+        _newTestRun = new CreateTestRunDto();
+        _form?.ResetValidation();
+    }
+
+    private void CancelEdit()
+    {
+        _showEditDialog = false;
+        _editTestRun = new TestRunDto();
+        _editForm?.ResetValidation();
+    }
+
+    private async Task CreateTestRunAsync()
+    {
+        if (!_formIsValid)
+        {
+            Snackbar.Add("Please fill in all required fields",Severity.Error);
+            return;
+        }
+
+        try
+        {
+            _newTestRun.TenantId = _tenantId;
+            await TestRunService.CreateTestRunAsync(_newTestRun,ApplicationContextService.SelectedProjectId ?? Guid.Empty);
+            await _table.ReloadServerData();
+            _showCreateDialog = false;
+            _newTestRun = new CreateTestRunDto();
+            _form?.ResetValidation();
+            Snackbar.Add("Test run created successfully",Severity.Success);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to create test run: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error creating test run: {ex}");
+        }
+    }
+
+    private async Task SaveEditAsync()
+    {
+        if (!_editFormIsValid)
+        {
+            Snackbar.Add("Please fill in all required fields",Severity.Error);
+            return;
+        }
+
+        try
+        {
+            await TestRunService.UpdateTestRunAsync(_editTestRun);
+            await _table.ReloadServerData();
+            _showEditDialog = false;
+            _editTestRun = new TestRunDto();
+            _editForm?.ResetValidation();
+            Snackbar.Add("Test run updated successfully",Severity.Success);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to update test run: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error updating test run: {ex}");
+        }
+    }
+    #endregion
+
+    #region Export/Import
+    private async Task ExportToCsvAsync()
+    {
+        try
+        {
+            var result = await TestRunService.GetTestRunsAsync(0,100,null);
+            var testRuns = result.ToList();
+
+            if (!testRuns.Any())
+            {
+                Snackbar.Add("No test runs found to export.",Severity.Warning);
+                return;
+            }
+
+            using var memoryStream = new MemoryStream();
+            using var writer = new StreamWriter(memoryStream);
+            using var csv = new CsvWriter(writer,CultureInfo.InvariantCulture);
+            csv.WriteRecords(testRuns.Select(tr => new
+            {
+                tr.Id,
+                tr.Name,
+                tr.Description,
+                // AssignedTester = _users.FirstOrDefault(u => u.Id == tr.AssignedTesterId)?.UserName ?? "None",
+                Project = _projects.FirstOrDefault(p => p.Id == tr.ProjectId)?.Name ?? "None",
+                tr.TenantId,
+                tr.CreatedAt,
+                tr.UpdatedAt
+            }));
+            await writer.FlushAsync();
+            memoryStream.Position = 0;
+
+            var csvBytes = memoryStream.ToArray();
+            var base64Data = Convert.ToBase64String(csvBytes);
+            await JSRuntime.InvokeVoidAsync("downloadFileFromBase64",
+                "TestRunsExport.csv",
+                "text/csv",
+                base64Data);
+
+            Snackbar.Add("Test runs exported to CSV successfully",Severity.Success);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to export test runs: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error exporting to CSV: {ex}");
+        }
+    }
+
+    private async Task ExportToExcelAsync()
+    {
+        try
+        {
+            var result = await TestRunService.GetTestRunsAsync(0,100,null);
+            var testRuns = result.ToList();
+
+            if (!testRuns.Any())
+            {
+                Snackbar.Add("No test runs found to export.",Severity.Warning);
+                return;
+            }
+
+            using var workbook = new XLWorkbook();
+            var worksheet = workbook.Worksheets.Add("Test Runs");
+
+            worksheet.Cell("A1").Value = "ID";
+            worksheet.Cell("B1").Value = "Name";
+            worksheet.Cell("C1").Value = "Description";
+            worksheet.Cell("D1").Value = "Assigned Tester";
+            worksheet.Cell("E1").Value = "Project";
+            worksheet.Cell("F1").Value = "Tenant ID";
+            worksheet.Cell("G1").Value = "Created At";
+            worksheet.Cell("H1").Value = "Updated At";
+
+            var row = 2;
+            foreach (var tr in testRuns)
+            {
+                worksheet.Cell($"A{row}").Value = tr.Id.ToString();
+                worksheet.Cell($"B{row}").Value = tr.Name;
+                worksheet.Cell($"C{row}").Value = tr.Description;
+                // worksheet.Cell($"D{row}").Value = _users.FirstOrDefault(u => u.Id == tr.AssignedTesterId)?.UserName ?? "None";
+                worksheet.Cell($"E{row}").Value = _projects.FirstOrDefault(p => p.Id == tr.ProjectId)?.Name ?? "None";
+                worksheet.Cell($"F{row}").Value = tr.TenantId;
+                worksheet.Cell($"G{row}").Value = tr.CreatedAt.ToString("yyyy-MM-dd");
+                worksheet.Cell($"H{row}").Value = tr.UpdatedAt?.ToString("yyyy-MM-dd");
+                row++;
+            }
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            stream.Position = 0;
+
+            var bytes = stream.ToArray();
+            var base64Data = Convert.ToBase64String(bytes);
+            await JSRuntime.InvokeVoidAsync("downloadFileFromBase64",
+                "TestRunsExport.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                base64Data);
+
+            Snackbar.Add("Test runs exported to Excel successfully",Severity.Success);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to export test runs: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error exporting to Excel: {ex}");
+        }
+    }
+
+    private async Task ExportToPdfAsync()
+    {
+        try
+        {
+            var result = await TestRunService.GetTestRunsAsync(1,1000,_searchTerm);
+            var testRuns = result.ToList();
+
+            if (!testRuns.Any())
+            {
+                Snackbar.Add("No test runs found to export.",Severity.Warning);
+                return;
+            }
+
+            var pdfRequest = new PdfGenerationDto
+                {
+                    Title = "Test Runs Report",
+                    FileName = "TestRuns_Report.pdf",
+                    FontSizeTitle = 16,
+                    FontSizeHeader = 12,
+                    FontSizeBody = 10,
+                    Columns = new List<PdfColumnDto>
+                {
+                    new PdfColumnDto { Field = "id", Header = "ID" },
+                    new PdfColumnDto { Field = "name", Header = "Name" },
+                    new PdfColumnDto { Field = "description", Header = "Description" },
+                    new PdfColumnDto { Field = "assignedTester", Header = "Assigned Tester" },
+                    new PdfColumnDto { Field = "project", Header = "Project" },
+                    new PdfColumnDto { Field = "tenantId", Header = "Tenant ID" },
+                    new PdfColumnDto { Field = "createdAt", Header = "Created At" },
+                    new PdfColumnDto { Field = "updatedAt", Header = "Updated At" }
+                },
+                    Data = testRuns.Select(tr => new Dictionary<string,string>
+                {
+                    { "id", tr.Id.ToString() },
+                    { "name", tr.Name ?? "" },
+                    { "description", tr.Description ?? "" },
+                    // { "assignedTester", _users.FirstOrDefault(u => u.Id == tr.AssignedTesterId)?.UserName ?? "None" },
+                    { "project", _projects.FirstOrDefault(p => p.Id == tr.ProjectId)?.Name ?? "None" },
+                    { "tenantId", tr.TenantId ?? "" },
+                    { "createdAt", tr.CreatedAt.ToString("yyyy-MM-dd") },
+                    { "updatedAt", tr.UpdatedAt?.ToString("yyyy-MM-dd") ?? "" }
+                }).ToList()
+                };
+
+            var pdfBytes = await CommonService.GeneratePdfAsync(pdfRequest);
+            var base64Data = Convert.ToBase64String(pdfBytes);
+            await JSRuntime.InvokeVoidAsync("downloadFileFromBase64",
+                "TestRuns_Report.pdf",
+                "application/pdf",
+                base64Data);
+
+            Snackbar.Add("Test runs exported to PDF successfully",Severity.Success);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to export test runs: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error exporting to PDF: {ex}");
+        }
+    }
+
+    private async Task ImportFromFileAsync()
+    {
+        var parameters = new DialogParameters
+        {
+            { "OnFileUploaded", new EventCallback<string>(this, ImportCsvContentAsync) }
+        };
+        var options = new DialogOptions
+            {
+                CloseButton = true,
+                MaxWidth = MaxWidth.Medium,
+                FullWidth = true
+            };
+        await DialogService.ShowAsync<FileUploadDialog>("Import Test Runs from CSV",parameters,options);
+    }
+
+    private async Task ImportCsvContentAsync( string csvContent )
+    {
+        try
+        {
+            using var reader = new StringReader(csvContent);
+            using var csv = new CsvReader(reader,CultureInfo.InvariantCulture);
+            var records = csv.GetRecords<CreateTestRunDto>().ToList();
+            foreach (var testRun in records)
+            {
+                if (!string.IsNullOrWhiteSpace(testRun?.Name))
+                {
+                    testRun.TenantId = _tenantId;
+                    // await TestRunService.CreateTestRunAsync(testRun,testRun.ProjectId);
+                }
+            }
+            await _table.ReloadServerData();
+            Snackbar.Add("Test runs imported successfully",Severity.Success);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to import test runs: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error importing CSV: {ex}");
+        }
+    }
+    #endregion
+
+    #region Validation
+    private string ValidateName( string name )
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return "Name is required";
+        if (name.Length < 3)
+            return "Name must be at least 3 characters long";
+        return null;
+    }
+    #endregion
+
+    #region Helpers
+    private void LogHover( string action )
+    {
+        Console.WriteLine($"Hovered: {action}");
+        Snackbar.Add($"Hovered: {action}",Severity.Info);
+    }
+    #endregion
+}

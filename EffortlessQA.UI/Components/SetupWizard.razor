@@ -1,0 +1,131 @@
+﻿// EffortlessQA.Client/Components/SetupWizard.razor
+@using EffortlessQA.UI.Services
+@using EffortlessQA.Data.Dtos
+@using MudBlazor
+@inject TenantService TenantService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<MudPaper Elevation="2" Class="pa-4">
+    <MudText Typo="Typo.h5" GutterBottom="true">Setup Wizard</MudText>
+    <MudForm @ref="_form" @bind-IsValid="@_formIsValid">
+        @if (_step == 1)
+        {
+            <MudTextField T="string" 
+                          Label="Tenant Name" 
+                          @bind-Value="_tenant.Name" 
+                          Required="true" 
+                          RequiredError="Tenant Name is required" 
+                          Validation="@(new Func<string, string>(ValidateTenantName))" />
+           @*  <MudTextField T="string" 
+                          Label="Tenant Address" 
+                          @bind-Value="_tenant.Address" 
+                          Class="mt-4" /> *@
+            <MudButton Variant="Variant.Filled" 
+                       Color="Color.Primary" 
+                       Class="mt-4" 
+                       OnClick="@NextStep" 
+                       Disabled="!_formIsValid">Next</MudButton>
+        }
+        else if (_step == 2)
+        {
+            <MudTextField T="string" 
+                          Label="Email" 
+                          @bind-Value="_user.Email" 
+                          Required="true" 
+                          RequiredError="Email is required" 
+                          Validation="@(new Func<string, string>(ValidateEmail))" />
+            <MudTextField T="string" 
+                          Label="Password" 
+                          @bind-Value="_user.Password" 
+                          InputType="InputType.Password" 
+                          Required="true" 
+                          RequiredError="Password is required" 
+                          Validation="@(new Func<string, string>(ValidatePassword))" 
+                          Class="mt-4" />
+            <MudTextField T="string" 
+                          Label="First Name" 
+                          @bind-Value="_user.FirstName" 
+                          Class="mt-4" />
+            <MudTextField T="string" 
+                          Label="Last Name" 
+                          @bind-Value="_user.LastName" 
+                          Class="mt-4" />
+            <MudButton Variant="Variant.Filled" 
+                       Color="Color.Primary" 
+                       Class="mt-4" 
+                       OnClick="@CompleteSetup" 
+                       Disabled="!_formIsValid">Finish</MudButton>
+            <MudButton Variant="Variant.Text" 
+                       OnClick="@PreviousStep">Back</MudButton>
+        }
+    </MudForm>
+</MudPaper>
+
+@code {
+    private int _step = 1;
+    private CreateTenantDto _tenant = new();
+    private RegisterDto _user = new();
+    private MudForm _form;
+    private bool _formIsValid;
+
+    private void NextStep()
+    {
+        if (_formIsValid)
+        {
+            _step = 2;
+        }
+    }
+
+    private void PreviousStep() => _step = 1;
+
+    private async Task CompleteSetup()
+    {
+        if (!_formIsValid) return;
+
+        try
+        {
+            await TenantService.CreateTenantAsync(_tenant);
+            await TenantService.RegisterUserAsync(_user);
+            Navigation.NavigateTo("/dashboard");
+            Snackbar.Add("Setup completed successfully", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Setup failed: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private string ValidateTenantName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return "Tenant Name is required";
+        if (name.Length < 3)
+            return "Tenant Name must be at least 3 characters long";
+        return null;
+    }
+
+    private string ValidateEmail(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return "Email is required";
+        if (!System.Text.RegularExpressions.Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+            return "Invalid email format";
+        return null;
+    }
+
+    private string ValidatePassword(string password)
+    {
+        if (string.IsNullOrWhiteSpace(password))
+            return "Password is required";
+        if (password.Length < 8)
+            return "Password must be at least 8 characters long";
+        if (!password.Any(char.IsUpper))
+            return "Password must contain at least one uppercase letter";
+        if (!password.Any(char.IsLower))
+            return "Password must contain at least one lowercase letter";
+        if (!password.Any(char.IsDigit))
+            return "Password must contain at least one number";
+        return null;
+    }
+}

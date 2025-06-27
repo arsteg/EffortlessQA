@@ -1,0 +1,169 @@
+﻿@page "/invite-user"
+@using EffortlessQA.UI.Services
+@using EffortlessQA.Data.Dtos
+@using MudBlazor
+@inject AuthService AuthService
+@inject ProjectService ProjectService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+    <MudCard Elevation="4" Class="pa-6">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h5" Color="Color.Primary">Invite User</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudForm @ref="_form" @bind-IsValid="@_formIsValid">
+                <MudGrid>
+                    <MudItem xs="12">
+                        <MudTextField T="string"
+                                      Label="Email"
+                                      @bind-Value="_inviteModel.Email"
+                                      Required="true"
+                                      RequiredError="Email is required"
+                                      Validation="@(new Func<string, string>(ValidateEmail))"
+                                      HelperText="Enter the user's email address" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField T="string"
+                                      Label="First Name"
+                                      @bind-Value="_inviteModel.FirstName"
+                                      Required="true"
+                                      RequiredError="Name is required"
+                                      HelperText="Enter the user's full name" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField T="string"
+                                      Label="Last Name"
+                                      @bind-Value="_inviteModel.LastName"
+                                      Required="true"
+                                      RequiredError="Name is required"
+                                      HelperText="Enter the user's full name" />
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6">
+                        <MudSelect T="Data.Entities.RoleType"
+                                   Label="Role"
+                                  @*  @bind-Value="_inviteModel.RoleType" *@
+                                   Required="true"
+                                   RequiredError="Role is required"
+                                   HelperText="Select the user's role">
+                           @*  <MudSelectItem Value="@Data.Entities.RoleType.Admin">Admin</MudSelectItem>
+                            <MudSelectItem Value="@Data.Entities.RoleType.Tester">Member</MudSelectItem> *@
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudSelect T="Guid"
+                                   Label="Project"
+                                   @bind-Value="_inviteModel.ProjectId"
+                                   Required="true"
+                                   RequiredError="Project is required"
+                                   HelperText="Select the project for the user">
+                            @foreach (var project in _projects)
+                            {
+                                <MudSelectItem Value="@project.Id">@project.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                </MudGrid>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Class="mt-6"
+                           OnClick="@InviteUserAsync"
+                           Disabled="!_formIsValid || _isLoading"
+                           FullWidth="true">
+                    @if (_isLoading)
+                    {
+                        <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
+                        <span>Inviting...</span>
+                    }
+                    else
+                    {
+                        <span>Invite User</span>
+                    }
+                </MudButton>
+                <MudButton Variant="Variant.Text"
+                           Color="Color.Secondary"
+                           Class="mt-2"
+                           OnClick="@(() => Navigation.NavigateTo("/users"))"
+                           FullWidth="true">
+                    Cancel
+                </MudButton>
+            </MudForm>
+        </MudCardContent>
+    </MudCard>
+</MudContainer>
+
+@code {
+    private InviteModel _inviteModel = new();
+    private MudForm _form = null!;
+    private bool _formIsValid;
+    private bool _isLoading;
+    private List<ProjectDto> _projects = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProjectsAsync();
+        if (_projects.Any())
+        {
+            _inviteModel.ProjectId = _projects.First().Id; // Set default project
+        }
+    }
+
+    private async Task LoadProjectsAsync()
+    {
+        try
+        {
+            _projects = await ProjectService.GetProjectsAsync();
+            if (_projects.Count == 0)
+            {
+                Snackbar.Add("No projects available. Please create a project first.", Severity.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load projects: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task InviteUserAsync()
+    {
+        if (!_formIsValid) return;
+
+        try
+        {
+            _isLoading = true;
+            var inviteDto = new InviteUserDto
+                {
+                    Email = _inviteModel.Email,
+                    FirstName = _inviteModel.FirstName,
+                    LastName = _inviteModel.LastName,
+                    RoleType = _inviteModel.RoleType,
+                    ProjectId = _inviteModel.ProjectId
+                };
+
+            await AuthService.InviteUserAsync(inviteDto);
+            Snackbar.Add($"Invited {inviteDto.Email} successfully", Severity.Success);
+            Navigation.NavigateTo("/Dashboard");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to invite user: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private string ValidateEmail(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return "Email is required";
+        if (!System.Text.RegularExpressions.Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+            return "Invalid email format";
+        return null!;
+    }
+}

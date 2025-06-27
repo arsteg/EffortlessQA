@@ -1,0 +1,1322 @@
+﻿@page "/requirements"
+@using ClosedXML.Excel
+@using CsvHelper
+@using EffortlessQA.UI.Components.dialogs
+@using EffortlessQA.UI.Models
+@using EffortlessQA.UI.Services
+@using EffortlessQA.Data.Dtos
+@using EffortlessQA.Data.Entities
+@using MudBlazor
+@using System.Globalization
+@using System.Text.Json
+@inject RequirementService RequirementService
+@inject CommonService CommonService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@inject IJSRuntime JSRuntime
+@inject IDialogService DialogService
+@inject ProjectService ProjectService
+@inject ApplicationContextService ApplicationContextService
+
+<MudThemeProvider Theme="_customTheme" />
+<MudContainer MaxWidth="MaxWidth.False" Class="py-8 px-4 px-md-8">
+    <MudGrid Spacing="4">
+        <!-- Header -->
+        <MudItem xs="12">
+            <MudText Typo="Typo.h5" Color="Color.Primary" Class="mb-4">Manage Requirements</MudText>
+        </MudItem>
+
+        <!-- Toolbar -->
+        <MudItem xs="12">
+            <MudPaper Elevation="2" Class="pa-4" Style="border-radius: 8px;">
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" sm="4" md="3">
+                        <MudTextField T="string"
+                                      Label="Search"
+                                      Placeholder="Enter requirement title..."
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Search"
+                                      @bind-Value="_searchTerm"
+                                      DebounceInterval="500"
+                                      OnDebounceIntervalElapsed="HandleSearchRequirements"
+                                      Variant="Variant.Outlined"
+                                      Clearable="true"
+                                      Class="mud-input-rounded" />
+                    </MudItem>
+                    <MudItem xs="12" sm="8" md="9" Class="d-flex align-center justify-end gap-2">
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                           Color="Color.Primary"
+                                           Size="Size.Medium"
+                                           OnClick="@OpenCreateDialogAsync"
+                                           OnMouseOver="@(() => LogHover("Add Requirement"))"
+                                           AriaLabel="Add Requirement"
+                                           Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Add Requirement</MudText>
+                        </div>
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                                           Color="Color.Secondary"
+                                           Size="Size.Medium"
+                                           OnClick="@RefreshRequirementsAsync"
+                                           OnMouseOver="@(() => LogHover("Refresh requirements"))"
+                                           AriaLabel="Refresh requirements"
+                                           Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Refresh</MudText>
+                        </div>
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.TextSnippet"
+                                           Color="Color.Default"
+                                           Size="Size.Medium"
+                                           OnClick="@ExportToCsvAsync"
+                                           OnMouseOver="@(() => LogHover("Export to CSV"))"
+                                           AriaLabel="Export to CSV"
+                                           Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Export CSV</MudText>
+                        </div>
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.GridOn"
+                                           Color="Color.Default"
+                                           Size="Size.Medium"
+                                           OnClick="@ExportToExcelAsync"
+                                           OnMouseOver="@(() => LogHover("Export to Excel"))"
+                                           AriaLabel="Export to Excel"
+                                           Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Export Excel</MudText>
+                        </div>
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.PictureAsPdf"
+                                           Color="Color.Default"
+                                           Size="Size.Medium"
+                                           OnClick="@ExportToPdfAsync"
+                                           OnMouseOver="@(() => LogHover("Export to PDF"))"
+                                           AriaLabel="Export to PDF"
+                                           Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Export PDF</MudText>
+                        </div>
+                        <div class="hover-container">
+                            <MudIconButton Icon="@Icons.Material.Filled.CloudUpload"
+                                           Color="Color.Primary"
+                                           Size="Size.Medium"
+                                           OnClick="@ImportFromFileAsync"
+                                           OnMouseOver="@(() => LogHover("Import Excel/CSV"))"
+                                           AriaLabel="Import Excel or CSV"
+                                           Class="mx-1 expressive-icon" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hover-text">Import Excel/CSV</MudText>
+                        </div>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Table -->
+        <MudItem xs="12">
+            <MudPaper Elevation="2" Class="pa-4" Style="border-radius: 8px;">
+                <MudTable ServerData="@(new Func<TableState, CancellationToken, Task<TableData<RequirementDto>>>(LoadRequirementsAsync))"
+                          @ref="_table"
+                          Hover="true"
+                          Breakpoint="Breakpoint.Sm"
+                          Loading="@_isLoading"
+                          Dense="true"
+                          AllowMultiSelection="true"
+                          @bind-SelectedItems="_selectedRequirements"
+                          Class="mud-table-clean"
+                          RowsPerPage="@_pageSize">
+                    <ToolBarContent>
+                        <MudText Typo="Typo.subtitle1" Color="Color.Primary">Requirements</MudText>
+                        <MudSpacer />
+                        @if (_selectedRequirements.Any())
+                        {
+                            <MudButton Variant="Variant.Text"
+                                       Color="Color.Error"
+                                       StartIcon="@Icons.Material.Filled.Delete"
+                                       OnClick="@BulkDeleteRequirementsAsync"
+                                       Size="Size.Small">Delete (@_selectedRequirements.Count)</MudButton>
+                        }
+                    </ToolBarContent>
+                    <HeaderContent>
+                        <MudTh Style="width: 40px;"></MudTh> <!-- For expand/collapse -->
+                        <MudTh>
+                            <MudTableSortLabel SortLabel="title" T="RequirementDto" InitialDirection="SortDirection.Ascending">Title</MudTableSortLabel>
+                        </MudTh>
+                        <MudTh>
+                            <MudTableSortLabel SortLabel="description" T="RequirementDto">Description</MudTableSortLabel>
+                        </MudTh>
+                        <MudTh>Tags</MudTh>
+                        <MudTh>Project</MudTh>
+                        <MudTh>Parent Requirement</MudTh>
+                        <MudTh>Test Cases</MudTh>
+                        <MudTh Style="width: 120px; text-align: center;">Actions</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd Style="vertical-align: middle;">
+                            @if (context.Children.Any())
+                            {
+                                <div style="display: flex; align-items: center;">
+                                    <MudIconButton Icon="@(_expandedRequirements.Contains(context.Id) ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                                                   Size="Size.Small"
+                                                   OnClick="@(() => ToggleExpand(context.Id))" />
+                                </div>
+                            }
+                        </MudTd>
+                        <MudTd>
+                            @if (context.IsEditing)
+                            {
+                                <MudTextField T="string"
+                                              @bind-Value="context.Title"
+                                              Required="true"
+                                              RequiredError="Title is required"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense"
+                                              Class="mud-input-compact" />
+                            }
+                            else
+                            {
+                                @context.Title
+                            }
+                        </MudTd>
+                        <MudTd>
+                            @if (context.IsEditing)
+                            {
+                                <MudTextField T="string"
+                                              @bind-Value="context.Description"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense"
+                                              Lines="2"
+                                              Class="mud-input-compact" />
+                            }
+                            else
+                            {
+                                <MudTd><div>@((MarkupString)context.Description)</div></MudTd>
+                            }
+                        </MudTd>
+                        <MudTd>
+                            @(context.Tags != null ? string.Join(", ",context.Tags) : "")
+                        </MudTd>
+                        <MudTd>
+                            @(_projects.FirstOrDefault(p => p.Id == context.ProjectId)?.Name ?? "None")
+                        </MudTd>
+                        <MudTd>
+                            @(_parentRequirements.FirstOrDefault(r => r.Id == context.ParentRequirementId)?.Title ?? "None")
+                        </MudTd>
+                        <MudTd>
+                            @(context.TestCaseIds != null ? string.Join(", ",context.TestCaseIds.Select(id => _availableTestCases.FirstOrDefault(tc => tc.Id == id)?.Title ?? id.ToString())) : "")
+                        </MudTd>
+                        <MudTd Style="display: flex; justify-content: center; gap: 8px; vertical-align: middle;">
+                            @if (context.IsEditing)
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Save"
+                                               Color="Color.Success"
+                                               Size="Size.Small"
+                                               OnClick="@(() => SaveInlineEditAsync(context))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Cancel"
+                                               Color="Color.Secondary"
+                                               Size="Size.Small"
+                                               OnClick="@(() => CancelInlineEdit(context))" />
+                            }
+                            else
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                               Color="Color.Success"
+                                               Size="Size.Small"
+                                               OnClick="@(() => OpenCreateDialogEditAsync(context.Id))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                               Color="Color.Primary"
+                                               Size="Size.Small"
+                                               OnClick="@(() => StartInlineEdit(context))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.NoteAlt"
+                                               Color="Color.Info"
+                                               Size="Size.Small"
+                                               OnClick="@(() => OpenEditDialogAsync(context))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                               Color="Color.Error"
+                                               Size="Size.Small"
+                                               OnClick="@(() => DeleteRequirementAsync(context.Id, context.ProjectId))" />
+                            }
+                        </MudTd>
+                    </RowTemplate>
+                    <ChildRowContent>
+                        @if (_expandedRequirements.Contains(context.Id))
+                        {
+                            @foreach (var child in context.Children)
+                            {
+                                <tr class="child-row">
+                                    <td style="vertical-align: middle; padding-left: @(20 * GetDepth(child))px;">
+                                        @if (child.Children.Any())
+                                        {
+                                            <div style="display: flex; align-items: center;">
+                                                <MudIconButton Icon="@(_expandedRequirements.Contains(child.Id) ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                                                               Size="Size.Small"
+                                                               OnClick="@(() => ToggleExpand(child.Id))" />
+                                            </div>
+                                        }
+                                    </td>
+                                    <td style="vertical-align: middle;">
+                                        @if (child.IsEditing)
+                                        {
+                                            <MudTextField T="string"
+                                                          @bind-Value="child.Title"
+                                                          Required="true"
+                                                          RequiredError="Title is required"
+                                                          Variant="Variant.Outlined"
+                                                          Margin="Margin.Dense"
+                                                          Class="mud-input-compact" />
+                                        }
+                                        else
+                                        {
+                                            @child.Title
+                                        }
+                                    </td>
+                                    <td style="vertical-align: middle;">
+                                        @if (child.IsEditing)
+                                        {
+                                            <MudTextField T="string"
+                                                          @bind-Value="child.Description"
+                                                          Variant="Variant.Outlined"
+                                                          Margin="Margin.Dense"
+                                                          Lines="2"
+                                                          Class="mud-input-compact" />
+                                        }
+                                        else
+                                        {
+                                            @* @child.Description *@
+                                            <MudTd><div>@((MarkupString)child.Description)</div></MudTd>
+                                        }
+                                    </td>
+                                    <td style="vertical-align: middle;">
+                                        @(child.Tags != null ? string.Join(", ",child.Tags) : "")
+                                    </td>
+                                    <td style="vertical-align: middle;">
+                                        @(_projects.FirstOrDefault(p => p.Id == child.ProjectId)?.Name ?? "None")
+                                    </td>
+                                    <td style="vertical-align: middle;">
+                                        @(_parentRequirements.FirstOrDefault(r => r.Id == child.ParentRequirementId)?.Title ?? "None")
+                                    </td>
+                                    <td style="vertical-align: middle;">
+                                        @(child.TestCaseIds != null ? string.Join(", ",child.TestCaseIds.Select(id => _availableTestCases.FirstOrDefault(tc => tc.Id == id)?.Title ?? id.ToString())) : "")
+                                    </td>
+                                    <td style="display: flex; justify-content: center; gap: 8px; vertical-align: middle;">
+                                        @if (child.IsEditing)
+                                        {
+                                            <MudIconButton Icon="@Icons.Material.Filled.Save"
+                                                           Color="Color.Success"
+                                                           Size="Size.Small"
+                                                           OnClick="@(() => SaveInlineEditAsync(child))" />
+                                            <MudIconButton Icon="@Icons.Material.Filled.Cancel"
+                                                           Color="Color.Secondary"
+                                                           Size="Size.Small"
+                                                           OnClick="@(() => CancelInlineEdit(child))" />
+                                        }
+                                        else
+                                        {
+                                            <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                                           Color="Color.Success"
+                                                           Size="Size.Small"
+                                                           OnClick="@(() => OpenCreateDialogEditAsync(child.Id))" />
+                                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                           Color="Color.Primary"
+                                                           Size="Size.Small"
+                                                           OnClick="@(() => StartInlineEdit(child))" />
+                                            <MudIconButton Icon="@Icons.Material.Filled.NoteAlt"
+                                                           Color="Color.Info"
+                                                           Size="Size.Small"
+                                                           OnClick="@(() => OpenEditDialogAsync(child))" />
+                                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                           Color="Color.Error"
+                                                           Size="Size.Small"
+                                                           OnClick="@(() => DeleteRequirementAsync(child.Id, child.ProjectId))" />
+                                        }
+                                    </td>
+                                </tr>
+                                @if (_expandedRequirements.Contains(child.Id))
+                                {
+                                    @RenderChildRows(child,2)
+                                }
+                            }
+                        }
+                    </ChildRowContent>
+                    <PagerContent>
+                        <div class="d-flex align-center gap-3">
+                            <MudText Typo="Typo.body2" Class="mr-2">Rows per page:</MudText>
+                            @foreach (var size in new int[] { 10,25,50,100 })
+                            {
+                                <MudButton Variant="@(_pageSize == size ? Variant.Filled : Variant.Outlined)"
+                                           Color="Color.Primary"
+                                           Size="Size.Small"
+                                           OnClick="@(() => OnPageSizeChanged(size))"
+                                           Class="mud-button-compact"
+                                           AriaLabel="@($"Set rows per page to {size}")">
+                                    @size
+                                </MudButton>
+                            }
+                            <MudTablePager RowsPerPageString="" DisableRowsPerPage="true" />
+                        </div>
+                    </PagerContent>
+                    <LoadingContent>
+                        <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
+                    </LoadingContent>
+                    <NoRecordsContent>
+                        <MudPaper Elevation="0" Class="pa-8 d-flex flex-column align-center justify-center" Style="min-height: 400px; background: transparent;">
+                            <MudIcon Icon="@Icons.Material.Filled.FolderOpen" Size="Size.Large" Color="Color.Primary" Class="mb-4" />
+                            <MudText Typo="Typo.h6" Color="Color.Primary" Align="Align.Center">No Requirements Found</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center" Class="mb-6 mt-3">
+                                Click "Add Requirement" above to create your first requirement.
+                            </MudText>
+                        </MudPaper>
+                    </NoRecordsContent>
+                </MudTable>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+<!-- Create New Requirement Dialog -->
+<MudDialog @bind-Visible="_showCreateDialog" Options="new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true, CloseButton = true }" Style="min-height: 80vh; max-height: 90vh;">
+    <DialogContent>
+        <MudGrid Class="pa-6">
+            <MudItem xs="12">
+                <MudText Typo="Typo.h6" Color="Color.Primary" Class="mb-4">Create New Requirement</MudText>
+                <MudForm @ref="_form" @bind-IsValid="_formIsValid" Class="d-flex flex-column gap-6">
+                    <MudTextField T="string"
+                                  Label="Requirement Title"
+                                  @bind-Value="_newRequirement.Title"
+                                  Required="true"
+                                  RequiredError="Title is required"
+                                  Validation="@(new Func<string, string>(ValidateTitle))"
+                                  Variant="Variant.Outlined"
+                                  Clearable="true"
+                                  AutoFocus="true"
+                                  Margin="Margin.Normal"
+                                  HelperText="Enter a unique requirement title (min 3 characters)"
+                                  Class="mud-input-rounded" />
+                   @*  <MudTextField T="string"
+                                  Label="Description"
+                                  @bind-Value="_newRequirement.Description"
+                                  Lines="15"
+                                  Variant="Variant.Outlined"
+                                  Clearable="true"
+                                  Margin="Margin.Normal"
+                                  HelperText="Describe the requirement in detail"
+                                  Class="mud-input-rounded" /> *@
+
+                    <MudText Typo="Typo.subtitle1">
+                        Description
+                       @*  <TinyMceEditor @bind-Value="_newRequirement.Description" EntityId="@_newRequirement.Id.ToString()" /> *@
+                    </MudText>
+                    <MudTextField T="string"
+                                  Label="Tags"
+                                  @bind-Value="_tagsInput"
+                                  Placeholder="Comma-separated tags"
+                                  Variant="Variant.Outlined"
+                                  Clearable="true"
+                                  Margin="Margin.Normal"
+                                  HelperText="Enter tags separated by commas"
+                                  Class="mud-input-rounded" />
+                    @* Uncomment and adjust Project selection if needed *@
+                    @* <MudSelect T="Guid"
+                    Label="Project"
+                    @bind-Value="_newRequirement.ProjectId"
+                    Required="true"
+                    RequiredError="Project is required"
+                    Variant="Variant.Outlined"
+                    Margin="Margin.Normal"
+                    Class="mud-input-rounded"
+                    AnchorOrigin="Origin.BottomCenter"
+                    TransformOrigin="Origin.TopCenter"
+                    ToStringFunc="@(id => _projects?.FirstOrDefault(p => p.Id == id)?.Name ?? "Unknown Project")">
+                    @foreach (var project in _projects)
+                    {
+                    <MudSelectItem Value="@project.Id">@(project.Name ?? $"Project ID: {project.Id}")</MudSelectItem>
+                    }
+                    </MudSelect> *@
+                </MudForm>
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@CancelCreate" Variant="Variant.Text" Color="Color.Secondary" Size="Size.Medium">Cancel</MudButton>
+        <MudButton OnClick="@CreateRequirementAsync" Variant="Variant.Filled" Color="Color.Primary" Disabled="!_formIsValid" Size="Size.Medium">Create</MudButton>
+    </DialogActions>
+</MudDialog>
+
+<!-- Edit Requirement Dialog -->
+<MudDialog @bind-Visible="_showEditDialog" Options="new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true, CloseButton = true }" Style="min-height: 80vh; max-height: 90vh;">
+    <DialogContent>
+        <MudGrid Class="pa-6">
+            <MudItem xs="12">
+                <MudText Typo="Typo.h6" Color="Color.Primary" Class="mb-4">Edit Requirement</MudText>
+                <MudForm @ref="_editForm" @bind-IsValid="_editFormIsValid" Class="d-flex flex-column gap-6">
+                    <MudTextField T="string"
+                                  Label="Requirement Title"
+                                  @bind-Value="_editRequirement.Title"
+                                  Required="true"
+                                  RequiredError="Title is required"
+                                  Validation="@(new Func<string, string>(ValidateTitle))"
+                                  Variant="Variant.Outlined"
+                                  Clearable="true"
+                                  AutoFocus="true"
+                                  Margin="Margin.Normal"
+                                  HelperText="Enter a unique requirement title (min 3 characters)"
+                                  Class="mud-input-rounded" />
+                  @*   <MudTextField T="string"
+                                  Label="Description"
+                                  @bind-Value="_editRequirement.Description"
+                                  Lines="15"
+                                  Variant="Variant.Outlined"
+                                  Clearable="true"
+                                  Margin="Margin.Normal"
+                                  HelperText="Describe the requirement in detail"
+                                  Class="mud-input-rounded" /> *@
+
+                    <MudText Typo="Typo.subtitle1">
+                        Description
+                     @*    <TinyMceEditor @bind-Value="_editRequirement.Description" EntityId="@_editRequirement.Id.ToString()" /> *@
+                    </MudText>
+                    @*<MudTextField T="string"
+                                  Label="Tags"
+                                  @bind-Value="_editTagsInput"
+                                  Placeholder="Comma-separated tags"
+                                  Variant="Variant.Outlined"
+                                  Clearable="true"
+                                  Margin="Margin.Normal"
+                                  HelperText="Enter tags separated by commas"
+                                  Class="mud-input-rounded" />*@
+                </MudForm>
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@CancelEdit" Variant="Variant.Text" Color="Color.Secondary" Size="Size.Medium">Cancel</MudButton>
+        <MudButton OnClick="@SaveEditAsync" Variant="Variant.Filled" Color="Color.Primary" Disabled="!_editFormIsValid" Size="Size.Medium">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    #region Fields
+    private List<RequirementDto> _requirements = new();
+    private List<RequirementDto> _parentRequirements = new();
+    private List<TestCaseDto> _availableTestCases = new();
+    private string _testCasesInput = string.Empty;
+    private CreateRequirementDto _newRequirement  = new() { Id = Guid.NewGuid() };
+    private RequirementDto _editRequirement = new();
+
+
+    private string _tagsInput = string.Empty;
+    private string _editTagsInput = string.Empty;
+    private bool _showCreateDialog;
+    private bool _showEditDialog;
+    private string _searchTerm = string.Empty;
+    private bool _isLoading;
+    private MudTable<RequirementDto> _table;
+    private HashSet<RequirementDto> _selectedRequirements = new();
+    private MudForm _form;
+    private MudForm _editForm;
+    private bool _formIsValid;
+    private bool _editFormIsValid;
+    private int _pageSize = 10;
+    private Dictionary<Guid, RequirementDto> _originalRequirements = new();
+    private List<ProjectDto> _projects = new();
+    private HashSet<Guid> _expandedRequirements = new();
+    private readonly string _tenantId = "default"; // Replace with dynamic tenant ID logic
+
+    private readonly MudTheme _customTheme = new()
+            {
+        // Palette = new Palette
+        // {
+        //     Primary = "#1976D2",
+        //     Secondary = "#FF4081",
+        //     Background = "#F5F7FA",
+        //     Surface = "#FFFFFF",
+        //     TextPrimary = "#212121",
+        //     TextSecondary = "#757575",
+        //     AppbarBackground = "#1976D2",
+        //     ActionDefault = "#212121"
+        // },
+                PaletteDark = new PaletteDark
+                {
+                    Primary = "#2196F3",
+                    Secondary = "#F50057",
+                    Background = "#121212",
+                    Surface = "#1E1E1E",
+                    TextPrimary = "#FFFFFF",
+                    TextSecondary = "#B0BEC5",
+                    AppbarBackground = "#2196F3",
+                    ActionDefault = "#FFFFFF"
+                },
+                Typography = new Typography
+                {
+            // Default = new Default
+            // {
+            //     FontFamily = new[] { "Roboto", "Helvetica", "Arial", "sans-serif" },
+            //     FontSize = ".875rem",
+            //     FontWeight = 400,
+            //     LineHeight = 1.43,
+            //     LetterSpacing = ".01071em"
+            // },
+            // H6 = new H6
+            // {
+            //     FontSize = "1.25rem",
+            //     FontWeight = 500,
+            //     LineHeight = 1.6,
+            //     LetterSpacing = ".0075em"
+            // }
+                },
+                LayoutProperties = new LayoutProperties
+                {
+                    DefaultBorderRadius = "8px"
+                }
+            };
+    #endregion
+
+    #region Lifecycle
+    protected override async Task OnInitializedAsync()
+    {
+        _projects = await ProjectService.GetProjectsAsync();
+        var allRequirements = await RequirementService.GetRequirementsAsync();
+        _parentRequirements = FlattenRequirements(allRequirements).ToList();
+        //_availableTestCases = await RequirementService.GetAvailableTestCasesAsync();
+        await _table?.ReloadServerData();
+    }
+    #endregion
+
+    #region Table Operations
+    private async Task<TableData<RequirementDto>> LoadRequirementsAsync(TableState state, CancellationToken cancellationToken)
+    {
+        _isLoading = true;
+        try
+        {
+            string filter = string.Empty;
+            if (!string.IsNullOrEmpty(_searchTerm))
+                filter += $"title:{_searchTerm}";
+            if (!string.IsNullOrEmpty(state.SortLabel))
+                filter += $"{(string.IsNullOrEmpty(filter) ? "" : ",")}sort:{state.SortLabel}:{(state.SortDirection == SortDirection.Ascending ? "asc" : "desc")}";
+
+            var result = await RequirementService.GetRequirementsAsync(
+
+            page: state.Page + 1,100,""
+
+
+        );
+
+            return new TableData<RequirementDto>
+                    {
+                        TotalItems = result.Count,
+                        Items = result.ToArray()
+                    };
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.", Severity.Error);
+            NavigationManager.NavigateTo("/login");
+            return new TableData<RequirementDto> { TotalItems = 0, Items = new List<RequirementDto>() };
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load requirements: {ex.Message}", Severity.Error);
+            Console.WriteLine($"Error loading requirements: {ex}");
+            return new TableData<RequirementDto> { TotalItems = 0, Items = new List<RequirementDto>() };
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task OnPageSizeChanged( int newSize )
+    {
+        _pageSize = newSize;
+        Snackbar.Add($"Page size changed to {_pageSize}",Severity.Info);
+        await _table.ReloadServerData();
+    }
+
+    private async Task HandleSearchRequirements( string term )
+    {
+        _searchTerm = term;
+        await _table.ReloadServerData();
+    }
+
+    private async Task RefreshRequirementsAsync()
+    {
+        await _table.ReloadServerData();
+        var allRequirements = await RequirementService.GetRequirementsAsync();
+        _parentRequirements = FlattenRequirements(allRequirements).ToList();
+        Snackbar.Add("Requirements refreshed successfully",Severity.Success);
+    }
+
+    private void StartInlineEdit( RequirementDto requirement )
+    {
+        requirement.IsEditing = true;
+        _testCasesInput = string.Join(",",requirement.TestCaseIds?.Select(id => id.ToString()) ?? new List<string>());
+        _originalRequirements[requirement.Id] = new RequirementDto
+                {
+                    Id = requirement.Id,
+                    Title = requirement.Title,
+                    Description = requirement.Description,
+                    Tags = requirement.Tags,
+                    ProjectId = requirement.ProjectId,
+                    TenantId = requirement.TenantId,
+                    ParentRequirementId = requirement.ParentRequirementId,
+                    TestCaseIds = requirement.TestCaseIds,
+                    Children = requirement.Children
+                };
+    }
+
+    private async Task SaveInlineEditAsync( RequirementDto requirement )
+    {
+        var titleValidationResult = ValidateTitle(requirement.Title);
+        if (titleValidationResult != null)
+        {
+            Snackbar.Add(titleValidationResult,Severity.Error);
+            return;
+        }
+
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(_tagsInput))
+            {
+                requirement.Tags = _tagsInput.Split(',',StringSplitOptions.RemoveEmptyEntries)
+            .Select(t => t.Trim()).ToArray();
+            }
+            if (!string.IsNullOrWhiteSpace(_testCasesInput))
+            {
+                requirement.TestCaseIds = _testCasesInput.Split(',',StringSplitOptions.RemoveEmptyEntries)
+            .Select(id => Guid.Parse(id.Trim())).ToList();
+            }
+
+            await RequirementService.UpdateRequirementAsync(requirement);
+            requirement.IsEditing = false;
+            _originalRequirements.Remove(requirement.Id);
+            _testCasesInput = string.Empty;
+            Snackbar.Add("Requirement updated successfully",Severity.Success);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to update requirement: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error updating requirement: {ex}");
+        }
+    }
+
+    private void CancelInlineEdit( RequirementDto requirement )
+    {
+        if (_originalRequirements.TryGetValue(requirement.Id,out var original))
+        {
+            requirement.Title = original.Title;
+            requirement.Description = original.Description;
+            requirement.Tags = original.Tags;
+            requirement.ProjectId = original.ProjectId;
+            requirement.TenantId = original.TenantId;
+            requirement.ParentRequirementId = original.ParentRequirementId;
+            requirement.TestCaseIds = original.TestCaseIds;
+            requirement.IsEditing = false;
+            _originalRequirements.Remove(requirement.Id);
+            _testCasesInput = string.Empty;
+        }
+    }
+
+    private async Task DeleteRequirementAsync( Guid id,Guid projectId )
+    {
+        var parameters = new DialogParameters { { "ContentText","Are you sure you want to delete this requirement and its children?" } };
+        var options = new DialogOptions { CloseButton = true,MaxWidth = MaxWidth.Small,FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirm Delete",parameters,options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            try
+            {
+                await RequirementService.DeleteRequirementAsync(id,projectId);
+                await _table.ReloadServerData();
+                Snackbar.Add("Requirement deleted successfully",Severity.Success);
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+                NavigationManager.NavigateTo("/login");
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to delete requirement: {ex.Message}",Severity.Error);
+                Console.WriteLine($"Error deleting requirement: {ex}");
+            }
+        }
+    }
+
+    private async Task BulkDeleteRequirementsAsync()
+    {
+        var parameters = new DialogParameters { { "ContentText",$"Are you sure you want to delete {_selectedRequirements.Count} requirements and their children?" } };
+        var options = new DialogOptions { CloseButton = true,MaxWidth = MaxWidth.Small,FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirm Bulk Delete",parameters,options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            try
+            {
+                foreach (var requirement in _selectedRequirements.ToList())
+                {
+                    await RequirementService.DeleteRequirementAsync(requirement.Id,requirement.ProjectId);
+                }
+                await _table.ReloadServerData();
+                _selectedRequirements.Clear();
+                Snackbar.Add("Selected requirements deleted successfully",Severity.Success);
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+                NavigationManager.NavigateTo("/login");
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to delete requirements: {ex.Message}",Severity.Error);
+                Console.WriteLine($"Error deleting requirements: {ex}");
+            }
+        }
+    }
+    #endregion
+
+    #region Dialog Operations
+    private async Task OpenCreateDialogAsync()
+    {
+        _newRequirement = new CreateRequirementDto { Id = Guid.NewGuid() };
+        _tagsInput = string.Empty;
+        _testCasesInput = string.Empty;
+        _projects = await ProjectService.GetProjectsAsync();
+        // _newRequirement.ProjectId = _projects.FirstOrDefault()?.Id ?? default;
+        //_availableTestCases = await RequirementService.GetAvailableTestCasesAsync();
+        _newRequirement.TenantId = _tenantId;
+        _showCreateDialog = true;
+        await Task.Run(() => _form?.ResetValidation());
+    }
+
+    private async Task OpenCreateDialogEditAsync( Guid RequirementParentId )
+    {
+        _newRequirement = new CreateRequirementDto { Id = Guid.NewGuid() };
+        _tagsInput = string.Empty;
+        _testCasesInput = string.Empty;
+        _newRequirement.TenantId = _tenantId;
+        _newRequirement.ParentRequirementId = RequirementParentId;
+        _showCreateDialog = true;
+        await Task.Run(() => _form?.ResetValidation());
+    }
+
+    private async Task OpenEditDialogAsync( RequirementDto requirement )
+    {
+        _editRequirement = new RequirementDto
+                {
+                    Id = requirement.Id,
+                    Title = requirement.Title,
+                    Description = requirement.Description,
+                    Tags = requirement.Tags,
+                    ProjectId = requirement.ProjectId,
+                    TenantId = requirement.TenantId,
+                    ParentRequirementId = requirement.ParentRequirementId,
+                    TestCaseIds = requirement.TestCaseIds,
+                    Children = requirement.Children
+                };
+        _editTagsInput = string.Join(",",requirement.Tags ?? new string[0]);
+        _testCasesInput = string.Join(",",requirement.TestCaseIds?.Select(id => id.ToString()) ?? new List<string>());
+        _projects = await ProjectService.GetProjectsAsync();
+        _showEditDialog = true;
+        await Task.Run(() => _editForm?.ResetValidation());
+    }
+
+    private void CancelCreate()
+    {
+        _showCreateDialog = false;
+        _newRequirement = new CreateRequirementDto();
+        _tagsInput = string.Empty;
+        _testCasesInput = string.Empty;
+        _form?.ResetValidation();
+    }
+
+    private void CancelEdit()
+    {
+        _showEditDialog = false;
+        _editRequirement = new RequirementDto();
+        _editTagsInput = string.Empty;
+        _testCasesInput = string.Empty;
+        _editForm?.ResetValidation();
+    }
+
+    private async Task CreateRequirementAsync()
+    {
+        if (!_formIsValid)
+        {
+            Snackbar.Add("Please fill in all required fields",Severity.Error);
+            return;
+        }
+
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(_tagsInput))
+            {
+                _newRequirement.Tags = _tagsInput.Split(',',StringSplitOptions.RemoveEmptyEntries)
+            .Select(t => t.Trim()).ToArray();
+            }
+            if (!string.IsNullOrWhiteSpace(_testCasesInput))
+            {
+                _newRequirement.RequirementTestCases = _testCasesInput.Split(',',StringSplitOptions.RemoveEmptyEntries)
+            .Select(id => new RequirementTestCase { TestCaseId = Guid.Parse(id.Trim()) })
+            .ToList();
+            }
+            _newRequirement.TenantId = _tenantId;
+            await RequirementService.CreateRequirementAsync(_newRequirement,ApplicationContextService.SelectedProjectId ?? Guid.Empty);
+            await _table.ReloadServerData();
+            _showCreateDialog = false;
+            _newRequirement = new CreateRequirementDto();
+            _tagsInput = string.Empty;
+            _testCasesInput = string.Empty;
+            _form?.ResetValidation();
+            Snackbar.Add("Requirement created successfully",Severity.Success);
+        }
+        catch (HttpRequestException ex) when (ex
+
+    .StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to create requirement: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error creating requirement: {ex}");
+        }
+    }
+
+    private async Task SaveEditAsync()
+    {
+        if (!_editFormIsValid)
+        {
+            Snackbar.Add("Please fill in all required fields",Severity.Error);
+            return;
+        }
+
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(_editTagsInput))
+            {
+                _editRequirement.Tags = _editTagsInput.Split(',',StringSplitOptions.RemoveEmptyEntries)
+            .Select(t => t.Trim()).ToArray();
+            }
+            if (!string.IsNullOrWhiteSpace(_testCasesInput))
+            {
+                _editRequirement.TestCaseIds = _testCasesInput.Split(',',StringSplitOptions.RemoveEmptyEntries)
+            .Select(id => Guid.Parse(id.Trim())).ToList();
+            }
+
+            await RequirementService.UpdateRequirementAsync(_editRequirement);
+            await _table.ReloadServerData();
+            _showEditDialog = false;
+            _editRequirement = new RequirementDto();
+            _editTagsInput = string.Empty;
+            _testCasesInput = string.Empty;
+            _editForm?.ResetValidation();
+            Snackbar.Add("Requirement updated successfully",Severity.Success);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to update requirement: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error updating requirement: {ex}");
+        }
+    }
+    #endregion
+
+    #region Export/Import
+    private async Task ExportToCsvAsync()
+    {
+        try
+        {
+            var result = await RequirementService.GetRequirementsAsync(
+        0,
+     100,
+     null);
+            var requirements = FlattenRequirements(result.ToArray());
+
+            if (!requirements.Any())
+            {
+                Snackbar.Add("No requirements found to export.",Severity.Warning);
+                return;
+            }
+
+            using var memoryStream = new MemoryStream();
+            using var writer = new StreamWriter(memoryStream);
+            using var csv = new CsvWriter(writer,CultureInfo.InvariantCulture);
+            csv.WriteRecords(requirements.Select(r => new
+            {
+                r.Id,
+                r.Title,
+                r.Description,
+                Tags = string.Join(",",r.Tags ?? new string[0]),
+                Project = _projects.FirstOrDefault(p => p.Id == r.ProjectId)?.Name ?? "None",
+                ParentRequirement = _parentRequirements.FirstOrDefault(pr => pr.Id == r.ParentRequirementId)?.Title ?? "None",
+                r.TenantId,
+                r.CreatedAt,
+                r.UpdatedAt,
+                TestCaseIds = string.Join(",",r.TestCaseIds ?? new List<Guid>())
+            }));
+            await writer.FlushAsync();
+            memoryStream.Position = 0;
+
+            var csvBytes = memoryStream.ToArray();
+            var base64Data = Convert.ToBase64String(csvBytes);
+            await JSRuntime.InvokeVoidAsync("downloadFileFromBase64",
+            "RequirementsExport.csv",
+            "text/csv",
+            base64Data);
+
+            Snackbar.Add("Requirements exported to CSV successfully",Severity.Success);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to export requirements: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error exporting to CSV: {ex}");
+        }
+    }
+
+    private async Task ExportToExcelAsync()
+    {
+        try
+        {
+            var result = await RequirementService.GetRequirementsAsync(0,100,null);
+            var requirements = FlattenRequirements(result.ToArray());
+
+            if (!requirements.Any())
+            {
+                Snackbar.Add("No requirements found to export.",Severity.Warning);
+                return;
+            }
+
+            using var workbook = new XLWorkbook();
+            var worksheet = workbook.Worksheets.Add("Requirements");
+
+            worksheet.Cell("A1").Value = "ID";
+            worksheet.Cell("B1").Value = "Title";
+            worksheet.Cell("C1").Value = "Description";
+            worksheet.Cell("D1").Value = "Tags";
+            worksheet.Cell("E1").Value = "Project";
+            worksheet.Cell("F1").Value = "Parent Requirement";
+            worksheet.Cell("G1").Value = "Tenant ID";
+            worksheet.Cell("H1").Value = "Created At";
+            worksheet.Cell("I1").Value = "Updated At";
+            worksheet.Cell("J1").Value = "Test Case IDs";
+
+            var row = 2;
+            foreach (var r in requirements)
+            {
+                worksheet.Cell($"A{row}").Value = r.Id.ToString();
+                worksheet.Cell($"B{row}").Value = r.Title;
+                worksheet.Cell($"C{row}").Value = r.Description;
+                worksheet.Cell($"D{row}").Value = string.Join(",",r.Tags ?? new string[0]);
+                worksheet.Cell($"E{row}").Value = _projects.FirstOrDefault(p => p.Id == r.ProjectId)?.Name ?? "None";
+                worksheet.Cell($"F{row}").Value = _parentRequirements.FirstOrDefault(pr => pr.Id == r.ParentRequirementId)?.Title ?? "None";
+                worksheet.Cell($"G{row}").Value = r.TenantId;
+                worksheet.Cell($"H{row}").Value = r.CreatedAt.ToString("yyyy-MM-dd");
+                worksheet.Cell($"I{row}").Value = r.UpdatedAt?.ToString("yyyy-MM-dd");
+                worksheet.Cell($"J{row}").Value = string.Join(",",r.TestCaseIds ?? new List<Guid>());
+                row++;
+            }
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            stream.Position = 0;
+
+            var bytes = stream.ToArray();
+            var base64Data = Convert.ToBase64String(bytes);
+            await JSRuntime.InvokeVoidAsync("downloadFileFromBase64",
+            "RequirementsExport.xlsx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            base64Data);
+
+            Snackbar.Add("Requirements exported to Excel successfully",Severity.Success);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to export requirements: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error exporting to Excel: {ex}");
+        }
+    }
+
+    private async Task ExportToPdfAsync()
+    {
+        try
+        {
+            var result = await RequirementService.GetRequirementsAsync(1,1000,searchTerm: _searchTerm);
+            var requirements = FlattenRequirements(result.ToArray());
+
+            if (!requirements.Any())
+            {
+                Snackbar.Add("No requirements found to export.",Severity.Warning);
+                return;
+            }
+
+            var pdfRequest = new PdfGenerationDto
+                    {
+                        Title = "Requirements Report",
+                        FileName = "Requirements_Report.pdf",
+                        FontSizeTitle = 16,
+                        FontSizeHeader = 12,
+                        FontSizeBody = 10,
+                        Columns = new List<PdfColumnDto>
+                    {
+                    new PdfColumnDto { Field = "id", Header = "ID" },
+                    new PdfColumnDto { Field = "title", Header = "Title" },
+                    new PdfColumnDto { Field = "description", Header = "Description" },
+                    new PdfColumnDto { Field = "tags", Header = "Tags" },
+                    new PdfColumnDto { Field = "project", Header = "Project" },
+                    new PdfColumnDto { Field = "parentRequirement", Header = "Parent Requirement" },
+                    new PdfColumnDto { Field = "tenantId", Header = "Tenant ID" },
+                    new PdfColumnDto { Field = "testCaseIds", Header = "Test Case IDs" }
+                    },
+                        Data = requirements.Select(r => new Dictionary<string,string>
+                    {
+                    { "id", r.Id.ToString() },
+                    { "title", r.Title ?? "" },
+                    { "description", r.Description ?? "" },
+                    { "tags", string.Join(",", r.Tags ?? new string[0]) },
+                    { "project", _projects.FirstOrDefault(p => p.Id == r.ProjectId)?.Name ?? "None" },
+                    { "parentRequirement", _parentRequirements.FirstOrDefault(pr => pr.Id == r.ParentRequirementId)?.Title ?? "None" },
+                    { "tenantId", r.TenantId ?? "" },
+                    { "testCaseIds", string.Join(",", r.TestCaseIds ?? new List<Guid>()) }
+                    }).ToList()
+                    };
+
+            var pdfBytes = await CommonService.GeneratePdfAsync(pdfRequest);
+            var base64Data = Convert.ToBase64String(pdfBytes);
+            await JSRuntime.InvokeVoidAsync("downloadFileFromBase64",
+            "Requirements_Report.pdf",
+            "application/pdf",
+            base64Data);
+
+            Snackbar.Add("Requirements exported to PDF successfully",Severity.Success);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to export requirements: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error exporting to PDF: {ex}");
+        }
+    }
+
+    private async Task ImportFromFileAsync()
+    {
+        var parameters = new DialogParameters
+            {
+            { "OnFileUploaded", new EventCallback<string>(this, ImportCsvContentAsync) }
+            };
+        var options = new DialogOptions
+                {
+                    CloseButton = true,
+                    MaxWidth = MaxWidth.Medium,
+                    FullWidth = true
+                };
+        await DialogService.ShowAsync<FileUploadDialog>("Import Requirements from CSV",parameters,options);
+    }
+
+    private async Task ImportCsvContentAsync( string csvContent )
+    {
+        try
+        {
+            using var reader = new StringReader(csvContent);
+            using var csv = new CsvReader(reader,CultureInfo.InvariantCulture);
+            var records = csv.GetRecords<CreateRequirementDto>().ToList();
+            foreach (var requirement in records)
+            {
+                if (!string.IsNullOrWhiteSpace(requirement?.Title))
+                {
+                    requirement.TenantId = _tenantId;
+                    await RequirementService.CreateRequirementAsync(requirement,requirement.ProjectId);
+                }
+            }
+            await _table.ReloadServerData();
+            Snackbar.Add("Requirements imported successfully",Severity.Success);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Unauthorized: Please check your permissions or login again.",Severity.Error);
+            NavigationManager.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to import requirements: {ex.Message}",Severity.Error);
+            Console.WriteLine($"Error importing CSV: {ex}");
+        }
+    }
+    #endregion
+
+    #region Hierarchy Helpers
+    private void ToggleExpand( Guid requirementId )
+    {
+        if (_expandedRequirements.Contains(requirementId))
+            _expandedRequirements.Remove(requirementId);
+        else
+            _expandedRequirements.Add(requirementId);
+        StateHasChanged();
+    }
+
+    private int GetDepth( RequirementDto requirement )
+    {
+        int depth = 1;
+        var current = requirement;
+        while (current.ParentRequirementId.HasValue)
+        {
+            current = _parentRequirements.FirstOrDefault(r => r.Id == current.ParentRequirementId.Value);
+            if (current == null) break;
+            depth++;
+        }
+        return depth;
+    }
+
+    private RenderFragment RenderChildRows( RequirementDto requirement,int depth )
+    {
+        return @<text>
+        @foreach (var child in requirement.Children)
+    {
+        <tr class="child-row" style="padding-left: @(20 * depth)px;">
+            <td>
+                @if (child.Children.Any())
+            {
+                <MudIconButton Icon="@(_expandedRequirements.Contains(child.Id) ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                               Size="Size.Small"
+                               OnClick="@(() => ToggleExpand(child.Id))" />
+            }
+            </td>
+            <td>
+                @if (child.IsEditing)
+            {
+                <MudTextField T="string"
+                              @bind-Value="child.Title"
+                              Required="true"
+                              RequiredError="Title is required"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Class="mud-input-compact" />
+            }
+            else
+            {
+                @child.Title
+            }
+            </td>
+            <td>
+                @if (child.IsEditing)
+            {
+                <MudTextField T="string"
+                              @bind-Value="child.Description"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Lines="2"
+                              Class="mud-input-compact" />
+            }
+            else
+            {
+                <MudTd><div>@((MarkupString)child.Description)</div></MudTd>
+            }
+            </td>
+            <td>
+                @(child.Tags != null ? string.Join(", ", child.Tags) : "")
+            </td>
+            <td>
+                @(_projects.FirstOrDefault(p => p.Id == child.ProjectId)?.Name ?? "None")
+            </td>
+            <td>
+                @(_parentRequirements.FirstOrDefault(r => r.Id == child.ParentRequirementId)?.Title ?? "N/A")
+            </td>
+            <td>
+                @(child.TestCaseIds != null ? string.Join(", ", child.TestCaseIds.Select(id => _availableTestCases.FirstOrDefault(tc => tc.Id == id)?.Title ?? id.ToString())) : "")
+            </td>
+            <td style="text-align: center;">
+                @if (child.IsEditing)
+            {
+                <MudIconButton Icon="@Icons.Material.Filled.Save"
+                               Color="Color.Success"
+                               Size="Size.Small"
+                               OnClick="@(() => SaveInlineEditAsync(child))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Cancel"
+                               Color="Color.Secondary"
+                               Size="Size.Small"
+                               OnClick="@(() => CancelInlineEdit(child))" />
+            }
+            else
+            {
+                <MudIconButton Icon="@Icons.Material.Filled.Add"
+                               Color="Color.Success"
+                               Size="Size.Small"
+                               OnClick="@(() => OpenCreateDialogEditAsync(child.Id))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               OnClick="@(() => StartInlineEdit(child))" />
+                <MudIconButton Icon="@Icons.Material.Filled.NoteAlt"
+                               Color="Color.Info"
+                               Size="Size.Small"
+                               OnClick="@(() => OpenEditDialogAsync(child))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                               Color="Color.Error"
+                               Size="Size.Small"
+                               OnClick="@(() => DeleteRequirementAsync(child.Id, child.ProjectId))" />
+            }
+            </td>
+        </tr>
+        @if (_expandedRequirements.Contains(child.Id))
+    {
+        @RenderChildRows(child, depth + 1)
+    }
+    }
+    </text>;
+    }
+
+    private List<RequirementDto> FlattenRequirements( IEnumerable<RequirementDto> requirements )
+    {
+        var result = new List<RequirementDto>();
+        foreach (var requirement in requirements)
+        {
+            result.Add(requirement);
+            if (requirement.Children.Any())
+                result.AddRange(FlattenRequirements(requirement.Children));
+        }
+        return result;
+    }
+    #endregion
+
+    #region Validation
+    private string ValidateTitle( string title )
+    {
+        if (string.IsNullOrWhiteSpace(title))
+            return "Title is required";
+        if (title.Length < 3)
+            return "Title must be at least 3 characters long";
+        return null;
+    }
+    #endregion
+
+    #region Helpers
+    private void LogHover( string action )
+    {
+        Console.WriteLine($"Hovered: {action}");
+        Snackbar.Add($"Hovered: {action}",Severity.Info);
+    }
+    #endregion
+}

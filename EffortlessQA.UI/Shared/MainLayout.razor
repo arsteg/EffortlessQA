@@ -1,19 +1,268 @@
 ﻿@inherits LayoutComponentBase
+@using EffortlessQA.UI.Services
+@using EffortlessQA.Data.Dtos
+@using MudBlazor
+@inject NavigationManager NavigationManager
+@inject AuthService AuthService
+@inject ApplicationContextService ApplicationContextService
+@inject ISnackbar Snackbar
+@inject IJSRuntime JSRuntime
 
-<PageTitle>EffortlessQA.UI</PageTitle>
+<MudThemeProvider Theme="@_theme" IsDarkMode="@_isDarkMode" />
+<MudPopoverProvider />
+<MudSnackbarProvider />
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+<MudLayout>
+    <!-- Top Bar -->
+    <MudAppBar Elevation="2" Dense="true">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" Size="Size.Medium" />
+        <MudText Typo="Typo.h6" Class="ml-3">EffortlessQA</MudText>
+        @if (IsAuthenticated)
+        {
+            @if (_isLoadingProjects)
+            {
+                <MudProgressCircular Color="Color.Default" Size="Size.Small" Class="ml-3" />
+            }
+            else if (_projectsError)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Error" Class="ml-3">Failed to load projects</MudText>
+            }
+            else if (!_projects.Any())
+            {
+                <MudText Typo="Typo.body2" Color="Color.Warning" Class="ml-3">No projects available</MudText>
+            }
+            else
+            {
+                <MudText Typo="Typo.body2" Color="Color.Inherit" Class="mr-3 ml-3">Current Project:</MudText>
+                <MudMenu Label="@(SelectedProjectId.HasValue ? _projects.FirstOrDefault(p => p.Id == SelectedProjectId.Value)?.Name ?? "No Project" : "No Project")"
+                         Color="Color.Inherit"
+                         Dense="true"
+                         Variant="Variant.Outlined"
+                         Class="ml-3"
+                         Style="width: 250px;">
+                    <MudMenuItem OnClick="@(() => OnProjectChanged(null))">No Project</MudMenuItem>
+                    @foreach (var project in _projects)
+                    {
+                        <MudMenuItem OnClick="@(() => OnProjectChanged(project.Id))">@(project.Name ?? $"Project ID: {project.Id}")</MudMenuItem>
+                    }
+                </MudMenu>
+            }
+        }
+        <MudSpacer />
+        <GlobalSearch />
+        @if (IsAuthenticated)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Inherit" Class="mr-3">Tenant: @SelectedTenant</MudText>
+        }
+        @if (IsAuthenticated)
+        {
+            <MudMenu Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit" Direction="Direction.Right" Dense="true" Size="Size.Medium">
+                <MudMenuItem OnClick="@ViewProfile">Profile</MudMenuItem>
+                <MudMenuItem OnClick="@ChangePassword">Change Password</MudMenuItem>
+                <MudMenuItem OnClick="@LogoutAsync">Logout</MudMenuItem>
+            </MudMenu>
+        }
+    </MudAppBar>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
-        </div>
+    <!-- Sidebar -->
+    <MudDrawer @bind-Open="@_drawerOpen" Elevation="2" ClipMode="DrawerClipMode.Docked" Width="250px" Breakpoint="Breakpoint.Md">
+        <MudNavMenu>
+            @if (IsAuthenticated)
+            {
+                <MudNavLink Href="/dashboard" Icon="@Icons.Material.Filled.Dashboard" Match="NavLinkMatch.Prefix" IconSize="Size.Medium">Dashboard</MudNavLink>
+                <MudNavLink Href="/projects" Icon="@Icons.Material.Filled.Work" Match="NavLinkMatch.Prefix" IconSize="Size.Medium">Projects</MudNavLink>
+                <MudNavLink Href="/requirements" Icon="@Icons.Material.Filled.List" Match="NavLinkMatch.Prefix" IconSize="Size.Medium">Requirements</MudNavLink>
+                <MudNavLink Href="/test-suites" Icon="@Icons.Material.Filled.Folder" Match="NavLinkMatch.Prefix" IconSize="Size.Medium">Test Suites</MudNavLink>
+                <MudNavLink Href="/test-cases" Icon="@Icons.Material.Filled.Description" Match="NavLinkMatch.Prefix" IconSize="Size.Medium">Test Cases</MudNavLink>
+                <MudNavLink Href="/test-runs" Icon="@Icons.Material.Filled.PlayArrow" Match="NavLinkMatch.Prefix" IconSize="Size.Medium">Test Runs</MudNavLink>
+                <MudNavLink Href="/defects" Icon="@Icons.Material.Filled.BugReport" Match="NavLinkMatch.Prefix" IconSize="Size.Medium">Defects</MudNavLink>
+                <MudNavLink Href="/reports" Icon="@Icons.Material.Filled.BarChart" Match="NavLinkMatch.Prefix" IconSize="Size.Medium">Reports</MudNavLink>
+                <MudNavLink Href="/search" Icon="@Icons.Material.Filled.Search" Match="NavLinkMatch.Prefix" IconSize="Size.Medium">Search</MudNavLink>
+                @if (IsAdmin)
+                {
+                    <MudNavGroup Title="Settings" Icon="@Icons.Material.Filled.Settings" Expanded="false" IconSize="Size.Medium">
+                        <MudNavLink Href="/tenant" Icon="@Icons.Material.Filled.Business" Match="NavLinkMatch.Prefix" IconSize="Size.Medium">Tenant</MudNavLink>
+                        <MudNavLink Href="/permissions" Icon="@Icons.Material.Filled.Security" Match="NavLinkMatch.Prefix" IconSize="Size.Medium">Permissions</MudNavLink>
+                        <MudNavLink Href="/users" Icon="@Icons.Material.Filled.People" Match="NavLinkMatch.Prefix" IconSize="Size.Medium">Users</MudNavLink>
+                        <MudNavLink Href="/invite-user" Icon="@Icons.Material.Filled.People" Match="NavLinkMatch.Prefix" IconSize="Size.Medium">Invite Users</MudNavLink>
+                    </MudNavGroup>
+                }
+            }
+            else
+            {
+                <MudNavLink Href="/login" Icon="@Icons.Material.Filled.Login" Match="NavLinkMatch.Prefix" IconSize="Size.Medium">Login</MudNavLink>
+                <MudNavLink Href="/register" Icon="@Icons.Material.Filled.AppRegistration" Match="NavLinkMatch.Prefix" IconSize="Size.Medium">Register</MudNavLink>
+                <MudNavLink Href="/password-reset" Icon="@Icons.Material.Filled.Lock" Match="NavLinkMatch.Prefix" IconSize="Size.Medium">Reset Password</MudNavLink>
+            }
+        </MudNavMenu>
+    </MudDrawer>
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+    <!-- Main Content -->
+    <MudMainContent Class="pt-4">
+        <MudContainer MaxWidth="MaxWidth.Large" Class="mb-4 px-4 px-md-8">
+            <Breadcrumb />
+        </MudContainer>
+        <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 px-4 px-md-8">
+            <MudPaper Elevation="1" Class="pa-4">
+                @Body
+            </MudPaper>
+        </MudContainer>
+    </MudMainContent>
+
+    <!-- Footer -->
+    <MudPaper Elevation="1" Class="pa-2 mt-4">
+        <MudText Typo="Typo.caption" Align="Align.Center">
+            EffortlessQA v1.0.0 | <MudLink Href="https://api.effortlessqa.com/docs" Target="_blank">API Docs</MudLink>
+        </MudText>
+    </MudPaper>
+</MudLayout>
+
+@code {
+    private bool _drawerOpen = true;
+    private bool IsAuthenticated => AuthService.IsAuthenticated;
+    private bool IsAdmin => AuthService.IsAdmin;
+    private string SelectedTenant { get; set; } = "";
+    private List<string> Tenants { get; set; } = new() { "Default Tenant", "Org A", "Org B" };
+    private List<ProjectDto> _projects { get; set; } = new List<ProjectDto>();
+    private bool _isLoadingProjects = true;
+    private bool _projectsError;
+    private bool _isDarkMode = false;
+    private readonly MudTheme _theme = new()
+    {
+        PaletteLight = new PaletteLight
+        {
+            Primary = "#1976D2",
+            Secondary = "#FF4081",
+            Background = "#F5F7FA",
+            Surface = "#FFFFFF",
+            TextPrimary = "#212121",
+            TextSecondary = "#757575",
+            AppbarBackground = "#1976D2",
+            AppbarText = "#FFFFFF"
+        },
+        PaletteDark = new PaletteDark
+        {
+            Primary = "#2196F3",
+            Secondary = "#F50057",
+            Background = "#121212",
+            Surface = "#1E1E1E",
+            TextPrimary = "#FFFFFF",
+            TextSecondary = "#B0BEC5",
+            AppbarBackground = "#2196F3",
+            AppbarText = "#FFFFFF"
+        },
+        Typography = new Typography
+        {
+            Default = new DefaultTypography()
+            {
+                FontFamily = new[] { "Roboto", "Helvetica", "Arial", "sans-serif" },
+                FontSize = ".875rem",
+                FontWeight = "400",
+                LineHeight = "1.43",
+                LetterSpacing = ".01071em"
+            },
+            H6 = new DefaultTypography()
+            {
+                FontSize = "1.25rem",
+                FontWeight = "500",
+                LineHeight = "1.6",
+                LetterSpacing = ".0075em"
+            }
+        },
+        LayoutProperties = new LayoutProperties
+        {
+            DefaultBorderRadius = "4px"
+        }
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("console.log", "MudBlazor initialized");
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _isLoadingProjects = true;
+            await ApplicationContextService.InitializeAsync();
+
+            // Fetch tenant name
+            SelectedTenant = await AuthService.GetCurrentTenantAsync();
+
+            Console.WriteLine($"Loaded tenant: {SelectedTenant}");
+
+            // Fetch projects
+            _projects = await ApplicationContextService.GetProjectsAsync();
+            Console.WriteLine($"Loaded {_projects.Count} projects: {System.Text.Json.JsonSerializer.Serialize(_projects)}");
+
+            // Pre-select the first project if available
+            if (_projects.Any() && !SelectedProjectId.HasValue)
+            {
+                SelectedProjectId = _projects.First().Id;
+                await OnProjectChanged(SelectedProjectId);
+            }
+
+            // Subscribe to project changes
+            ApplicationContextService.OnProjectChanged += async () =>
+            {
+                _projects = await ApplicationContextService.GetProjectsAsync();
+                Console.WriteLine($"Projects updated: {_projects.Count}");
+                // Ensure selected project is still valid
+                if (SelectedProjectId.HasValue && !_projects.Any(p => p.Id == SelectedProjectId))
+                {
+                    SelectedProjectId = _projects.Any() ? _projects.First().Id : null;
+                    await OnProjectChanged(SelectedProjectId);
+                }
+                await InvokeAsync(StateHasChanged);
+            };
+        }
+        catch (Exception ex)
+        {
+            _projectsError = true;
+            Snackbar.Add($"Failed to load projects or tenant: {ex.Message}", Severity.Error);
+            Console.WriteLine($"Error loading data: {ex}");
+        }
+        finally
+        {
+            _isLoadingProjects = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+
+    private async Task LogoutAsync()
+    {
+        await AuthService.LogoutAsync();
+        NavigationManager.NavigateTo("/login");
+    }
+
+    private void ViewProfile()
+    {
+        NavigationManager.NavigateTo("/profile");
+    }
+
+    private Guid? SelectedProjectId { get; set; }
+
+    private async Task OnProjectChanged(Guid? newProjectId)
+    {
+        SelectedProjectId = newProjectId;
+        ApplicationContextService.SelectedProject = _projects.FirstOrDefault(p => p.Id == newProjectId) ?? null;
+        var projectName = newProjectId.HasValue
+            ? _projects.FirstOrDefault(p => p.Id == newProjectId.Value)?.Name ?? "No Project"
+            : "No Project";
+        Snackbar.Add($"Switched to project: {projectName}", Severity.Info);
+        await ApplicationContextService.NotifyProjectChangedAsync();
+        await ApplicationContextService.SetProjectIdAsync(newProjectId);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void ChangePassword()
+    {
+        NavigationManager.NavigateTo("/change-password");
+    }
+}

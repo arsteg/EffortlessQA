@@ -1,0 +1,193 @@
+﻿using System;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Threading.Tasks;
+using EffortlessQA.Data.Dtos;
+using Microsoft.AspNetCore.Http;
+
+namespace EffortlessQA.UI.Services
+{
+    public class AuthService
+    {
+        private readonly HttpClient _httpClient;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private bool _isAuthenticated;
+        private bool _isAdmin;
+
+        public AuthService(
+            IHttpClientFactory httpClientFactory,
+            IHttpContextAccessor httpContextAccessor
+        )
+        {
+            _httpClient = httpClientFactory.CreateClient("EffortlessQAApi");
+            _httpContextAccessor = httpContextAccessor;
+        }
+
+        public bool IsAuthenticated => _isAuthenticated;
+        public bool IsAdmin => _isAdmin;
+
+        public async Task LoginAsync(LoginDto loginDto)
+        {
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync("Auth/login", loginDto);
+                response.EnsureSuccessStatusCode();
+
+                var loginResponse = await response.Content.ReadFromJsonAsync<LoginResponseDto>();
+                if (loginResponse?.Data == null)
+                {
+                    throw new Exception("No token received from login response.");
+                }
+
+                // Store token in session storage
+                _httpContextAccessor.HttpContext.Session.SetString("authToken", loginResponse.Data);
+
+                _isAuthenticated = true;
+                // TODO: Implement IsAdmin logic based on token claims if needed
+                // Example: _isAdmin = await CheckAdminRoleAsync(loginResponse.Data);
+            }
+            catch (Exception ex)
+            {
+                _isAuthenticated = false;
+                _isAdmin = false;
+                throw new Exception($"Login failed: {ex.Message}");
+            }
+        }
+
+        public async Task RegisterAsync(RegisterDto registerDto)
+        {
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync("register", registerDto);
+                response.EnsureSuccessStatusCode();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Registration failed: {ex.Message}");
+            }
+        }
+
+        public async Task LogoutAsync()
+        {
+            _httpContextAccessor.HttpContext.Session.Remove("authToken");
+            _isAuthenticated = false;
+            _isAdmin = false;
+            await Task.CompletedTask;
+        }
+
+        public async Task<string> GetCurrentTenantAsync()
+        {
+            try
+            {
+                var token = await GetTokenAsync();
+                if (!string.IsNullOrEmpty(token))
+                {
+                    _httpClient.DefaultRequestHeaders.Authorization =
+                        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                }
+
+                var response = await _httpClient.GetAsync("Auth/tenantCurrent");
+                response.EnsureSuccessStatusCode();
+                var tenant = await response.Content.ReadFromJsonAsync<ApiResponse<TenantDto>>();
+                return tenant?.Data?.Name ?? "Unknown Tenant";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching tenant: {ex.Message}");
+                return "Unknown Tenant";
+            }
+        }
+
+        public async Task<string> GetTokenAsync()
+        {
+            return _httpContextAccessor.HttpContext.Session.GetString("authToken");
+        }
+
+        public async Task InviteUserAsync(InviteUserDto inviteUserDto)
+        {
+            try
+            {
+                var token = await GetTokenAsync();
+                if (!string.IsNullOrEmpty(token))
+                {
+                    _httpClient.DefaultRequestHeaders.Authorization =
+                        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                }
+
+                var response = await _httpClient.PostAsJsonAsync("users/invite", inviteUserDto);
+                response.EnsureSuccessStatusCode();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Invite user failed: {ex.Message}");
+            }
+        }
+
+        public async Task ChangePasswordAsync(
+            Guid userId,
+            string currentPassword,
+            string newPassword
+        )
+        {
+            try
+            {
+                var token = await GetTokenAsync();
+                if (!string.IsNullOrEmpty(token))
+                {
+                    _httpClient.DefaultRequestHeaders.Authorization =
+                        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                }
+
+                var changePasswordDto = new ChangePasswordDto
+                {
+                    UserId = userId,
+                    CurrentPassword = currentPassword,
+                    NewPassword = newPassword
+                };
+
+                var response = await _httpClient.PostAsJsonAsync(
+                    "auth/change-password",
+                    changePasswordDto
+                );
+                response.EnsureSuccessStatusCode();
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new Exception(
+                    "Failed to change password. Please check your current password and try again.",
+                    ex
+                );
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error changing password: {ex.Message}", ex);
+            }
+        }
+
+        public async Task<Guid> GetUserIdAsync()
+        {
+            var token = await GetTokenAsync();
+            if (string.IsNullOrEmpty(token))
+                throw new Exception("No authentication token found.");
+
+            try
+            {
+                // TODO: Implement JWT parsing if needed
+                // Example:
+                // var handler = new JwtSecurityTokenHandler();
+                // var jwtToken = handler.ReadJwtToken(token);
+                // var userIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "sub" || c.Type == ClaimTypes.NameIdentifier);
+                // if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+                //     throw new Exception("Invalid user ID format in token.");
+                // return userId;
+
+                // Placeholder: Replace with actual logic
+                return Guid.NewGuid();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error reading user ID from token: {ex.Message}", ex);
+            }
+        }
+    }
+}
