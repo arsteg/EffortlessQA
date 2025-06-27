@@ -1,5 +1,7 @@
+using Blazored.LocalStorage;
 using EffortlessQA.UI.Services; // Ensure this namespace matches your project
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MudBlazor.Services;
@@ -10,15 +12,20 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddMudServices(); // Add MudBlazor services
+builder.Services.AddScoped<ProtectedSessionStorage>();
+builder.Services.AddBlazoredLocalStorage();
+builder.Services.AddTransient<AuthTokenHandler>();
 
-// Register IHttpClientFactory with named client
 builder.Services.AddHttpClient(
-    "EffortlessQAApi",
-    client =>
-    {
-        client.BaseAddress = new Uri("https://api.effortlessqa.com");
-    }
-);
+	"EffortlessQAApi",
+	client =>
+	{
+		client.BaseAddress = new Uri("https://localhost:7196/api/v1/");
+		client.DefaultRequestHeaders.Accept.Add(
+			new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json")
+		);
+	}
+).AddHttpMessageHandler<AuthTokenHandler>(); // Add the AuthTokenHandler
 
 builder.Services.AddHttpContextAccessor();
 

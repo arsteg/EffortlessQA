@@ -14,7 +14,7 @@ namespace EffortlessQA.UI.Services
 
         public TestRunService(IHttpClientFactory httpClientFactory)
         {
-            _httpClient = httpClientFactory.CreateClient("EffortlessQA.Api");
+            _httpClient = httpClientFactory.CreateClient("EffortlessQAApi");
         }
 
         public async Task<List<TestRunDto>> GetTestRunsAsync(

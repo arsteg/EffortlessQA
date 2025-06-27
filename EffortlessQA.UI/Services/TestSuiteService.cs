@@ -15,7 +15,7 @@ namespace EffortlessQA.UI.Services
 
         public TestSuiteService(IHttpClientFactory httpClientFactory)
         {
-            _httpClient = httpClientFactory.CreateClient("EffortlessQA.Api");
+            _httpClient = httpClientFactory.CreateClient("EffortlessQAApi");
         }
 
         #endregion

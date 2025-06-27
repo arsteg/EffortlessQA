@@ -10,7 +10,7 @@ namespace EffortlessQA.UI.Services
 
         public CommonService(IHttpClientFactory httpClientFactory)
         {
-            _httpClient = httpClientFactory.CreateClient("EffortlessQA.Api");
+            _httpClient = httpClientFactory.CreateClient("EffortlessQAApi");
         }
 
         public async Task<byte[]> GeneratePdfAsync(PdfGenerationDto pdfRequest)

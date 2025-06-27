@@ -16,7 +16,7 @@ namespace EffortlessQA.UI.Services
         #region Constructor
         public TestCaseService(IHttpClientFactory httpClientFactory)
         {
-            _httpClient = httpClientFactory.CreateClient("EffortlessQA.Api");
+            _httpClient = httpClientFactory.CreateClient("EffortlessQAApi");
         }
         #endregion
 

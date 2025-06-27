@@ -17,7 +17,8 @@ namespace EffortlessQA.UI.Services
             CancellationToken cancellationToken
         )
         {
-            var token = await _localStorage.GetItemAsync<string>("authToken");
+            //var token = await _localStorage.GetItemAsync<string>("authToken");
+            var token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlMDlhZDc5MS00MGQxLTQ5MzctODI5Yi1lNGM5Y2Q3ZTYyN2YiLCJlbWFpbCI6Im1vaGRyYWZpb25saW5lQGdtYWlsLmNvbSIsInRlbmFudElkIjoiNTUwYjA2ZjQ3ZDI4NDkxMGJhM2MyNzE1MGU1MmFhMTgiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJBZG1pbiIsImV4cCI6MTc4MjU2Mjg4OSwiaXNzIjoiRWZmb3J0bGVzc1FBIiwiYXVkIjoiRWZmb3J0bGVzc1FBVXNlcnMifQ.gEoALuWkuf_-UT7cCy0ZfgeYpbSWWUI0ThuCgqRQ2uk";
             if (!string.IsNullOrEmpty(token))
             {
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);

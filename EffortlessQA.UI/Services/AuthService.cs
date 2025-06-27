@@ -4,6 +4,9 @@ using System.Net.Http.Json;
 using System.Threading.Tasks;
 using EffortlessQA.Data.Dtos;
 using Microsoft.AspNetCore.Http;
+using Blazored.LocalStorage; // Use Blazored.LocalStorage instead of ProtectedSessionStorage
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace EffortlessQA.UI.Services
 {
@@ -11,13 +14,15 @@ namespace EffortlessQA.UI.Services
     {
         private readonly HttpClient _httpClient;
         private readonly IHttpContextAccessor _httpContextAccessor;
-        private bool _isAuthenticated;
+		private readonly ILocalStorageService _localStorage; // Changed to ILocalStorageService
+		private bool _isAuthenticated;
         private bool _isAdmin;
 
         public AuthService(
             IHttpClientFactory httpClientFactory,
-            IHttpContextAccessor httpContextAccessor
-        )
+            IHttpContextAccessor httpContextAccessor,
+			ILocalStorageService localStorage
+		)
         {
             _httpClient = httpClientFactory.CreateClient("EffortlessQAApi");
             _httpContextAccessor = httpContextAccessor;
@@ -39,10 +44,22 @@ namespace EffortlessQA.UI.Services
                     throw new Exception("No token received from login response.");
                 }
 
-                // Store token in session storage
-                _httpContextAccessor.HttpContext.Session.SetString("authToken", loginResponse.Data);
+				// Store token in session storage
+				//_httpContextAccessor.HttpContext.Session.SetString("authToken", loginResponse.Data);
 
-                _isAuthenticated = true;
+				//await _localStorage.SetItemAsync("authToken",loginResponse.Data);
+
+				var handler = new JwtSecurityTokenHandler();
+				var token = handler.ReadJwtToken(loginResponse.Data);
+				var claims = token.Claims.Select(c => $"{c.Type}: {c.Value}");
+				Console.WriteLine("Token Claims: " + string.Join(", ",claims)); // Log claims
+
+				var roleClaim = token.Claims.FirstOrDefault(c =>
+					c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
+				);
+				_isAdmin = roleClaim?.Value == "Admin";
+
+				_isAuthenticated = true;
                 // TODO: Implement IsAdmin logic based on token claims if needed
                 // Example: _isAdmin = await CheckAdminRoleAsync(loginResponse.Data);
             }
@@ -69,8 +86,9 @@ namespace EffortlessQA.UI.Services
 
         public async Task LogoutAsync()
         {
-            _httpContextAccessor.HttpContext.Session.Remove("authToken");
-            _isAuthenticated = false;
+            //_httpContextAccessor.HttpContext.Session.Remove("authToken");
+			await _localStorage.RemoveItemAsync("authToken"); // Changed to RemoveItemAsync
+			_isAuthenticated = false;
             _isAdmin = false;
             await Task.CompletedTask;
         }
@@ -79,8 +97,8 @@ namespace EffortlessQA.UI.Services
         {
             try
             {
-                var token = await GetTokenAsync();
-                if (!string.IsNullOrEmpty(token))
+				var token = await GetTokenAsync();
+				if (!string.IsNullOrEmpty(token))
                 {
                     _httpClient.DefaultRequestHeaders.Authorization =
                         new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
@@ -100,8 +118,10 @@ namespace EffortlessQA.UI.Services
 
         public async Task<string> GetTokenAsync()
         {
-            return _httpContextAccessor.HttpContext.Session.GetString("authToken");
-        }
+            //return _httpContextAccessor.HttpContext.Session.GetString("authToken");
+            //return await _localStorage.GetItemAsync<string>("authToken");
+            return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlMDlhZDc5MS00MGQxLTQ5MzctODI5Yi1lNGM5Y2Q3ZTYyN2YiLCJlbWFpbCI6Im1vaGRyYWZpb25saW5lQGdtYWlsLmNvbSIsInRlbmFudElkIjoiNTUwYjA2ZjQ3ZDI4NDkxMGJhM2MyNzE1MGU1MmFhMTgiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJBZG1pbiIsImV4cCI6MTc4MjU2Mjg4OSwiaXNzIjoiRWZmb3J0bGVzc1FBIiwiYXVkIjoiRWZmb3J0bGVzc1FBVXNlcnMifQ.gEoALuWkuf_-UT7cCy0ZfgeYpbSWWUI0ThuCgqRQ2uk";
+		}
 
         public async Task InviteUserAsync(InviteUserDto inviteUserDto)
         {
