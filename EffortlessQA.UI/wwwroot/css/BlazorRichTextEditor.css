@@ -1,0 +1,46 @@
+﻿.editor-container {
+    margin-top: 8px;
+}
+
+.toolbar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.toolbar-button {
+    background-color: #2196F3;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+    .toolbar-button:hover {
+        background-color: #1976D2;
+    }
+
+.toolbar-input {
+    display: none;
+}
+
+.toolbar label {
+    background-color: #2196F3;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+    .toolbar label:hover {
+        background-color: #1976D2;
+    }
+
+.editor {
+    border-radius: 4px;
+    background-color: #FFFFFF;
+    color: #212121;
+    font-family: Arial, sans-serif;
+}

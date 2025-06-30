@@ -320,7 +320,20 @@
     protected override async Task OnInitializedAsync()
     {
         // Initialize table data
-        await _table?.ReloadServerData();
+        // await _table?.ReloadServerData();
+        if (_table != null)
+        {
+            await _table.ReloadServerData();
+        }
+        else
+        {
+            // Optionally, retry after a short delay
+            await Task.Delay(100); // Wait for component initialization
+            if (_table != null)
+            {
+                await _table.ReloadServerData();
+            }
+        }
     }
 
     #endregion
