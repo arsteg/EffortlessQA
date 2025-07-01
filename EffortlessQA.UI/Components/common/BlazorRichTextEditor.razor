@@ -27,7 +27,7 @@
             <option value="24pt">24pt</option>
             <option value="36pt">36pt</option>
         </select>
-        <InputFile accept="image/*" OnChange="@HandleImageUpload" title="Upload Image" class="toolbar-button" style="margin-left: 5px;" />
+        @* <InputFile accept="image/*" OnChange="@HandleImageUpload" title="Upload Image" class="toolbar-button" style="margin-left: 5px;" /> *@
     </div>
     <div class="editor"
          @ref="editorRef"
@@ -38,7 +38,7 @@
 
 @code {
     [Parameter]
-    public string Value { get; set; } = "<p>Start typing here...</p>";
+    public string Value { get; set; }
 
     [Parameter]
     public EventCallback<string> ValueChanged { get; set; }
@@ -59,25 +59,30 @@
 
     protected override async Task OnInitializedAsync()
     {
-        dotNetRef = DotNetObjectReference.Create(this);
         _httpClient = HttpClientFactory.CreateClient("EffortlessQAApi");
+        await InitializeDotNetRef();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            string initialContent = string.IsNullOrWhiteSpace(Value) ? "<p>Start typing here...</p>" : Value;
+            string initialContent = Value;
             try
             {
-                await JSRuntime.InvokeVoidAsync("initializeEditor", editorRef, initialContent, dotNetRef, EntityId, FieldName);
+                await JSRuntime.InvokeVoidAsync("initializeEditor", editorRef, initialContent, dotNetRef);
             }
             catch (JSException ex)
             {
                 Console.WriteLine($"Error initializing editor content: {ex.Message}");
-                await ShowError($"Failed to initialize editor: {ex.Message}");
             }
         }
+    }
+
+    private async Task InitializeDotNetRef()
+    {
+        dotNetRef?.Dispose();
+        dotNetRef = DotNetObjectReference.Create(this);
     }
 
     private async Task FormatTextBold()
@@ -130,63 +135,6 @@
         catch (JSException ex)
         {
             Console.WriteLine($"Error executing command {command}: {ex.Message}");
-            await ShowError($"Failed to apply {command}: {ex.Message}");
-        }
-    }
-
-    private async Task HandleImageUpload(InputFileChangeEventArgs e)
-    {
-        try
-        {
-            var file = e.GetMultipleFiles(1).FirstOrDefault();
-            if (file != null)
-            {
-                if (file.ContentType.StartsWith("image/"))
-                {
-                    Console.WriteLine($"HandleImageUpload called: fileType={file.ContentType}, fileName={file.Name}, fileSize={file.Size}");
-                    var buffer = new byte[file.Size];
-                    await file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024).ReadAsync(buffer);
-                    var formData = new MultipartFormDataContent();
-                    formData.Add(new ByteArrayContent(buffer), "file", file.Name);
-                    var response = await _httpClient.PostAsync($"common/images/upload?entityId={Uri.EscapeDataString(EntityId)}&fieldName={Uri.EscapeDataString(FieldName)}", formData);
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        var errorContent = await response.Content.ReadAsStringAsync();
-                        Console.WriteLine($"Image upload failed with status: {response.StatusCode}, response: {errorContent}");
-                        await ShowError($"Image upload failed: HTTP Error {response.StatusCode}");
-                        return;
-                    }
-                    var json = await response.Content.ReadAsStringAsync();
-                    var result = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(json);
-                    if (result != null && result.TryGetValue("location", out var location))
-                    {
-                        Console.WriteLine($"Image uploaded successfully: {location}");
-                        await JSRuntime.InvokeVoidAsync("insertImage", editorRef, $"<img src='{location}' style='max-width: 100%; height: auto;' alt='Uploaded image' />");
-                        await RestoreCursorPosition();
-                        await UpdateContent();
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Invalid JSON response: {json}");
-                        await ShowError("Image upload failed: Invalid server response");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine($"Selected file is not an image: {file.ContentType}");
-                    await ShowError("Selected file is not a valid image.");
-                }
-            }
-            else
-            {
-                Console.WriteLine("No file selected.");
-                await ShowError("No file selected.");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error handling uploaded image: {ex.Message}");
-            await ShowError($"Failed to process uploaded image: {ex.Message}");
         }
     }
 
@@ -195,7 +143,6 @@
     {
         try
         {
-            Console.WriteLine($"HandlePasteImage called: fileType={fileType}, fileName={fileName}, blobLength={blob.Length}");
             if (fileType.StartsWith("image/"))
             {
                 var formData = new MultipartFormDataContent();
@@ -204,35 +151,27 @@
                 if (!response.IsSuccessStatusCode)
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"Image upload failed with status: {response.StatusCode}, response: {errorContent}");
-                    await ShowError($"Image upload failed: HTTP Error {response.StatusCode}");
                     return;
                 }
                 var json = await response.Content.ReadAsStringAsync();
                 var result = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(json);
-                if (result != null && result.TryGetValue("location", out var location))
+                if (result != null && result.TryGetValue("location", out var location) && !string.IsNullOrEmpty(location))
                 {
                     Console.WriteLine($"Image uploaded successfully: {location}");
-                    await JSRuntime.InvokeVoidAsync("insertImage", editorRef, $"<img src='{location}' style='max-width: 100%; height: auto;' alt='Pasted image' />");
+                    await JSRuntime.InvokeVoidAsync("focusEditor", editorRef);
+                    await JSRuntime.InvokeVoidAsync("insertImage", editorRef, $"<img src='{location}' style='max-width: 100%; height: auto;' alt='Dropped or pasted image' />");
                     await RestoreCursorPosition();
                     await UpdateContent();
                 }
                 else
                 {
-                    Console.WriteLine($"Invalid JSON response: {json}");
-                    await ShowError("Image upload failed: Invalid server response");
+                    Console.WriteLine($"Invalid JSON response or missing 'location': {json}");
                 }
-            }
-            else
-            {
-                Console.WriteLine($"Pasted content is not an image: {fileType}");
-                await ShowError("Pasted content is not a valid image.");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error handling pasted image: {ex.Message}");
-            await ShowError($"Failed to process pasted image: {ex.Message}");
+            Console.WriteLine($"Error handling dropped or pasted image: {ex.Message}");
         }
     }
 
@@ -258,7 +197,6 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Error updating content: {ex.Message}");
-            await ShowError($"Failed to update editor content: {ex.Message}");
         }
         finally
         {
@@ -272,6 +210,7 @@
         {
             isUpdatingContent = true;
             var newContent = await JSRuntime.InvokeAsync<string>("getEditorContent", editorRef);
+            Console.WriteLine($"Editor content after update: {newContent}");
             if (!string.IsNullOrWhiteSpace(newContent) && !newContent.StartsWith("<"))
             {
                 newContent = $"<p>{newContent}</p>";
@@ -285,7 +224,6 @@
         catch (JSException ex)
         {
             Console.WriteLine($"Error updating content: {ex.Message}");
-            await ShowError($"Failed to retrieve editor content: {ex.Message}");
         }
         finally
         {
@@ -328,7 +266,11 @@
         try
         {
             await JSRuntime.InvokeVoidAsync("destroyEditor", editorRef);
-            dotNetRef?.Dispose();
+            if (dotNetRef != null)
+            {
+                dotNetRef.Dispose();
+                dotNetRef = null;
+            }
         }
         catch (JSException ex)
         {

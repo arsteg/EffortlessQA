@@ -56,7 +56,7 @@ namespace EffortlessQA.UI.Services
 
                 var response = await _httpClient.GetAsync(url, cancellationToken);
                 var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
-                Console.WriteLine($"Response: {response.StatusCode} - {responseContent}");
+                //Console.WriteLine($"Response: {response.StatusCode} - {responseContent}");
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -186,9 +186,9 @@ namespace EffortlessQA.UI.Services
                     cancellationToken
                 );
                 var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
-                Console.WriteLine(
-                    $"UpdateRequirement Response: {response.StatusCode} - {responseContent}"
-                );
+                //Console.WriteLine(
+                    //$"UpdateRequirement Response: {response.StatusCode} - {responseContent}"
+                //);
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -233,9 +233,9 @@ namespace EffortlessQA.UI.Services
                     cancellationToken
                 );
                 var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
-                Console.WriteLine(
-                    $"DeleteRequirement Response: {response.StatusCode} - {responseContent}"
-                );
+                //Console.WriteLine(
+                //    $"DeleteRequirement Response: {response.StatusCode} - {responseContent}"
+                //);
 
                 if (!response.IsSuccessStatusCode)
                 {

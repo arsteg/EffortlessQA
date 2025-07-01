@@ -16,14 +16,21 @@
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
     <link href="css/site.css" rel="stylesheet" />
     <link rel="stylesheet" href="css/BlazorRichTextEditor.css" />
-    <!-- Remove bootstrap.min.css to avoid conflicts -->
-    <!-- <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" /> -->
 </head>
 <body>
     <component type="typeof(App)" render-mode="Server" />
 
-    <script src="_framework/blazor.server.js"></script>
+    <script src="_framework/blazor.server.js" autostart="true"></script>
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
     <script src="js/editor.js"></script>
+    @*  <script>
+        // Ensure Blazor reconnection logic
+        Blazor.start({
+            reconnectionOptions: {
+                maxRetries: 10,
+                retryIntervalMilliseconds: 1000
+            }
+        });
+    </script>  *@
 </body>
 </html>
