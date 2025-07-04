@@ -1084,7 +1084,7 @@
                     new PdfColumnDto { Field = "tags", Header = "Tags" },
                     new PdfColumnDto { Field = "project", Header = "Project" },
                     new PdfColumnDto { Field = "parentRequirement", Header = "Parent Requirement" },
-                    new PdfColumnDto { Field = "tenantId", Header = "Tenant ID" },
+                    new PdfColumnDto { Field = "TenantId", Header = "Tenant ID" },
                     new PdfColumnDto { Field = "testCaseIds", Header = "Test Case IDs" }
                     },
                         Data = requirements.Select(r => new Dictionary<string,string>
@@ -1095,7 +1095,7 @@
                     { "tags", string.Join(",", r.Tags ?? new string[0]) },
                     { "project", _projects.FirstOrDefault(p => p.Id == r.ProjectId)?.Name ?? "None" },
                     { "parentRequirement", _parentRequirements.FirstOrDefault(pr => pr.Id == r.ParentRequirementId)?.Title ?? "None" },
-                    { "tenantId", r.TenantId ?? "" },
+                    { "TenantId", r.TenantId ?? "" },
                     { "testCaseIds", string.Join(",", r.TestCaseIds ?? new List<Guid>()) }
                     }).ToList()
                     };

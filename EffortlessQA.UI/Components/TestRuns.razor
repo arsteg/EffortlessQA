@@ -876,7 +876,7 @@
                     { "description", tr.Description ?? "" },
                     // { "assignedTester", _users.FirstOrDefault(u => u.Id == tr.AssignedTesterId)?.UserName ?? "None" },
                     { "project", _projects.FirstOrDefault(p => p.Id == tr.ProjectId)?.Name ?? "None" },
-                    { "tenantId", tr.TenantId ?? "" },
+                    { "TenantId", tr.TenantId ?? "" },
                     { "createdAt", tr.CreatedAt.ToString("yyyy-MM-dd") },
                     { "updatedAt", tr.UpdatedAt?.ToString("yyyy-MM-dd") ?? "" }
                 }).ToList()

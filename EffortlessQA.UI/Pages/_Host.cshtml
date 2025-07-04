@@ -18,11 +18,23 @@
     <link rel="stylesheet" href="css/BlazorRichTextEditor.css" />
 </head>
 <body>
+    <div id="app">Loading...</div>
     <component type="typeof(App)" render-mode="Server" />
 
     <script src="_framework/blazor.server.js" autostart="true"></script>
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
     <script src="js/editor.js"></script>
+    <script>
+        window.downloadFileFromBase64 = (filename, contentType, base64Data) => {
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = `data:${contentType};base64,${base64Data}`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+    </script>
     @*  <script>
         // Ensure Blazor reconnection logic
         Blazor.start({

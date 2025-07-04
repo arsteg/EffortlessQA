@@ -59,7 +59,7 @@ namespace EffortlessQA.Api.Middleware
             }
 
             var cookieTenantId = context.Request.Cookies["TenantId"];
-            var jwtTenantId = context.User.FindFirst("tenantId")?.Value;
+            var jwtTenantId = context.User.FindFirst("TenantId")?.Value;
 
             if (string.IsNullOrEmpty(cookieTenantId) || string.IsNullOrEmpty(jwtTenantId))
             {

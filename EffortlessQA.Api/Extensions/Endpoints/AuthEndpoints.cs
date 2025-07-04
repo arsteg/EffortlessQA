@@ -81,8 +81,30 @@ namespace EffortlessQA.Api.Extensions
             // POST /api/v1/auth/login
             app.MapPost(
                     "/api/v1/auth/login",
-                    async ([FromBody] LoginDto dto, IAuthService authService) =>
+                    async (
+                        [FromBody] LoginDto dto,
+                        IAuthService authService,
+                        HttpContext context
+                    ) =>
                     {
+                        if (
+                            dto == null
+                            || string.IsNullOrWhiteSpace(dto.Email)
+                            || string.IsNullOrWhiteSpace(dto.Password)
+                        )
+                        {
+                            return Results.BadRequest(
+                                new ApiResponse<object>
+                                {
+                                    Error = new ErrorResponse
+                                    {
+                                        Code = "InvalidInput",
+                                        Message = "Email and password are required."
+                                    }
+                                }
+                            );
+                        }
+
                         try
                         {
                             var token = await authService.LoginAsync(dto);
@@ -94,22 +116,55 @@ namespace EffortlessQA.Api.Extensions
                                 }
                             );
                         }
+                        catch (UnauthorizedAccessException)
+                        {
+                            return Results.Unauthorized();
+                        }
                         catch (Exception ex)
                         {
-                            return Results.BadRequest(
-                                new ApiResponse<object>
-                                {
-                                    Error = new ErrorResponse
-                                    {
-                                        Code = "BadRequest",
-                                        Message = ex.Message
-                                    }
-                                }
-                            );
+                            return Results.StatusCode(500);
                         }
                     }
                 )
                 .WithName("Login")
+                .WithTags(AUTH_TAG)
+                .WithMetadata();
+
+            // POST /api/v1/auth/logout
+            app.MapPost(
+                    "/api/v1/auth/logout",
+                    (HttpContext context) =>
+                    {
+                        context.Response.Cookies.Delete(
+                            "access_token",
+                            new CookieOptions
+                            {
+                                HttpOnly = true,
+                                Secure = true,
+                                SameSite = SameSiteMode.Strict
+                            }
+                        );
+
+                        context.Response.Cookies.Delete(
+                            "TenantId",
+                            new CookieOptions
+                            {
+                                HttpOnly = true,
+                                Secure = true,
+                                SameSite = SameSiteMode.Strict
+                            }
+                        );
+
+                        return Results.Ok(
+                            new ApiResponse<object>
+                            {
+                                Data = null,
+                                Meta = new { Message = "Logout successful" }
+                            }
+                        );
+                    }
+                )
+                .WithName("Logout")
                 .WithTags(AUTH_TAG)
                 .WithMetadata();
 

@@ -1,12 +1,13 @@
 ﻿using System;
+using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using EffortlessQA.Data.Dtos;
+using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage; // For CSRF token storage if needed
 using Microsoft.AspNetCore.Http;
-using Blazored.LocalStorage; // Use Blazored.LocalStorage instead of ProtectedSessionStorage
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 
 namespace EffortlessQA.UI.Services
 {
@@ -14,18 +15,19 @@ namespace EffortlessQA.UI.Services
     {
         private readonly HttpClient _httpClient;
         private readonly IHttpContextAccessor _httpContextAccessor;
-		private readonly ILocalStorageService _localStorage; // Changed to ILocalStorageService
-		private bool _isAuthenticated;
+        private readonly IAntiforgery _antiforgery;
+        private bool _isAuthenticated;
         private bool _isAdmin;
 
         public AuthService(
             IHttpClientFactory httpClientFactory,
             IHttpContextAccessor httpContextAccessor,
-			ILocalStorageService localStorage
-		)
+            IAntiforgery antiforgery
+        )
         {
             _httpClient = httpClientFactory.CreateClient("EffortlessQAApi");
             _httpContextAccessor = httpContextAccessor;
+            _antiforgery = antiforgery;
         }
 
         public bool IsAuthenticated => _isAuthenticated;
@@ -35,33 +37,33 @@ namespace EffortlessQA.UI.Services
         {
             try
             {
-                var response = await _httpClient.PostAsJsonAsync("Auth/login", loginDto);
+                // Get CSRF token
+                //var antiforgeryToken = await GetCsrfTokenAsync();
+
+                // Add CSRF token to headers
+                //_httpClient.DefaultRequestHeaders.Add("X-CSRF-TOKEN", antiforgeryToken);
+
+                var response = await _httpClient.PostAsJsonAsync("auth/login", loginDto);
                 response.EnsureSuccessStatusCode();
 
-                var loginResponse = await response.Content.ReadFromJsonAsync<LoginResponseDto>();
+                var loginResponse = await response.Content.ReadFromJsonAsync<ApiResponse<string>>();
                 if (loginResponse?.Data == null)
                 {
                     throw new Exception("No token received from login response.");
                 }
 
-				// Store token in session storage
-				//_httpContextAccessor.HttpContext.Session.SetString("authToken", loginResponse.Data);
+                // Parse JWT to extract claims (optional, for role checking)
+                var handler = new JwtSecurityTokenHandler();
+                var token = handler.ReadJwtToken(loginResponse.Data);
+                var claims = token.Claims.Select(c => $"{c.Type}: {c.Value}");
+                Console.WriteLine("Token Claims: " + string.Join(", ", claims)); // Log claims
 
-				//await _localStorage.SetItemAsync("authToken",loginResponse.Data);
+                var roleClaim = token.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role);
+                _isAdmin = roleClaim?.Value == "Admin";
+                _isAuthenticated = true;
 
-				var handler = new JwtSecurityTokenHandler();
-				var token = handler.ReadJwtToken(loginResponse.Data);
-				var claims = token.Claims.Select(c => $"{c.Type}: {c.Value}");
-				Console.WriteLine("Token Claims: " + string.Join(", ",claims)); // Log claims
-
-				var roleClaim = token.Claims.FirstOrDefault(c =>
-					c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
-				);
-				_isAdmin = roleClaim?.Value == "Admin";
-
-				_isAuthenticated = true;
-                // TODO: Implement IsAdmin logic based on token claims if needed
-                // Example: _isAdmin = await CheckAdminRoleAsync(loginResponse.Data);
+                // Clear CSRF token header after request
+                _httpClient.DefaultRequestHeaders.Remove("X-CSRF-TOKEN");
             }
             catch (Exception ex)
             {
@@ -75,8 +77,15 @@ namespace EffortlessQA.UI.Services
         {
             try
             {
-                var response = await _httpClient.PostAsJsonAsync("register", registerDto);
+                // Get CSRF token
+                var antiforgeryToken = await GetCsrfTokenAsync();
+                _httpClient.DefaultRequestHeaders.Add("X-CSRF-TOKEN", antiforgeryToken);
+
+                var response = await _httpClient.PostAsJsonAsync("api/auth/register", registerDto);
                 response.EnsureSuccessStatusCode();
+
+                // Clear CSRF token header
+                _httpClient.DefaultRequestHeaders.Remove("X-CSRF-TOKEN");
             }
             catch (Exception ex)
             {
@@ -84,27 +93,27 @@ namespace EffortlessQA.UI.Services
             }
         }
 
-        public async Task LogoutAsync()
+        public async Task Async()
         {
-            //_httpContextAccessor.HttpContext.Session.Remove("authToken");
-			await _localStorage.RemoveItemAsync("authToken"); // Changed to RemoveItemAsync
-			_isAuthenticated = false;
-            _isAdmin = false;
-            await Task.CompletedTask;
+            try
+            {
+                // Call logout endpoint to clear cookies
+                var response = await _httpClient.PostAsync("api/auth/logout", null);
+                response.EnsureSuccessStatusCode();
+                _isAuthenticated = false;
+                _isAdmin = false;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Logout failed: {ex.Message}");
+            }
         }
 
         public async Task<string> GetCurrentTenantAsync()
         {
             try
             {
-				var token = await GetTokenAsync();
-				if (!string.IsNullOrEmpty(token))
-                {
-                    _httpClient.DefaultRequestHeaders.Authorization =
-                        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-                }
-
-                var response = await _httpClient.GetAsync("Auth/tenantCurrent");
+                var response = await _httpClient.GetAsync("api/auth/tenantCurrent");
                 response.EnsureSuccessStatusCode();
                 var tenant = await response.Content.ReadFromJsonAsync<ApiResponse<TenantDto>>();
                 return tenant?.Data?.Name ?? "Unknown Tenant";
@@ -116,26 +125,19 @@ namespace EffortlessQA.UI.Services
             }
         }
 
-        public async Task<string> GetTokenAsync()
-        {
-            //return _httpContextAccessor.HttpContext.Session.GetString("authToken");
-            //return await _localStorage.GetItemAsync<string>("authToken");
-            return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlMDlhZDc5MS00MGQxLTQ5MzctODI5Yi1lNGM5Y2Q3ZTYyN2YiLCJlbWFpbCI6Im1vaGRyYWZpb25saW5lQGdtYWlsLmNvbSIsInRlbmFudElkIjoiNTUwYjA2ZjQ3ZDI4NDkxMGJhM2MyNzE1MGU1MmFhMTgiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJBZG1pbiIsImV4cCI6MTc4MjU2Mjg4OSwiaXNzIjoiRWZmb3J0bGVzc1FBIiwiYXVkIjoiRWZmb3J0bGVzc1FBVXNlcnMifQ.gEoALuWkuf_-UT7cCy0ZfgeYpbSWWUI0ThuCgqRQ2uk";
-		}
-
         public async Task InviteUserAsync(InviteUserDto inviteUserDto)
         {
             try
             {
-                var token = await GetTokenAsync();
-                if (!string.IsNullOrEmpty(token))
-                {
-                    _httpClient.DefaultRequestHeaders.Authorization =
-                        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-                }
+                // Get CSRF token
+                var antiforgeryToken = await GetCsrfTokenAsync();
+                _httpClient.DefaultRequestHeaders.Add("X-CSRF-TOKEN", antiforgeryToken);
 
-                var response = await _httpClient.PostAsJsonAsync("users/invite", inviteUserDto);
+                var response = await _httpClient.PostAsJsonAsync("api/users/invite", inviteUserDto);
                 response.EnsureSuccessStatusCode();
+
+                // Clear CSRF token header
+                _httpClient.DefaultRequestHeaders.Remove("X-CSRF-TOKEN");
             }
             catch (Exception ex)
             {
@@ -151,12 +153,9 @@ namespace EffortlessQA.UI.Services
         {
             try
             {
-                var token = await GetTokenAsync();
-                if (!string.IsNullOrEmpty(token))
-                {
-                    _httpClient.DefaultRequestHeaders.Authorization =
-                        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-                }
+                // Get CSRF token
+                var antiforgeryToken = await GetCsrfTokenAsync();
+                _httpClient.DefaultRequestHeaders.Add("X-CSRF-TOKEN", antiforgeryToken);
 
                 var changePasswordDto = new ChangePasswordDto
                 {
@@ -166,10 +165,13 @@ namespace EffortlessQA.UI.Services
                 };
 
                 var response = await _httpClient.PostAsJsonAsync(
-                    "auth/change-password",
+                    "api/auth/change-password",
                     changePasswordDto
                 );
                 response.EnsureSuccessStatusCode();
+
+                // Clear CSRF token header
+                _httpClient.DefaultRequestHeaders.Remove("X-CSRF-TOKEN");
             }
             catch (HttpRequestException ex)
             {
@@ -186,28 +188,28 @@ namespace EffortlessQA.UI.Services
 
         public async Task<Guid> GetUserIdAsync()
         {
-            var token = await GetTokenAsync();
-            if (string.IsNullOrEmpty(token))
-                throw new Exception("No authentication token found.");
-
             try
             {
-                // TODO: Implement JWT parsing if needed
-                // Example:
-                // var handler = new JwtSecurityTokenHandler();
-                // var jwtToken = handler.ReadJwtToken(token);
-                // var userIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "sub" || c.Type == ClaimTypes.NameIdentifier);
-                // if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
-                //     throw new Exception("Invalid user ID format in token.");
-                // return userId;
+                // Call an endpoint to get the current user's ID (requires authentication)
+                var response = await _httpClient.GetAsync("api/auth/user-profile");
+                response.EnsureSuccessStatusCode();
+                var userProfile = await response.Content.ReadFromJsonAsync<ApiResponse<UserDto>>();
+                if (userProfile?.Data == null)
+                    throw new Exception("User profile not found.");
 
-                // Placeholder: Replace with actual logic
-                return Guid.NewGuid();
+                return userProfile.Data.Id;
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error reading user ID from token: {ex.Message}", ex);
+                throw new Exception($"Error retrieving user ID: {ex.Message}", ex);
             }
+        }
+
+        private async Task<string> GetCsrfTokenAsync()
+        {
+            // Get CSRF token from the antiforgery service
+            var tokens = _antiforgery.GetAndStoreTokens(_httpContextAccessor.HttpContext);
+            return tokens.RequestToken;
         }
     }
 }

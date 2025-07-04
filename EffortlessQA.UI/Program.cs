@@ -1,3 +1,4 @@
+using System.Net;
 using Blazored.LocalStorage;
 using EffortlessQA.UI.Services;
 using Microsoft.AspNetCore.Builder;
@@ -30,19 +31,22 @@ builder.Services.AddMudServices(config =>
 });
 builder.Services.AddScoped<ProtectedSessionStorage>();
 builder.Services.AddBlazoredLocalStorage();
-builder.Services.AddTransient<AuthTokenHandler>();
 
-builder.Services.AddHttpClient(
-    "EffortlessQAApi",
-    client =>
-    {
-        client.BaseAddress = new Uri("https://localhost:7196/api/v1/");
-        client.DefaultRequestHeaders.Accept.Add(
-            new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json")
-        );
-        client.Timeout = TimeSpan.FromSeconds(60); // Increase HTTP timeout for image uploads
-    }
-).AddHttpMessageHandler<AuthTokenHandler>();
+builder
+    .Services.AddHttpClient(
+        "EffortlessQAApi",
+        client =>
+        {
+            client.BaseAddress = new Uri("https://localhost:7196/api/v1/");
+            client.DefaultRequestHeaders.Accept.Add(
+                new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json")
+            );
+            client.Timeout = TimeSpan.FromSeconds(60); // Increase HTTP timeout for image uploads
+        }
+    )
+    .ConfigurePrimaryHttpMessageHandler(
+        () => new HttpClientHandler { UseCookies = true, CookieContainer = new CookieContainer() }
+    );
 
 builder.Services.AddSignalR(options =>
 {
@@ -51,7 +55,7 @@ builder.Services.AddSignalR(options =>
     options.KeepAliveInterval = TimeSpan.FromSeconds(60); // Keep-alive ping
     options.EnableDetailedErrors = true; // Enable detailed SignalR errors for debugging
 });
-
+builder.Services.AddAntiforgery(); // Add antiforgery service
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddScoped<AuthService>();

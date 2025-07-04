@@ -1,5 +1,4 @@
-﻿using System.Linq.Expressions;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Text.Json;
 using EffortlessQA.Data.Entities;
 using Microsoft.AspNetCore.Http;
@@ -9,7 +8,6 @@ namespace EffortlessQA.Data
 {
     public class EffortlessQAContext : DbContext
     {
-        private readonly string? _tenantId;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
         public EffortlessQAContext(
@@ -19,23 +17,6 @@ namespace EffortlessQA.Data
             : base(options)
         {
             _httpContextAccessor = httpContextAccessor;
-
-            // Check if the current request is for the login endpoint
-            var endpoint = _httpContextAccessor?.HttpContext?.Request.Path.Value;
-            if (
-                endpoint != null
-                && endpoint.Contains("/api/auth/login", StringComparison.OrdinalIgnoreCase)
-            )
-            {
-                _tenantId = null; // Bypass tenant filter for login
-            }
-            else
-            {
-                // Try to get TenantId from cookie first, then fall back to JWT
-                _tenantId =
-                    _httpContextAccessor?.HttpContext?.Request.Cookies["TenantId"]
-                    ?? _httpContextAccessor?.HttpContext?.User?.FindFirst("tenantId")?.Value;
-            }
         }
 
         public DbSet<Tenant> Tenants { get; set; }
@@ -63,46 +44,7 @@ namespace EffortlessQA.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Multi-tenant filters
-            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
-            {
-                // Skip join tables
-                if (
-                    entityType.ClrType == typeof(RequirementTestCase)
-                    || entityType.ClrType == typeof(RolePermission)
-                )
-                {
-                    continue;
-                }
-
-                // Apply filter only to entities that inherit from EntityBase and have a TenantId property
-                if (
-                    typeof(EntityBase).IsAssignableFrom(entityType.ClrType)
-                    && entityType.ClrType != typeof(Tenant)
-                )
-                {
-                    // Check if the entity has a TenantId property
-                    var tenantIdProperty = entityType.ClrType.GetProperty("TenantId");
-                    if (tenantIdProperty != null && tenantIdProperty.PropertyType == typeof(string))
-                    {
-                        var parameter = Expression.Parameter(entityType.ClrType, "e");
-                        var tenantIdPropertyAccess = Expression.Property(
-                            parameter,
-                            tenantIdProperty
-                        );
-                        var tenantIdValue = Expression.Constant(_tenantId);
-                        var filter = Expression.Lambda(
-                            Expression.Equal(tenantIdPropertyAccess, tenantIdValue),
-                            parameter
-                        );
-                        entityType.SetQueryFilter(filter);
-                    }
-                }
-            }
-
             // JSONB mappings
-            //modelBuilder.Entity<TestCase>().Property(t => t.Steps).HasColumnType("jsonb");
-            //modelBuilder.Entity<TestCase>().Property(t => t.ExpectedResults).HasColumnType("jsonb");
             modelBuilder
                 .Entity<TestRunResult>()
                 .Property(t => t.Attachments)
@@ -122,7 +64,6 @@ namespace EffortlessQA.Data
             modelBuilder.Entity<Tenant>().HasIndex(t => t.Id);
             modelBuilder.Entity<User>().HasIndex(u => u.TenantId);
             modelBuilder.Entity<User>().HasIndex(u => u.Email).IsUnique();
-
             modelBuilder.Entity<Project>().HasIndex(p => p.TenantId);
             modelBuilder.Entity<Requirement>().HasIndex(r => new { r.TenantId, r.ProjectId });
             modelBuilder.Entity<TestSuite>().HasIndex(s => new { s.TenantId, s.ProjectId });
@@ -178,8 +119,6 @@ namespace EffortlessQA.Data
 
             modelBuilder.Entity<RolePermission>().HasKey(rp => new { rp.RoleId, rp.PermissionId });
             modelBuilder.Entity<RolePermission>().HasOne(rp => rp.Role);
-            //.WithMany(r => r.RolePermissions)
-            //.HasForeignKey(rp => rp.RoleId);
             modelBuilder
                 .Entity<RolePermission>()
                 .HasOne(rp => rp.Permission)
@@ -198,12 +137,11 @@ namespace EffortlessQA.Data
         {
             var userId = _httpContextAccessor?.HttpContext?.User?.FindFirst("sub")?.Value;
             Guid? currentUserId =
-                userId != null && Guid.TryParse(userId, out var parsedId) ? parsedId : (Guid?)null;
+                userId != null && Guid.TryParse(userId, out var parsedId) ? parsedId : null;
 
             var auditEntries = new List<AuditLog>();
             foreach (var entry in ChangeTracker.Entries<EntityBase>())
             {
-                // Audit logic (as previously defined)
                 if (entry.State == EntityState.Added)
                 {
                     entry.Entity.CreatedAt = DateTime.UtcNow;
@@ -228,13 +166,11 @@ namespace EffortlessQA.Data
 
                 Guid? projectId = null;
                 string tenantId =
-                    _tenantId
-                    ?? entry
+                    entry
                         .Entity.GetType()
                         .GetProperty("TenantId")
                         ?.GetValue(entry.Entity)
-                        ?.ToString()
-                    ?? "Unknown";
+                        ?.ToString() ?? "Unknown";
                 if (entityType.GetProperty("ProjectId") != null)
                 {
                     projectId = (Guid?)entityType.GetProperty("ProjectId")?.GetValue(entry.Entity);
@@ -264,7 +200,6 @@ namespace EffortlessQA.Data
                             }
                         );
                         break;
-                    // ... (other cases as previously defined)
                 }
             }
 
@@ -276,7 +211,6 @@ namespace EffortlessQA.Data
             return await base.SaveChangesAsync(cancellationToken);
         }
 
-        // Helper method to get EntityId
         private Guid GetEntityId(Type entityType, object entity)
         {
             var idProperty = entityType.GetProperty("Id");
@@ -292,25 +226,13 @@ namespace EffortlessQA.Data
                 );
 
             if (idValue is Guid guidId)
-            {
                 return guidId;
-            }
-            else if (idValue is string stringId)
-            {
-                if (Guid.TryParse(stringId, out var parsedGuid))
-                {
-                    return parsedGuid;
-                }
-                throw new InvalidOperationException(
-                    $"Id property of entity {entityType.Name} is a string ('{stringId}') but cannot be parsed as a Guid."
-                );
-            }
+            else if (idValue is string stringId && Guid.TryParse(stringId, out var parsedGuid))
+                return parsedGuid;
             else
-            {
                 throw new InvalidOperationException(
                     $"Id property of entity {entityType.Name} is of unsupported type {idValue.GetType().Name}."
                 );
-            }
         }
     }
 }

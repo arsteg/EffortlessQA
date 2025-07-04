@@ -219,26 +219,38 @@ namespace EffortlessQA.Api.Services.Implementation
 
         public async Task<string> LoginAsync(LoginDto dto)
         {
+            // Validate input
+            if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
+                throw new ArgumentException("Email and password are required.");
+
+            // Find user
             var user = await _context
                 .Users.IgnoreQueryFilters()
                 .FirstOrDefaultAsync(u => u.Email == dto.Email && !u.IsDeleted);
             if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
-                throw new Exception("Invalid email or password.");
+                throw new UnauthorizedAccessException("Invalid email or password.");
 
             // Generate JWT token
             var token = GenerateJwtToken(user);
 
-            // Set TenantId in a secure cookie
+            // Set cookies before any response is written
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTimeOffset.UtcNow.AddHours(1)
+            };
+
+            _httpContextAccessor?.HttpContext?.Response.Cookies.Append(
+                "access_token",
+                token,
+                cookieOptions
+            );
             _httpContextAccessor?.HttpContext?.Response.Cookies.Append(
                 "TenantId",
                 user.TenantId,
-                new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.Strict,
-                    Expires = DateTimeOffset.UtcNow.AddHours(1) // Match JWT expiration
-                }
+                cookieOptions
             );
 
             return token;
@@ -351,7 +363,7 @@ namespace EffortlessQA.Api.Services.Implementation
             try
             {
                 // Retrieve tenantId from JWT claims
-                var tenantId = _httpContextAccessor.HttpContext?.User.FindFirst("tenantId")?.Value;
+                var tenantId = _httpContextAccessor.HttpContext?.User.FindFirst("TenantId")?.Value;
 
                 if (string.IsNullOrEmpty(tenantId))
                 {
@@ -633,7 +645,7 @@ namespace EffortlessQA.Api.Services.Implementation
 
         private string GenerateJwtToken(User user)
         {
-            var keyString = _configuration["Jwt:Key"];
+            var keyString = _configuration["JwtSettings:SecretKey"];
             if (string.IsNullOrEmpty(keyString))
             {
                 Log.Error("JWT key is null or empty in configuration.");
@@ -641,7 +653,7 @@ namespace EffortlessQA.Api.Services.Implementation
             }
 
             var keyBytes = Encoding.UTF8.GetBytes(keyString);
-            if (keyBytes.Length < 32) // Enforce 256-bit (32-byte) minimum
+            if (keyBytes.Length < 32)
             {
                 Log.Error(
                     "JWT key is too short: {KeyLength} bytes, expected at least 32 bytes.",
@@ -652,13 +664,13 @@ namespace EffortlessQA.Api.Services.Implementation
                 );
             }
 
-            Log.Information("JWT key length: {KeyLength} bytes", keyBytes.Length); // Debug log
+            Log.Information("JWT key length: {KeyLength} bytes", keyBytes.Length);
 
             var claims = new[]
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                new Claim("tenantId", user.TenantId),
+                new Claim("TenantId", user.TenantId),
                 new Claim(
                     ClaimTypes.Role,
                     user.Roles.FirstOrDefault()?.RoleType.ToString() ?? RoleType.Admin.ToString()
@@ -668,11 +680,12 @@ namespace EffortlessQA.Api.Services.Implementation
             var key = new SymmetricSecurityKey(keyBytes);
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
+            var expiresInMinutes = _configuration.GetValue<int>("JwtSettings:ExpiresInMinutes", 60);
             var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Audience"],
+                issuer: _configuration["JwtSettings:Issuer"],
+                audience: _configuration["JwtSettings:Audience"],
                 claims: claims,
-                expires: DateTime.Now.AddYears(1),
+                expires: DateTime.UtcNow.AddMinutes(expiresInMinutes),
                 signingCredentials: creds
             );
 

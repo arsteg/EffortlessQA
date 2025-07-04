@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using EffortlessQA.Api.Extensions;
 using EffortlessQA.Api.Extensions.Endpoints;
+using EffortlessQA.Api.Jwt;
 using EffortlessQA.Api.Middleware;
 using EffortlessQA.Api.Services.Implementation;
 using EffortlessQA.Api.Services.Interface;
@@ -39,37 +40,37 @@ builder
     )
     .AddHttpContextAccessor();
 
-var jwtSettings = builder.Configuration.GetSection("Jwt");
-var keyString = jwtSettings["Key"];
-var keyBytes = Encoding.UTF8.GetBytes(keyString ?? "");
-if (keyBytes.Length < 16)
-{
-    throw new InvalidOperationException(
-        $"JWT key must be at least 16 bytes (128 bits) for HS256. Current length: {keyBytes.Length} bytes."
-    );
-}
-
+var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()!;
+var key = Encoding.UTF8.GetBytes(jwtSettings.SecretKey);
 builder
-    .Services.AddAuthentication(options =>
-    {
-        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    })
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
+    .Services.AddAuthentication("Bearer")
+    .AddJwtBearer(
+        "Bearer",
+        options =>
         {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtSettings["Issuer"],
-            ValidAudience = jwtSettings["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
-            NameClaimType = ClaimTypes.NameIdentifier,
-            RoleClaimType = ClaimTypes.Role
-        };
-    });
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = jwtSettings.Issuer,
+                ValidAudience = jwtSettings.Audience,
+                IssuerSigningKey = new SymmetricSecurityKey(key)
+            };
+            options.Events = new JwtBearerEvents
+            {
+                OnMessageReceived = context =>
+                {
+                    var token = context.Request.Cookies["access_token"];
+                    if (!string.IsNullOrEmpty(token))
+                    {
+                        context.Token = token;
+                    }
+                    return Task.CompletedTask;
+                }
+            };
+        }
+    );
 
 // Authorization with RBAC
 builder.Services.AddAuthorization(options =>
@@ -112,22 +113,22 @@ builder.Services.AddHttpContextAccessor();
 // CORS
 builder.Services.AddCors(options =>
 {
-	options.AddPolicy(
-		"AllowSpecificOrigins",
-		policy =>
-		{
-			var allowedOrigins = builder.Environment.IsDevelopment()
+    options.AddPolicy(
+        "AllowSpecificOrigins",
+        policy =>
+        {
+            var allowedOrigins = builder.Environment.IsDevelopment()
                 ? new[] { "https://localhost:7129", "https://localhost:7129/" } // Allow both with/without trailing slash
                 : new[] { "https://effortlessqa.netlify.app", "https://effortlessqa.netlify.app/" }; // Production
 
             policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials(); // Required for authenticated requests
-		}
-	);
+        }
+    );
 });
 
 builder.Services.AddAntiforgery(options =>
 {
-	options.HeaderName = "X-CSRF-TOKEN"; // Optional: Customize the header name if needed
+    options.HeaderName = "X-CSRF-TOKEN"; // Optional: Customize the header name if needed
 });
 
 // Swagger
@@ -186,8 +187,8 @@ var app = builder.Build();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseAntiforgery();
 app.UseCors("AllowSpecificOrigins");
+app.UseAntiforgery();
 
 //app.UseMiddleware<TenantValidationMiddleware>(); // Temporarily disabled
 app.UseMiddleware<RequestLoggingMiddleware>();

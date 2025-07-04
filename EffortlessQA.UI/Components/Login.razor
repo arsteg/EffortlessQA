@@ -49,7 +49,7 @@
                                FullWidth="true">Register</MudButton>
                     <MudButton Variant="Variant.Text"
                                Class="mt-2"
-                               OnClick="@(() => Navigation.NavigateTo("/password-reset"))"
+                               OnClick="@(() => Navigation.NavigateTo("/forgot-password"))"
                                FullWidth="true">Forgot Password?</MudButton>
                 </MudForm>
             </MudCardContent>
@@ -63,6 +63,14 @@
     private bool _formIsValid;
     private bool _isLoading;
 
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthService.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/dashboard");
+        }
+    }
+
     private async Task LoginAsync()
     {
         if (!_formIsValid) return;
@@ -74,9 +82,17 @@
             Navigation.NavigateTo("/dashboard");
             Snackbar.Add("Login successful", Severity.Success);
         }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Snackbar.Add("Invalid email or password.", Severity.Error);
+            _loginDto = new(); // Reset form
+            await _form.ResetAsync(); // Reset MudForm validation
+        }
         catch (Exception ex)
         {
             Snackbar.Add($"Login failed: {ex.Message}", Severity.Error);
+            _loginDto = new(); // Reset form
+            await _form.ResetAsync(); // Reset MudForm validation
         }
         finally
         {
@@ -88,7 +104,7 @@
     {
         if (string.IsNullOrWhiteSpace(email))
             return "Email is required";
-        if (!System.Text.RegularExpressions.Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+        if (!System.Text.RegularExpressions.Regex.IsMatch(email, @"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$"))
             return "Invalid email format";
         return null;
     }

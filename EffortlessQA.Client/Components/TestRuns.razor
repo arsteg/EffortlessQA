@@ -865,7 +865,7 @@
                     new PdfColumnDto { Field = "description", Header = "Description" },
                     new PdfColumnDto { Field = "assignedTester", Header = "Assigned Tester" },
                     new PdfColumnDto { Field = "project", Header = "Project" },
-                    new PdfColumnDto { Field = "tenantId", Header = "Tenant ID" },
+                    new PdfColumnDto { Field = "TenantId", Header = "Tenant ID" },
                     new PdfColumnDto { Field = "createdAt", Header = "Created At" },
                     new PdfColumnDto { Field = "updatedAt", Header = "Updated At" }
                 },
@@ -876,7 +876,7 @@
                     { "description", tr.Description ?? "" },
                     // { "assignedTester", _users.FirstOrDefault(u => u.Id == tr.AssignedTesterId)?.UserName ?? "None" },
                     { "project", _projects.FirstOrDefault(p => p.Id == tr.ProjectId)?.Name ?? "None" },
-                    { "tenantId", tr.TenantId ?? "" },
+                    { "TenantId", tr.TenantId ?? "" },
                     { "createdAt", tr.CreatedAt.ToString("yyyy-MM-dd") },
                     { "updatedAt", tr.UpdatedAt?.ToString("yyyy-MM-dd") ?? "" }
                 }).ToList()
