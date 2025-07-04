@@ -1,11 +1,13 @@
-﻿using System;
+﻿using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
+using Azure.Storage.Sas;
+using EffortlessQA.Data.Entities;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.Extensions.Configuration;
+using System;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Azure.Storage.Blobs;
-using Azure.Storage.Blobs.Models;
-using Azure.Storage.Sas;
-using Microsoft.Extensions.Configuration;
 
 namespace EffortlessQA.Api.Services.Implementation
 {
@@ -29,7 +31,10 @@ namespace EffortlessQA.Api.Services.Implementation
             Stream fileStream,
             string fileName,
             string entityId,
-            string fieldName
+            string fieldName,
+            string tenantId,
+            string ProjectId,
+            string EntityType
         )
         {
             // Validate file
@@ -40,7 +45,9 @@ namespace EffortlessQA.Api.Services.Implementation
                 throw new Exception("Invalid image format.");
 
             // Generate unique file name: {entityId}/{fieldName}/{guid}_{originalName}
-            var blobName = $"{entityId}/{fieldName}/{Guid.NewGuid()}_{fileName}";
+            //tenantId + ProjectId + EntityType + $"{entityId}/{fieldName}/{Guid.NewGuid()}_{fileName}";
+            var blobName = $"{tenantId}/{ProjectId}/{EntityType}/{entityId}/{fieldName}/{Guid.NewGuid()}_{fileName}";
+            //var blobName1 = $"{entityId}/{fieldName}/{Guid.NewGuid()}_{fileName}";
             var blobClient = _containerClient.GetBlobClient(blobName);
 
             // Upload file

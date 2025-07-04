@@ -390,7 +390,7 @@
                                   HelperText="Enter a unique requirement title (min 3 characters)"
                                   Class="mud-input-rounded" />
                     <MudText Typo="Typo.subtitle1">Description</MudText>
-                    <BlazorRichTextEditor @bind-Value="_newRequirement.Description" EntityId="@_newRequirement.Id.ToString()" />
+                    <BlazorRichTextEditor @bind-Value="_newRequirement.Description" EntityId="@_newRequirement.Id.ToString()" ProjectId="@ApplicationContextService.SelectedProjectId.ToString()" EntityType="Requirements" FieldName="Description" />
                     <MudTextField T="string"
                                   Label="Tags"
                                   @bind-Value="_tagsInput"

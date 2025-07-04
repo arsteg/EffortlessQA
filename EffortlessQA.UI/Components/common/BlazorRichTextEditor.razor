@@ -47,7 +47,13 @@
     public string EntityId { get; set; } = Guid.NewGuid().ToString();
 
     [Parameter]
-    public string FieldName { get; set; } = "default";
+    public string ProjectId { get; set; } = Guid.NewGuid().ToString();
+    
+    [Parameter]
+    public string EntityType { get; set; } = "defaultType";
+
+    [Parameter]
+    public string FieldName { get; set; } = "defaultName";
 
     [Parameter]
     public string Height { get; set; } = "400px";
@@ -147,7 +153,7 @@
             {
                 var formData = new MultipartFormDataContent();
                 formData.Add(new ByteArrayContent(blob), "file", fileName);
-                var response = await _httpClient.PostAsync($"common/images/upload?entityId={Uri.EscapeDataString(EntityId)}&fieldName={Uri.EscapeDataString(FieldName)}", formData);
+                var response = await _httpClient.PostAsync($"common/images/upload?entityId={Uri.EscapeDataString(EntityId)}&fieldName={Uri.EscapeDataString(FieldName)}&ProjectId={Uri.EscapeDataString(ProjectId)}&EntityType={Uri.EscapeDataString(EntityType)}", formData);
                 if (!response.IsSuccessStatusCode)
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();

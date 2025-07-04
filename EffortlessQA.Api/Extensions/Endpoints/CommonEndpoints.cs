@@ -1,6 +1,7 @@
 ﻿using EffortlessQA.Api.Services.Implementation;
 using EffortlessQA.Data.Dtos;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -91,8 +92,11 @@ namespace EffortlessQA.Api.Extensions
                         AzureBlobStorageService blobStorageService,
                         IFormFile file,
 						[FromQuery] string entityId,
-						[FromQuery] string fieldName
-					) =>
+						[FromQuery] string fieldName,
+                        [FromQuery] string ProjectId,
+                        [FromQuery] string EntityType
+
+                    ) =>
                     {
                         try
                         {
@@ -108,8 +112,11 @@ namespace EffortlessQA.Api.Extensions
                                 stream,
                                 file.FileName,
                                 entityId,
-								fieldName
-							);
+								fieldName,
+                                tenantId,
+                                ProjectId,
+                                EntityType
+                            );
 
                             return Results.Ok(new { location = imageUrl });
                         }
