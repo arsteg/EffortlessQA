@@ -384,21 +384,7 @@
                         </MudTd>
                     </RowTemplate>
                     <PagerContent>
-                        <div class="d-flex align-center gap-3">
-                            <MudText Typo="Typo.body2" Class="mr-2">Rows per page:</MudText>
-                            @foreach (var size in new int[] { 10,25,50,100 })
-                            {
-                                <MudButton Variant="@(_pageSize == size ? Variant.Filled : Variant.Outlined)"
-                                           Color="Color.Primary"
-                                           Size="Size.Small"
-                                           OnClick="@(() => OnPageSizeChanged(size))"
-                                           Class="mud-button-compact"
-                                           AriaLabel="@($"Set rows per page to {size}")">
-                                    @size
-                                </MudButton>
-                            }
-                            <MudTablePager RowsPerPageString="" DisableRowsPerPage="true" />
-                        </div>
+                        <MudTablePager />
                     </PagerContent>
                     <LoadingContent>
                         <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
