@@ -4,6 +4,7 @@ using EffortlessQA.Data.Dtos;
 using EffortlessQA.Data.Entities;
 using Ganss.Xss;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace EffortlessQA.Api.Services.Implementation
 {
@@ -357,8 +358,11 @@ namespace EffortlessQA.Api.Services.Implementation
             {
                 await _blobStorageService.DeleteAllImagesForEntityAsync(
                     requirementId.ToString(),
-					"default"
-				);
+					"Description",
+                    tenantId,
+                    projectId.ToString(),
+                    "Requirements"
+                );
                 _logger.LogInformation(
                     "Deleted images for requirement {RequirementId}",
                     requirementId
@@ -384,7 +388,10 @@ namespace EffortlessQA.Api.Services.Implementation
                 {
                     await _blobStorageService.DeleteAllImagesForEntityAsync(
                         child.Id.ToString(),
-                        "Description"
+                        "Description",
+                        tenantId,
+                        child.ProjectId.ToString(),
+                        "Requirements"
                     );
                     _logger.LogInformation(
                         "Deleted images for child requirement {ChildRequirementId}",

@@ -45,9 +45,7 @@ namespace EffortlessQA.Api.Services.Implementation
                 throw new Exception("Invalid image format.");
 
             // Generate unique file name: {entityId}/{fieldName}/{guid}_{originalName}
-            //tenantId + ProjectId + EntityType + $"{entityId}/{fieldName}/{Guid.NewGuid()}_{fileName}";
             var blobName = $"{tenantId}/{ProjectId}/{EntityType}/{entityId}/{fieldName}/{Guid.NewGuid()}_{fileName}";
-            //var blobName1 = $"{entityId}/{fieldName}/{Guid.NewGuid()}_{fileName}";
             var blobClient = _containerClient.GetBlobClient(blobName);
 
             // Upload file
@@ -105,9 +103,9 @@ namespace EffortlessQA.Api.Services.Implementation
             }
         }
 
-        public async Task DeleteAllImagesForEntityAsync(string entityId, string fieldName)
+        public async Task DeleteAllImagesForEntityAsync(string entityId, string fieldName, string tenantId, string ProjectId, string EntityType)
         {
-            var blobPrefix = $"{entityId}/{fieldName}/";
+            var blobPrefix = $"{tenantId}/{ProjectId}/{EntityType}/{entityId}/{fieldName}/";
             var blobs = _containerClient.GetBlobsAsync(prefix: blobPrefix);
 
             await foreach (var blob in blobs)

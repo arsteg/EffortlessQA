@@ -416,7 +416,7 @@
                                   HelperText="Enter a unique requirement title (min 3 characters)"
                                   Class="mud-input-rounded" />
                     <MudText Typo="Typo.subtitle1">Description</MudText>
-                    <BlazorRichTextEditor @bind-Value="_editRequirement.Description" EntityId="@_editRequirement.Id.ToString()" />
+                    <BlazorRichTextEditor @bind-Value="_editRequirement.Description" EntityId="@_editRequirement.Id.ToString()" ProjectId="@_editRequirement.ProjectId.ToString()" EntityType="Requirements" FieldName="Description" />
                     <MudTextField T="string"
                                   Label="Tags"
                                   @bind-Value="_editTagsInput"
@@ -442,7 +442,7 @@
     private List<RequirementDto> _parentRequirements = new();
     private List<TestCaseDto> _availableTestCases = new();
     private string _testCasesInput = string.Empty;
-    private CreateRequirementDto _newRequirement  = new() { Id = Guid.NewGuid() };
+    private CreateRequirementDto _newRequirement = new() { Id = Guid.NewGuid() };
     private RequirementDto _editRequirement = new();
     private string _tagsInput = string.Empty;
     private string _editTagsInput = string.Empty;
@@ -488,7 +488,7 @@
                 },
                 Typography = new Typography
                 {
-                    // Default = new Default
+            // Default = new Default
             // {
             //     FontFamily = new[] { "Roboto", "Helvetica", "Arial", "sans-serif" },
             //     FontSize = ".875rem",
@@ -730,6 +730,7 @@
         // _newRequirement.ProjectId = _projects.FirstOrDefault()?.Id ?? default;
         //_availableTestCases = await RequirementService.GetAvailableTestCasesAsync();
         _newRequirement.TenantId = _tenantId;
+        ApplicationContextService.SelectedProjectId = Guid.Parse("5b412642-5b3f-4a6e-b7c4-68b5503dbd5e");
         _showCreateDialog = true;
         await Task.Run(() => _form?.ResetValidation());
     }
