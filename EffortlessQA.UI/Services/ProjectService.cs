@@ -83,7 +83,7 @@ namespace EffortlessQA.UI.Services
                     );
                 }
 
-                return apiResponse.Data ?? new PagedResult<ProjectDto>();
+                return apiResponse?.Data ?? new PagedResult<ProjectDto>();
             }
             catch (HttpRequestException ex)
                 when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)

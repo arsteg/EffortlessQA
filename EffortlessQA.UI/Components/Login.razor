@@ -81,6 +81,7 @@
             await AuthService.LoginAsync(_loginDto);
             Navigation.NavigateTo("/dashboard");
             Snackbar.Add("Login successful", Severity.Success);
+
         }
         catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {

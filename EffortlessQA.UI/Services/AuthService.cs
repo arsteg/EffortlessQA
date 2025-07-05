@@ -93,7 +93,7 @@ namespace EffortlessQA.UI.Services
             }
         }
 
-        public async Task Async()
+        public async Task LogoutAsync()
         {
             try
             {
@@ -113,7 +113,7 @@ namespace EffortlessQA.UI.Services
         {
             try
             {
-                var response = await _httpClient.GetAsync("api/auth/tenantCurrent");
+                var response = await _httpClient.GetAsync("auth/tenantCurrent");
                 response.EnsureSuccessStatusCode();
                 var tenant = await response.Content.ReadFromJsonAsync<ApiResponse<TenantDto>>();
                 return tenant?.Data?.Name ?? "Unknown Tenant";

@@ -121,6 +121,7 @@
 @code {
     private bool _drawerOpen = true;
     private bool IsAuthenticated => AuthService.IsAuthenticated;
+    private bool IsProjectLoaded = false;
     private bool IsAdmin => AuthService.IsAdmin;
     private string SelectedTenant { get; set; } = "";
     private List<string> Tenants { get; set; } = new() { "Default Tenant", "Org A", "Org B" };
@@ -178,58 +179,68 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
-        {
-            await JSRuntime.InvokeVoidAsync("console.log", "MudBlazor initialized");
-        }
+       
+        
+        
+            if (IsAuthenticated && !IsProjectLoaded)
+            {
+                try
+                {
+                    _isLoadingProjects = true;
+                    await ApplicationContextService.InitializeAsync();
+
+                    // Fetch tenant name
+                    SelectedTenant = await AuthService.GetCurrentTenantAsync();
+
+                    Console.WriteLine($"Loaded tenant: {SelectedTenant}");
+
+                    // Fetch projects
+                    _projects = await ApplicationContextService.GetProjectsAsync();
+                    Console.WriteLine($"Loaded {_projects.Count} projects: {System.Text.Json.JsonSerializer.Serialize(_projects)}");
+
+                    // Pre-select the first project if available
+                    if (_projects.Any() && !SelectedProjectId.HasValue)
+                    {
+                        SelectedProjectId = _projects.First().Id;
+                        await OnProjectChanged(SelectedProjectId);
+                    }
+
+                    // Subscribe to project changes
+                ApplicationContextService.OnProjectChanged += HandleProjectChanged;
+
+                }
+                catch (Exception ex)
+                {
+                    _projectsError = true;
+                    Snackbar.Add($"Failed to load projects or tenant: {ex.Message}", Severity.Error);
+                    Console.WriteLine($"Error loading data: {ex}");
+                }
+                finally
+                {
+                    IsProjectLoaded = true;
+                    _isLoadingProjects = false;
+                    await InvokeAsync(StateHasChanged);
+                }
+            }
+        
     }
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            _isLoadingProjects = true;
-            await ApplicationContextService.InitializeAsync();
-
-            // Fetch tenant name
-            SelectedTenant = await AuthService.GetCurrentTenantAsync();
-
-            Console.WriteLine($"Loaded tenant: {SelectedTenant}");
-
-            // Fetch projects
-            _projects = await ApplicationContextService.GetProjectsAsync();
-            Console.WriteLine($"Loaded {_projects.Count} projects: {System.Text.Json.JsonSerializer.Serialize(_projects)}");
-
-            // Pre-select the first project if available
-            if (_projects.Any() && !SelectedProjectId.HasValue)
+            if (!IsAuthenticated)
             {
-                SelectedProjectId = _projects.First().Id;
-                await OnProjectChanged(SelectedProjectId);
+                NavigationManager.NavigateTo("/login");
+                return;
             }
-
-            // Subscribe to project changes
-            ApplicationContextService.OnProjectChanged += async () =>
-            {
-                _projects = await ApplicationContextService.GetProjectsAsync();
-                Console.WriteLine($"Projects updated: {_projects.Count}");
-                // Ensure selected project is still valid
-                if (SelectedProjectId.HasValue && !_projects.Any(p => p.Id == SelectedProjectId))
-                {
-                    SelectedProjectId = _projects.Any() ? _projects.First().Id : null;
-                    await OnProjectChanged(SelectedProjectId);
-                }
-                await InvokeAsync(StateHasChanged);
-            };
         }
         catch (Exception ex)
         {
-            _projectsError = true;
-            Snackbar.Add($"Failed to load projects or tenant: {ex.Message}", Severity.Error);
-            Console.WriteLine($"Error loading data: {ex}");
+            _projectsError = true;            
         }
         finally
-        {
-            _isLoadingProjects = false;
+        {           
             await InvokeAsync(StateHasChanged);
         }
     }
@@ -238,7 +249,7 @@
 
     private async Task LogoutAsync()
     {
-        //await AuthService.LogoutAsync();
+        await AuthService.LogoutAsync();
         NavigationManager.NavigateTo("/login");
     }
 
@@ -266,4 +277,29 @@
     {
         NavigationManager.NavigateTo("/change-password");
     }
+    private async Task HandleProjectChanged()
+    {
+        try
+        {
+            _projects = await ApplicationContextService.GetProjectsAsync();
+            if (SelectedProjectId.HasValue && !_projects.Any(p => p.Id == SelectedProjectId))
+            {
+                SelectedProjectId = _projects.Any() ? _projects.First().Id : null;
+                await OnProjectChanged(SelectedProjectId);
+            }
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            _projectsError = true;
+            Snackbar.Add($"Failed to update projects: {ex.Message}", Severity.Error);
+           
+        }
+    }
+
+    public void Dispose()
+    {
+        ApplicationContextService.OnProjectChanged -= HandleProjectChanged;
+    }
+
 }
